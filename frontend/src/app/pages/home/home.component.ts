@@ -369,7 +369,7 @@ import { AuthService } from '../../services/auth.service';
     }
     
     .new-post {
-      background: #fff;
+      background: var(--background-secondary);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
@@ -388,10 +388,12 @@ import { AuthService } from '../../services/auth.service';
         font-size: 18px;
         min-height: 80px;
         outline: none;
+        color: var(--text-primary);
+        background: var(--background);
         transition: opacity 0.2s;
         
         &::placeholder {
-          color: var(--text-secondary);
+          color: var(--text-tertiary);
         }
         
         &:disabled {
@@ -674,6 +676,8 @@ import { AuthService } from '../../services/auth.service';
         font-size: 14px;
         resize: none;
         min-height: 60px;
+        color: var(--text-primary);
+        background: var(--background);
         
         &:focus {
           outline: none;
@@ -844,6 +848,8 @@ import { AuthService } from '../../services/auth.service';
             font-size: 14px;
             resize: none;
             min-height: 50px;
+            color: var(--text-primary);
+            background: var(--background);
             
             &:focus {
               outline: none;
@@ -938,6 +944,8 @@ import { AuthService } from '../../services/auth.service';
             font-size: 13px;
             resize: none;
             min-height: 40px;
+            color: var(--text-primary);
+            background: var(--background);
             
             &:focus {
               outline: none;
@@ -1027,6 +1035,8 @@ import { AuthService } from '../../services/auth.service';
                 font-size: 14px;
                 resize: none;
                 min-height: 50px;
+                color: var(--text-primary);
+                background: var(--background);
                 
                 &:focus {
                   outline: none;

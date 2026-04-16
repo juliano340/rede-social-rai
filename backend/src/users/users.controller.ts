@@ -1,12 +1,16 @@
-import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UsersService } from './users.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService
+  ) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -40,9 +44,24 @@ export class UsersController {
 
   @Get(':username')
   @Public()
-  async getProfile(@Param('username') username: string, @User() user?: any) {
-    if (user) {
-      return this.usersService.getProfileByUsername(username, user.userId);
+  async getProfile(
+    @Param('username') username: string,
+    @Headers('authorization') authHeader: string
+  ) {
+    let userId: string | null = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const payload = this.jwtService.verify(token);
+        userId = payload.sub;
+      } catch (e) {
+        // token inválido, permanece null
+      }
+    }
+    
+    if (userId) {
+      return this.usersService.getProfileByUsername(username, userId);
     }
     return this.usersService.findByUsername(username);
   }

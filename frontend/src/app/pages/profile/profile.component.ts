@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { UsersService, User } from '../../services/users.service';
 import { PostsService } from '../../services/posts.service';
@@ -243,7 +243,32 @@ interface Post {
                                           <span class="reply-name">{{ child.author.name }}</span>
                                           <span class="reply-username">&#64;{{ child.author.username }}</span>
                                         </div>
-                                        <p class="reply-text">{{ child.content }}</p>
+                                        @if (editingNestedReply() === child.id) {
+                                          <div class="edit-reply-form">
+                                            <textarea 
+                                              [(ngModel)]="editNestedReplyContent" 
+                                              maxlength="280"
+                                            ></textarea>
+                                            <div class="edit-actions">
+                                              <button class="cancel-edit" (click)="cancelEditNestedReply()">Cancelar</button>
+                                              <button 
+                                                class="save-edit" 
+                                                (click)="saveEditNestedReply(child.id, post.id)"
+                                                [disabled]="!editNestedReplyContent.trim() || savingNestedReply()"
+                                              >
+                                                Salvar
+                                              </button>
+                                            </div>
+                                          </div>
+                                        } @else {
+                                          <p class="reply-text">{{ child.content }}</p>
+                                        }
+                                        @if (authService.currentUser()?.id === child.author.id && editingNestedReply() !== child.id) {
+                                          <div class="reply-actions">
+                                            <button class="reply-edit-btn" (click)="startEditNestedReply(child)">Editar</button>
+                                            <button class="reply-delete-btn" (click)="deleteNestedReply(child.id, post.id)">Excluir</button>
+                                          </div>
+                                        }
                                       </div>
                                     </div>
                                   }
@@ -1205,6 +1230,10 @@ export class ProfileComponent implements OnInit {
   loadingReplies = signal(false);
   editingReply = signal<string | null>(null);
   editReplyContent = '';
+  // Nested reply editing
+  editingNestedReply = signal<string | null>(null);
+  editNestedReplyContent = '';
+  savingNestedReply = signal(false);
   savingReply = signal(false);
   showDeleteModal = signal(false);
   deletingReplyId = signal<string | null>(null);
@@ -1333,7 +1362,7 @@ export class ProfileComponent implements OnInit {
     this.postsService.updateReply(postId, replyId, this.editReplyContent).subscribe({
       next: (updated) => {
         this.postReplies.update(replies => 
-          replies.map(r => r.id === replyId ? updated : r)
+          replies.map(r => r.id === replyId ? { ...updated, children: r.children } : r)
         );
         this.cancelEditReply();
         this.savingReply.set(false);
@@ -1375,6 +1404,45 @@ export class ProfileComponent implements OnInit {
     this.showDeleteModal.set(false);
     this.deletingReplyId.set(null);
     this.deletingReplyPostId.set(null);
+  }
+
+  // Nested reply editing methods
+  startEditNestedReply(reply: any) {
+    this.editingNestedReply.set(reply.id);
+    this.editNestedReplyContent = reply.content;
+  }
+
+  cancelEditNestedReply() {
+    this.editingNestedReply.set(null);
+    this.editNestedReplyContent = '';
+  }
+
+  saveEditNestedReply(replyId: string, postId: string) {
+    if (!this.editNestedReplyContent.trim()) return;
+    
+    this.savingNestedReply.set(true);
+    this.postsService.updateReply(postId, replyId, this.editNestedReplyContent).subscribe({
+      next: (updated) => {
+        this.postReplies.update(replies => 
+          replies.map(r => ({
+            ...r,
+            children: r.children?.map((c: any) => c.id === replyId ? { ...updated, author: c.author } : c)
+          }))
+        );
+        this.cancelEditNestedReply();
+        this.savingNestedReply.set(false);
+      },
+      error: (err) => {
+        console.error('Error editing nested reply:', err);
+        this.savingNestedReply.set(false);
+      }
+    });
+  }
+
+  deleteNestedReply(replyId: string, postId: string) {
+    this.showDeleteModal.set(true);
+    this.deletingReplyId.set(replyId);
+    this.deletingReplyPostId.set(postId);
   }
 
   toggleReply(postId: string) {
@@ -1505,7 +1573,15 @@ export class ProfileComponent implements OnInit {
   }
 
   loadProfile(username: string) {
-    this.http.get<any>(`http://localhost:3000/users/${username}`).subscribe({
+    this.loading.set(true);
+    
+    let headers = new HttpHeaders();
+    const token = this.authService.getToken();
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+    
+    this.http.get<any>(`http://localhost:3000/users/${username}`, { headers }).subscribe({
       next: (data) => {
         this.profile.set(data);
         this.loading.set(false);

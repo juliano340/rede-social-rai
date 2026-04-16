@@ -164,6 +164,7 @@ import { AuthService } from '../../services/auth.service';
           border-radius: var(--radius-md);
           font-size: var(--font-size-md);
           background: var(--background);
+          color: var(--text-primary);
           transition: all var(--transition-fast);
           
           &::placeholder {
