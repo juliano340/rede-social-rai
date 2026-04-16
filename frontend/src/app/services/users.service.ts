@@ -60,4 +60,10 @@ export class UsersService {
   updateProfile(data: { name?: string; bio?: string }): Observable<any> {
     return this.http.patch(`${this.apiUrl}/users/me`, data);
   }
+  
+  uploadAvatar(file: File): Observable<{ avatar: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ avatar: string }>(`${this.apiUrl}/users/me/avatar`, formData);
+  }
 }

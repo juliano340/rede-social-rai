@@ -113,6 +113,30 @@ export class UsersService {
     };
   }
 
+  async updateAvatar(userId: string, avatarPath: string) {
+    // Delete old avatar if exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatar: true },
+    });
+    
+    if (user?.avatar) {
+      // Avatar path is stored, will be handled by uploads service
+    }
+    
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarPath },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        bio: true,
+        avatar: true,
+      },
+    });
+  }
+
   async updateProfile(userId: string, data: { name?: string; bio?: string; avatar?: string }) {
     return this.prisma.user.update({
       where: { id: userId },

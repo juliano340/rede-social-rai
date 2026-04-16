@@ -52,10 +52,26 @@ interface Post {
       } @else if (profile()) {
         <div class="profile-card">
           <div class="profile-header">
-            <div class="avatar-wrapper">
-              <div class="avatar-placeholder">
-                {{ (profile()!.name[0] || '?').toUpperCase() }}
-              </div>
+            <div class="avatar-wrapper" [class.can-upload]="isOwnProfile()">
+              @if (profile()?.avatar) {
+                <img [src]="'http://localhost:3000' + profile()!.avatar" alt="Avatar" class="avatar-image">
+              } @else {
+                <div class="avatar-placeholder">
+                  {{ (profile()!.name[0] || '?').toUpperCase() }}
+                </div>
+              }
+              @if (isOwnProfile()) {
+                <div class="avatar-overlay" (click)="triggerFileInput()">
+                  <span class="camera-icon">📷</span>
+                </div>
+                <input 
+                  type="file" 
+                  #fileInput 
+                  (change)="onFileSelected($event)" 
+                  accept="image/*" 
+                  style="display: none"
+                >
+              }
             </div>
             <div class="profile-info">
               <h1>{{ profile()?.name }}</h1>
@@ -349,7 +365,43 @@ interface Post {
     }
     
     .avatar-wrapper {
+      position: relative;
       flex-shrink: 0;
+      
+      &.can-upload {
+        cursor: pointer;
+        
+        &:hover .avatar-overlay {
+          opacity: 1;
+        }
+      }
+      
+      .avatar-image {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+      }
+      
+      .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+        
+        .camera-icon {
+          font-size: 24px;
+        }
+      }
     }
     
     .avatar-placeholder {
@@ -364,11 +416,51 @@ interface Post {
       font-weight: 700;
       font-size: 36px;
       box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+      overflow: hidden;
       
       &.small {
         width: 44px;
         height: 44px;
         font-size: 16px;
+      }
+    }
+    
+    .avatar-wrapper {
+      position: relative;
+      
+      &.can-upload {
+        cursor: pointer;
+        
+        &:hover .avatar-overlay {
+          opacity: 1;
+        }
+      }
+      
+      .avatar-image {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+      }
+      
+      .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+        
+        .camera-icon {
+          font-size: 24px;
+        }
       }
     }
     
@@ -1256,6 +1348,9 @@ export class ProfileComponent implements OnInit {
   modalTitle = signal('');
   modalUsers = signal<UserProfile[]>([]);
   modalLoading = signal(false);
+  
+  // Avatar upload
+  isUploadingAvatar = signal(false);
 
   constructor(
     private route: ActivatedRoute,
@@ -1623,6 +1718,51 @@ export class ProfileComponent implements OnInit {
     return new Date(dateStr).toLocaleDateString('pt-BR', { 
       month: 'long', 
       year: 'numeric' 
+    });
+  }
+  
+  triggerFileInput() {
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
+  }
+  
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecione uma imagem.');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('A imagem deve ter no máximo 5MB.');
+        return;
+      }
+      
+      this.uploadAvatar(file);
+    }
+  }
+  
+  uploadAvatar(file: File) {
+    this.isUploadingAvatar.set(true);
+    
+    this.usersService.uploadAvatar(file).subscribe({
+      next: (response) => {
+        // Update profile with new avatar
+        this.profile.update(p => p ? { ...p, avatar: response.avatar } : p);
+        this.isUploadingAvatar.set(false);
+      },
+      error: (err) => {
+        console.error('Error uploading avatar:', err);
+        this.isUploadingAvatar.set(false);
+        alert('Erro ao fazer upload da imagem. Tente novamente.');
+      }
     });
   }
 }

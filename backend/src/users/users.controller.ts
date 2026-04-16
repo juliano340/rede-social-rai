@@ -1,15 +1,24 @@
-import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UsersService } from './users.service';
 import { JwtService } from '@nestjs/jwt';
+import { UploadsService } from '../uploads/uploads.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+interface UploadedFile {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+}
 
 @Controller('users')
 export class UsersController {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private uploadsService: UploadsService
   ) {}
 
   @Get('me')
@@ -22,6 +31,29 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async updateMe(@User() user: any, @Body() data: any) {
     return this.usersService.update(user.userId, data);
+  }
+
+  @Post('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(@User() user: any, @UploadedFile() file: UploadedFile) {
+    if (!file) {
+      return { error: 'No file uploaded' };
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return { error: 'Invalid file type. Only images are allowed.' };
+    }
+    
+    // Process and save avatar
+    const avatarPath = await this.uploadsService.processAndSaveAvatar(file, user.userId);
+    
+    // Update user avatar in database
+    await this.usersService.updateAvatar(user.userId, avatarPath);
+    
+    return { avatar: avatarPath };
   }
 
   @Get('search')

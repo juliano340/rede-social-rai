@@ -61,6 +61,11 @@ ehthumbs.db
 *.db-journal
 
 # ===========================
+# Uploaded files (avatars, etc)
+# ===========================
+uploads/
+
+# ===========================
 # Test & Coverage
 # ===========================
 coverage/
