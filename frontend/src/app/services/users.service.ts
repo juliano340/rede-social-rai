@@ -56,4 +56,8 @@ export class UsersService {
   getSuggested(limit = 10): Observable<UsersResponse> {
     return this.http.get<UsersResponse>(`${this.apiUrl}/users/suggested?limit=${limit}`);
   }
+  
+  updateProfile(data: { name?: string; bio?: string }): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/users/me`, data);
+  }
 }

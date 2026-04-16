@@ -75,6 +75,65 @@ export class PostsService {
     };
   }
 
+  async findFollowing(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    
+    // Buscar IDs dos usuários que eu sigo
+    const following = await this.prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+    
+    const followingIds = following.map(f => f.followingId);
+    
+    // Se não segue ninguém, retorna vazio
+    if (followingIds.length === 0) {
+      return {
+        posts: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+    
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where: { authorId: { in: followingIds } },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              replies: true,
+            },
+          },
+        },
+      }),
+      this.prisma.post.count({
+        where: { authorId: { in: followingIds } },
+      }),
+    ]);
+
+    return {
+      posts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async findByUser(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     

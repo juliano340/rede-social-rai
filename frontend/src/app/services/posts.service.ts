@@ -41,6 +41,14 @@ export class PostsService {
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params });
   }
 
+  getFollowingPosts(page = 1, limit = 20): Observable<PostsResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+    
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params });
+  }
+
   getUserPosts(userId: string, page = 1, limit = 20): Observable<PostsResponse> {
     const params = new HttpParams()
       .set('page', page.toString())

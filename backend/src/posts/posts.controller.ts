@@ -26,6 +26,20 @@ export class PostsController {
     );
   }
 
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
+  async findFollowing(
+    @User() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.postsService.findFollowing(
+      user.userId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
+  }
+
   @Get('user/:userId')
   @Public()
   async findByUser(

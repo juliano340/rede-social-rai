@@ -229,6 +229,26 @@ interface Post {
                                   <button class="reply-delete-btn" (click)="deleteReply(reply.id, post.id)">Excluir</button>
                                 </div>
                               }
+                              
+                              <!-- Nested replies (children) -->
+                              @if (reply.children && reply.children.length > 0) {
+                                <div class="nested-replies">
+                                  @for (child of reply.children; track child.id) {
+                                    <div class="reply-item nested">
+                                      <div class="reply-avatar small">
+                                        {{ (child.author.name[0] || '?').toUpperCase() }}
+                                      </div>
+                                      <div class="reply-content">
+                                        <div class="reply-header">
+                                          <span class="reply-name">{{ child.author.name }}</span>
+                                          <span class="reply-username">&#64;{{ child.author.username }}</span>
+                                        </div>
+                                        <p class="reply-text">{{ child.content }}</p>
+                                      </div>
+                                    </div>
+                                  }
+                                </div>
+                              }
                             </div>
                           </div>
                         }
@@ -256,22 +276,7 @@ interface Post {
               <h2>{{ modalTitle() }}</h2>
               <button class="modal-close" (click)="closeModal()">✕</button>
             </div>
-            <div class="modal-content">
-      
-      <!-- Delete Confirmation Modal -->
-      @if (showDeleteModal()) {
-        <div class="modal-overlay" (click)="closeDeleteModal()">
-          <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-            <div class="modal-icon">⚠️</div>
-            <h2>Excluir Resposta</h2>
-            <p>Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.</p>
-            <div class="modal-actions">
-              <button class="modal-cancel" (click)="closeDeleteModal()">Cancelar</button>
-              <button class="modal-confirm" (click)="confirmDeleteReply()">Excluir</button>
-            </div>
-          </div>
-        </div>
-      }
+<div class="modal-content">
               @if (modalLoading()) {
                 <div class="loading-state">
                   <div class="spinner"></div>
@@ -892,11 +897,36 @@ interface Post {
           }
           
 .reply-delete-btn {
-             color: var(--error);
-           }
-         }
-         
-         .reply-to-reply-btn {
+              color: var(--error);
+            }
+          }
+          
+          .nested-replies {
+            margin-top: 8px;
+            padding-left: 12px;
+            border-left: 2px solid var(--border);
+          }
+          
+          .reply-item.nested {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+          }
+          
+          .reply-item.nested .reply-avatar.small {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #0d8ecf);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 10px;
+            flex-shrink: 0;
+          }
+          
+          .reply-to-reply-btn {
            background: none;
            border: none;
            font-size: 12px;

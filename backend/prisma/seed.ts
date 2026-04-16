@@ -74,6 +74,73 @@ async function main() {
 
   console.log('✅ Created test posts');
 
+  // Create more posts with likes and comments
+  const post4 = await prisma.post.create({
+    data: {
+      content: 'Angular 17 está incrível! Os signals mudam completamente a forma de escrever código. 💡',
+      authorId: user1.id,
+    },
+  });
+
+  const post5 = await prisma.post.create({
+    data: {
+      content: 'Prisma + PostgreSQL = combinação perfeita para APIs Node.js 🚀',
+      authorId: user2.id,
+    },
+  });
+
+  const post6 = await prisma.post.create({
+    data: {
+      content: 'Cores e tipografia são a base de qualquer bom design. 🎨✨',
+      authorId: user3.id,
+    },
+  });
+
+  const post7 = await prisma.post.create({
+    data: {
+      content: 'Trabalhando em um novo projeto de rede social! Empolgado para mostrar em breve 📱',
+      authorId: user1.id,
+    },
+  });
+
+  // Create likes
+  const likes = [
+    { postId: post1.id, userId: user2.id },
+    { postId: post1.id, userId: user3.id },
+    { postId: post2.id, userId: user1.id },
+    { postId: post3.id, userId: user1.id },
+    { postId: post3.id, userId: user2.id },
+    { postId: post4.id, userId: user2.id },
+    { postId: post5.id, userId: user1.id },
+    { postId: post6.id, userId: user1.id },
+    { postId: post6.id, userId: user2.id },
+  ];
+  
+  for (const like of likes) {
+    try {
+      await prisma.like.create({ data: like });
+    } catch (e) {
+      // Skip duplicates
+    }
+  }
+
+  // Create comments (replies)
+  const replies = [
+    { content: 'Parabéns pelo projeto!', postId: post1.id, authorId: user2.id },
+    { content: 'Muito legal!', postId: post1.id, authorId: user3.id },
+    { content: 'Concordo! Angular tá evoluindo muito', postId: post4.id, authorId: user2.id },
+    { content: 'Show! Angular 17 é tooooop', postId: post4.id, authorId: user3.id },
+    { content: 'Prisma facilita demais o trabalho!', postId: post5.id, authorId: user3.id },
+    { content: 'Design minimalista é o melhor 🎯', postId: post6.id, authorId: user1.id },
+    { content: 'Mal posso esperar para ver!', postId: post7.id, authorId: user2.id },
+  ];
+  
+  for (const reply of replies) {
+    await prisma.reply.create({ data: reply });
+  }
+
+  console.log('✅ Created more posts with likes and comments');
+
   // Alice follows Bob
   await prisma.follow.create({
     data: {

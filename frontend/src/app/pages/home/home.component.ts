@@ -13,6 +13,26 @@ import { AuthService } from '../../services/auth.service';
     <div class="home-page">
       <h1>Feed</h1>
       
+      <!-- Feed Tabs -->
+      @if (authService.isLoggedIn()) {
+        <div class="feed-tabs">
+          <button 
+            class="feed-tab" 
+            [class.active]="feedType() === 'all'"
+            (click)="switchFeed('all')"
+          >
+            Para você
+          </button>
+          <button 
+            class="feed-tab" 
+            [class.active]="feedType() === 'following'"
+            (click)="switchFeed('following')"
+          >
+            Seguindo
+          </button>
+        </div>
+      }
+      
       @if (authService.isLoggedIn()) {
         <div class="new-post">
           <textarea 
@@ -313,10 +333,39 @@ import { AuthService } from '../../services/auth.service';
     }
   `,
   styles: [`
-    .home-page h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
+.home-page h1 {
+      font-size: 20px;
       font-weight: 700;
+    }
+    
+    .feed-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      
+      .feed-tab {
+        flex: 1;
+        padding: 12px;
+        background: none;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        
+        &:hover {
+          color: var(--text-primary);
+          background: var(--background-secondary);
+        }
+        
+        &.active {
+          color: var(--text-primary);
+          border-bottom-color: var(--primary);
+        }
+      }
     }
     
     .new-post {
@@ -1143,6 +1192,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class HomeComponent implements OnInit {
   posts = signal<Post[]>([]);
+  feedType = signal<'all' | 'following'>('all');
   newPostContent = '';
   isSubmitting = signal(false);
   isLoading = signal(true);
@@ -1191,7 +1241,12 @@ export class HomeComponent implements OnInit {
     this.isLoading.set(true);
     this.loadError.set(null);
     
-    this.postsService.getPosts().subscribe({
+    const feed = this.feedType();
+    const request = feed === 'following' 
+      ? this.postsService.getFollowingPosts()
+      : this.postsService.getPosts();
+    
+    request.subscribe({
       next: (response) => {
         this.posts.set(response.posts);
         this.isLoading.set(false);
@@ -1201,6 +1256,11 @@ export class HomeComponent implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  switchFeed(type: 'all' | 'following') {
+    this.feedType.set(type);
+    this.loadPosts();
   }
 
   createPost() {
@@ -1368,6 +1428,13 @@ export class HomeComponent implements OnInit {
           post._count.replies += 1;
           this.posts.update(posts => [...posts]);
         }
+        
+        // Recarregar lista de comentários
+        this.postsService.getReplies(postId).subscribe({
+          next: (data) => {
+            this.postReplies.set(data.replies || []);
+          }
+        });
         
         this.cancelReply();
         this.isSubmittingReply.set(false);
