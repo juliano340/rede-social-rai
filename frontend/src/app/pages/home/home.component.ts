@@ -1,0 +1,1513 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { PostsService, Post } from '../../services/posts.service';
+import { AuthService } from '../../services/auth.service';
+
+@Component({
+  selector: 'app-home',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  template: `
+    <div class="home-page">
+      <h1>Feed</h1>
+      
+      @if (authService.isLoggedIn()) {
+        <div class="new-post">
+          <textarea 
+            [(ngModel)]="newPostContent" 
+            placeholder="O que está acontecendo?"
+            maxlength="280"
+            [disabled]="isSubmitting()"
+            aria-label="O que está acontecendo?"
+          ></textarea>
+          <div class="new-post-footer">
+            <span 
+              class="char-count" 
+              [class.warning]="newPostContent.length > 260"
+              [class.danger]="newPostContent.length >= 280"
+            >
+              {{ newPostContent.length }}/280
+            </span>
+            <button 
+              (click)="createPost()" 
+              [disabled]="!canSubmit()"
+              [class.loading]="isSubmitting()"
+            >
+              @if (isSubmitting()) {
+                <span class="spinner"></span>
+                Publicando...
+              } @else {
+                Publicar
+              }
+            </button>
+          </div>
+          @if (submitError()) {
+            <div class="submit-error" role="alert">
+              {{ submitError() }}
+            </div>
+          }
+          @if (submitSuccess()) {
+            <div class="submit-success" role="status">
+              Post publicado com sucesso!
+            </div>
+          }
+        </div>
+      }
+      
+      <div class="posts-container">
+        @if (isLoading()) {
+          <div class="loading-state">
+            <div class="spinner-lg"></div>
+            <p>Carregando publicações...</p>
+          </div>
+        } @else if (loadError()) {
+          <div class="error-state" role="alert">
+            <p>Algo deu errado ao carregar o feed.</p>
+            <button (click)="loadPosts()">Tentar novamente</button>
+          </div>
+        } @else if (posts().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <p>Nenhuma publicação ainda.</p>
+            <span>Seja o primeiro a compartilhar algo!</span>
+          </div>
+        } @else {
+          <div class="posts">
+            @for (post of posts(); track post.id) {
+              <article class="post" [class.deleting]="deletingPostId() === post.id">
+                <div class="post-avatar">
+                  <div class="avatar-placeholder" aria-hidden="true">
+                    {{ (post.author.name[0] || '?').toUpperCase() }}
+                  </div>
+                </div>
+                <div class="post-content">
+                  <div class="post-header">
+                    <a [routerLink]="['/profile', post.author.username]" class="author-name">
+                      {{ post.author.name }}
+                    </a>
+                    <span class="author-username">&#64;{{ post.author.username }}</span>
+                    <span class="post-time">{{ formatDate(post.createdAt) }}</span>
+                  </div>
+                  <p class="post-text">{{ post.content }}</p>
+                  <div class="post-actions">
+                    <button 
+                      class="action-btn like" 
+                      (click)="toggleLike(post)"
+                      [class.liked]="postLikes()[post.id]"
+                      [disabled]="postLikingId() === post.id"
+                    >
+                      <span class="icon">{{ postLikes()[post.id] ? '❤️' : '🤍' }}</span>
+                      <span>{{ post._count.likes }}</span>
+                    </button>
+                    <button 
+                      class="action-btn reply" 
+                      (click)="toggleReply(post.id)"
+                      [class.active]="replyingToPost() === post.id || viewingRepliesPost() === post.id"
+                    >
+                      <span class="icon">💬</span>
+                      <span>{{ post._count.replies }}</span>
+                    </button>
+                    @if (authService.currentUser()?.id === post.author.id) {
+                      <button 
+                        class="action-btn delete" 
+                        (click)="deletePost(post.id)"
+                        [disabled]="deletingPostId() === post.id"
+                      >
+                        <span class="icon">🗑</span>
+                      </button>
+                    }
+                  </div>
+                  
+                  @if (viewingRepliesPost() === post.id || replyingToPost() === post.id) {
+                    <div class="replies-list">
+                      <button class="close-replies" (click)="toggleReply(post.id)">
+                        ✕
+                      </button>
+                      
+                      <!-- Show comment link -->
+                      @if (replyingToPost() !== post.id) {
+                        <button class="add-reply-link" (click)="toggleReply(post.id)">
+                          💬 Comentar
+                        </button>
+                      }
+                      
+                      <!-- Reply form -->
+                      @if (replyingToPost() === post.id) {
+                        <div class="reply-form">
+                          <textarea 
+                            [(ngModel)]="replyContent" 
+                            placeholder="Escreva um comentário..."
+                            maxlength="280"
+                          ></textarea>
+                          <div class="reply-actions">
+                            <span class="char-count">{{ replyContent.length }}/280</span>
+                            <div class="reply-buttons">
+                              <button class="cancel-btn" (click)="cancelReply()">Cancelar</button>
+                              <button 
+                                class="submit-reply-btn" 
+                                (click)="submitReply(post.id)"
+                                [disabled]="!replyContent.trim() || isSubmittingReply()"
+                              >
+                                Comentar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                      
+                      @if (loadingReplies()) {
+                        <div class="loading-replies">
+                          <div class="spinner-sm"></div>
+                        </div>
+                      } @else if (postReplies().length === 0 && replyingToPost() !== post.id) {
+                        <p class="no-replies">Nenhuma resposta ainda.</p>
+                      } @else {
+                        @for (reply of postReplies(); track reply.id) {
+                          <div class="reply-item">
+                            <div class="reply-avatar">
+                              {{ (reply.author.name[0] || '?').toUpperCase() }}
+                            </div>
+                            <div class="reply-content">
+                              <div class="reply-header">
+                                <span class="reply-name">{{ reply.author.name }}</span>
+                                <span class="reply-username">&#64;{{ reply.author.username }}</span>
+                              </div>
+                              @if (editingReply() === reply.id) {
+                                <div class="edit-reply-form">
+                                  <textarea 
+                                    [(ngModel)]="editReplyContent" 
+                                    maxlength="280"
+                                  ></textarea>
+                                  <div class="edit-actions">
+                                    <button class="cancel-edit" (click)="cancelEditReply()">Cancelar</button>
+                                    <button 
+                                      class="save-edit" 
+                                      (click)="saveEditReply(reply.id, post.id)"
+                                      [disabled]="!editReplyContent.trim() || savingReply()"
+                                    >
+                                      Salvar
+                                    </button>
+                                  </div>
+                                </div>
+                              } @else {
+                                <p class="reply-text">{{ reply.content }}</p>
+                              }
+                              @if (authService.currentUser()?.id === reply.author.id && editingReply() !== reply.id) {
+                                <div class="reply-actions">
+                                  <button class="reply-edit-btn" (click)="startEditReply(reply)">Editar</button>
+                                  <button class="reply-delete-btn" (click)="deleteReply(reply.id, post.id)">Excluir</button>
+                                </div>
+                              }
+                              @if (authService.currentUser() && editingReply() !== reply.id) {
+                                <button class="reply-to-reply-btn" (click)="toggleReplyToComment(reply.id)">
+                                  Responder
+                                </button>
+                              }
+                              @if (replyingToComment() === reply.id) {
+                                <div class="reply-to-reply-form">
+                                  <textarea 
+                                    [(ngModel)]="replyingToCommentContent" 
+                                    placeholder="Escreva uma resposta..."
+                                    maxlength="280"
+                                  ></textarea>
+                                  <div class="reply-actions">
+                                    <button class="cancel-btn" (click)="cancelReplyToComment()">Cancelar</button>
+                                    <button 
+                                      class="submit-reply-btn" 
+                                      (click)="submitReplyToComment(reply.id, post.id)"
+                                      [disabled]="!replyingToCommentContent.trim()"
+                                    >
+                                      Responder
+                                    </button>
+                                  </div>
+                                </div>
+                              }
+                              
+                              <!-- Nested replies (children) -->
+                              @if (reply.children && reply.children.length > 0) {
+                                <div class="nested-replies">
+                                  @for (child of reply.children; track child.id) {
+                                    <div class="reply-item nested">
+                                      <div class="reply-avatar small">
+                                        {{ (child.author.name[0] || '?').toUpperCase() }}
+                                      </div>
+                                      <div class="reply-content">
+                                        <div class="reply-header">
+                                          <span class="reply-name">{{ child.author.name }}</span>
+                                          <span class="reply-username">&#64;{{ child.author.username }}</span>
+                                        </div>
+                                        @if (editingNestedReply() === child.id) {
+                                          <div class="edit-reply-form">
+                                            <textarea 
+                                              [(ngModel)]="editNestedReplyContent" 
+                                              maxlength="280"
+                                            ></textarea>
+                                            <div class="edit-actions">
+                                              <button class="cancel-edit" (click)="cancelEditNestedReply()">Cancelar</button>
+                                              <button 
+                                                class="save-edit" 
+                                                (click)="saveEditNestedReply(child.id, post.id)"
+                                                [disabled]="!editNestedReplyContent.trim() || savingReply()"
+                                              >
+                                                Salvar
+                                              </button>
+                                            </div>
+                                          </div>
+                                        } @else {
+                                          <p class="reply-text">{{ child.content }}</p>
+                                        }
+                                        @if (authService.currentUser()?.id === child.author.id && editingNestedReply() !== child.id) {
+                                          <div class="reply-actions">
+                                            <button class="reply-edit-btn" (click)="startEditNestedReply(child)">Editar</button>
+                                            <button class="reply-delete-btn" (click)="deleteNestedReply(child.id, post.id)">Excluir</button>
+                                          </div>
+                                        }
+                                      </div>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    @if (showDeleteModal()) {
+      <div class="modal-overlay" (click)="closeDeleteModal()">
+        <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+          <div class="modal-icon">⚠️</div>
+          <h2>Excluir Resposta</h2>
+          <p>Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.</p>
+          <div class="modal-actions">
+            <button class="modal-cancel" (click)="closeDeleteModal()">Cancelar</button>
+            <button class="modal-confirm" (click)="confirmDeleteReply()">Excluir</button>
+          </div>
+        </div>
+      </div>
+    }
+    
+    @if (showDeletePostModal()) {
+      <div class="modal-overlay" (click)="closeDeletePostModal()">
+        <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+          <div class="modal-icon">🗑️</div>
+          <h2>Excluir Postagem</h2>
+          <p>Tem certeza que deseja excluir esta postagem? Esta ação não pode ser desfeita.</p>
+          <div class="modal-actions">
+            <button class="modal-cancel" (click)="closeDeletePostModal()">Cancelar</button>
+            <button class="modal-confirm" (click)="confirmDeletePost()">Excluir</button>
+          </div>
+        </div>
+      </div>
+    }
+  `,
+  styles: [`
+    .home-page h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .new-post {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+      
+      &:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.2);
+      }
+      
+      textarea {
+        width: 100%;
+        border: none;
+        resize: none;
+        font-size: 18px;
+        min-height: 80px;
+        outline: none;
+        transition: opacity 0.2s;
+        
+        &::placeholder {
+          color: var(--text-secondary);
+        }
+        
+        &:disabled {
+          opacity: 0.6;
+        }
+      }
+    }
+    
+    .new-post-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      
+      .char-count {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        
+        &.warning {
+          color: #f59e0b;
+        }
+        
+        &.danger {
+          color: var(--error);
+        }
+      }
+      
+      button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s, transform 0.1s, opacity 0.2s;
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        &:hover:not(:disabled) {
+          background: var(--primary-hover);
+        }
+        
+        &:active:not(:disabled) {
+          transform: scale(0.98);
+        }
+        
+        &.loading {
+          background: var(--primary-hover);
+        }
+      }
+    }
+    
+    .submit-error {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: var(--error);
+      font-size: 14px;
+    }
+    
+    .submit-success {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      color: var(--success);
+      font-size: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    .spinner-lg {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-state, .error-state {
+      text-align: center;
+      padding: 60px 20px;
+      
+      p {
+        color: var(--text-secondary);
+        margin-top: 12px;
+      }
+      
+      button {
+        margin-top: 16px;
+        padding: 10px 20px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-weight: 600;
+        
+        &:hover {
+          background: var(--primary-hover);
+        }
+      }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+      
+      p {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+      
+      span {
+        color: var(--text-secondary);
+      }
+    }
+    
+    .posts {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .post {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      background: var(--background-secondary);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      
+      &:hover {
+        background: var(--background-tertiary);
+      }
+      
+      &.deleting {
+        opacity: 0.5;
+      }
+    }
+    
+    .post-avatar {
+      flex-shrink: 0;
+    }
+    
+    .avatar-placeholder {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #0d8ecf);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 20px;
+    }
+    
+    .post-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    
+    .author-name {
+      font-weight: 700;
+      color: var(--text-primary);
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .author-username, .post-time {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    .post-text {
+      margin: 8px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+    
+    .post-actions {
+      display: flex;
+      gap: 16px;
+    }
+    
+    .action-btn {
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 6px 8px;
+      border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+      
+      &:hover {
+        background: rgba(224, 36, 94, 0.1);
+        color: var(--error);
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      &.like.liked {
+        color: #e0245e;
+      }
+      
+      &.reply:hover {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      
+      .icon {
+        font-size: 18px;
+      }
+    }
+    
+    .reply-form {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--background-secondary);
+      border-radius: var(--radius-md);
+      
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        font-size: 14px;
+        resize: none;
+        min-height: 60px;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--primary);
+        }
+      }
+      
+      .reply-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        
+        .char-count {
+          font-size: 12px;
+          color: var(--text-tertiary);
+        }
+        
+        .reply-buttons {
+          display: flex;
+          gap: 8px;
+          
+          .cancel-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            
+            &:hover {
+              background: var(--background-secondary);
+            }
+          }
+          
+          .submit-reply-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 500;
+            
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+            
+            &:disabled {
+              opacity: 0.5;
+            }
+          }
+        }
+      }
+    }
+    
+    .replies-list {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--background-secondary);
+      border-radius: var(--radius-md);
+      position: relative;
+      
+      .close-replies {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: none;
+        border: none;
+        font-size: 16px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: var(--radius-sm);
+        
+        &:hover {
+          background: var(--border);
+        }
+      }
+      
+      .add-reply-link {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        
+        &:hover {
+          background: var(--background-secondary);
+        }
+      }
+      
+      .loading-replies {
+        text-align: center;
+        padding: 20px;
+      }
+      
+      .no-replies {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 20px;
+      }
+      
+      .reply-item {
+        display: flex;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+      
+      .reply-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #0d8ecf);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      
+      .reply-content {
+        flex: 1;
+        min-width: 0;
+        
+        .reply-header {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 4px;
+        }
+        
+        .reply-name {
+          font-weight: 600;
+          color: var(--text-primary);
+          font-size: 14px;
+        }
+        
+        .reply-username {
+          color: var(--text-secondary);
+          font-size: 14px;
+        }
+        
+        .reply-text {
+          color: var(--text-primary);
+          font-size: 14px;
+        }
+        
+        .edit-reply-form {
+          margin-top: 8px;
+          
+          textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            font-size: 14px;
+            resize: none;
+            min-height: 50px;
+            
+            &:focus {
+              outline: none;
+              border-color: var(--primary);
+            }
+          }
+          
+          .edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+          }
+          
+          .cancel-edit, .save-edit {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            cursor: pointer;
+          }
+          
+          .cancel-edit {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            
+            &:hover {
+              background: var(--border);
+            }
+          }
+          
+          .save-edit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+            
+            &:disabled {
+              opacity: 0.5;
+            }
+          }
+        }
+        
+        .reply-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 4px;
+          
+          .reply-edit-btn, .reply-delete-btn {
+            background: none;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            
+            &:hover {
+              background: var(--background-secondary);
+            }
+          }
+          
+          .reply-delete-btn {
+            color: var(--error);
+          }
+        }
+        
+        .reply-to-reply-btn {
+          background: none;
+          border: none;
+          color: var(--primary);
+          font-size: 12px;
+          cursor: pointer;
+          padding: 2px 6px;
+          margin-top: 4px;
+          
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+        
+        .reply-to-reply-form {
+          margin-top: 8px;
+          
+          textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            font-size: 13px;
+            resize: none;
+            min-height: 40px;
+            
+            &:focus {
+              outline: none;
+              border-color: var(--primary);
+            }
+          }
+          
+          .reply-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 6px;
+          }
+          
+          .cancel-btn, .submit-reply-btn {
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+          }
+          
+          .cancel-btn {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            
+            &:hover {
+              background: var(--border);
+            }
+          }
+          
+          .submit-reply-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+            
+            &:disabled {
+              opacity: 0.5;
+            }
+          }
+        }
+        
+        .nested-replies {
+          margin-top: 8px;
+          padding-left: 12px;
+          border-left: 2px solid var(--border);
+          
+          .reply-item.nested {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            
+            &:last-child {
+              border-bottom: none;
+            }
+            
+            .reply-avatar.small {
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, var(--primary), #0d8ecf);
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              font-size: 10px;
+              flex-shrink: 0;
+            }
+            
+            .reply-text {
+              color: var(--text-primary);
+              font-size: 14px;
+            }
+            
+            .edit-reply-form {
+              margin-top: 8px;
+              
+              textarea {
+                width: 100%;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                padding: 8px;
+                font-size: 14px;
+                resize: none;
+                min-height: 50px;
+                
+                &:focus {
+                  outline: none;
+                  border-color: var(--primary);
+                }
+              }
+              
+              .edit-actions {
+                display: flex;
+                gap: 8px;
+                margin-top: 8px;
+              }
+              
+              .cancel-edit, .save-edit {
+                padding: 4px 12px;
+                border-radius: var(--radius-sm);
+                font-size: 13px;
+                cursor: pointer;
+              }
+              
+              .cancel-edit {
+                background: var(--background-secondary);
+                color: var(--text-primary);
+                border: 1px solid var(--border);
+                
+                &:hover {
+                  background: var(--border);
+                }
+              }
+              
+              .save-edit {
+                background: var(--primary);
+                color: white;
+                border: none;
+                
+                &:hover:not(:disabled) {
+                  background: var(--primary-hover);
+                }
+                
+                &:disabled {
+                  opacity: 0.5;
+                }
+              }
+            }
+            
+            .reply-actions {
+              display: flex;
+              gap: 8px;
+              margin-top: 4px;
+              
+              .reply-edit-btn, .reply-delete-btn {
+                background: none;
+                border: none;
+                font-size: 12px;
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: var(--radius-sm);
+                color: var(--text-secondary);
+                
+                &:hover {
+                  background: var(--background-secondary);
+                }
+              }
+              
+              .reply-delete-btn {
+                color: var(--error);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .confirm-modal {
+      background: var(--background);
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      animation: slideUp 0.2s ease;
+      
+      .modal-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      
+      h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+      
+      p {
+        font-size: 15px;
+        color: var(--text-secondary);
+        margin: 0 0 20px 0;
+        line-height: 1.4;
+      }
+      
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+      
+      .modal-cancel, .modal-confirm {
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      
+      .modal-cancel {
+        background: var(--background-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        
+        &:hover {
+          background: var(--border);
+        }
+      }
+      
+      .modal-confirm {
+        background: var(--error);
+        color: white;
+        border: none;
+        
+        &:hover {
+          background: #c71d2f;
+        }
+      }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  `]
+})
+export class HomeComponent implements OnInit {
+  posts = signal<Post[]>([]);
+  newPostContent = '';
+  isSubmitting = signal(false);
+  isLoading = signal(true);
+  loadError = signal<string | null>(null);
+  submitError = signal<string | null>(null);
+  submitSuccess = signal(false);
+  deletingPostId = signal<string | null>(null);
+  postLikingId = signal<string | null>(null);
+  postLikes = signal<Record<string, boolean>>({});
+  replyingToPost = signal<string | null>(null);
+  viewingRepliesPost = signal<string | null>(null);
+  postReplies = signal<any[]>([]);
+  loadingReplies = signal(false);
+  editingReply = signal<string | null>(null);
+  editReplyContent = '';
+  savingReply = signal(false);
+  showDeleteModal = signal(false);
+  showDeletePostModal = signal(false);
+  deletingReplyId = signal<string | null>(null);
+  deletingReplyPostId = signal<string | null>(null);
+  replyContent = '';
+  isSubmittingReply = signal(false);
+  replyingToComment = signal<string | null>(null);
+  replyingToCommentContent = '';
+  
+  // Nested reply editing/deletion
+  editingNestedReply = signal<string | null>(null);
+  editNestedReplyContent = '';
+
+  constructor(
+    public authService: AuthService,
+    private postsService: PostsService
+  ) {}
+
+  ngOnInit() {
+    this.loadPosts();
+  }
+
+  canSubmit(): boolean {
+    return this.newPostContent.trim().length > 0 && 
+           this.newPostContent.length <= 280 &&
+           !this.isSubmitting();
+  }
+
+  loadPosts() {
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    
+    this.postsService.getPosts().subscribe({
+      next: (response) => {
+        this.posts.set(response.posts);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        this.loadError.set('Não foi possível carregar as publicações.');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  createPost() {
+    if (!this.canSubmit()) return;
+    
+    this.submitError.set(null);
+    this.submitSuccess.set(false);
+    this.isSubmitting.set(true);
+    
+    this.postsService.createPost(this.newPostContent).subscribe({
+      next: (post) => {
+        this.posts.update(posts => [post, ...posts]);
+        this.newPostContent = '';
+        this.isSubmitting.set(false);
+        this.submitSuccess.set(true);
+        
+        setTimeout(() => this.submitSuccess.set(false), 3000);
+      },
+      error: (err) => {
+        this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
+        this.isSubmitting.set(false);
+      }
+    });
+  }
+
+  deletePost(id: string) {
+    this.showDeletePostModal.set(true);
+    this.deletingPostId.set(id);
+  }
+
+  confirmDeletePost() {
+    const id = this.deletingPostId();
+    if (!id) return;
+    
+    this.postsService.deletePost(id).subscribe({
+      next: () => {
+        this.posts.update(posts => posts.filter(p => p.id !== id));
+        this.closeDeletePostModal();
+      },
+      error: (err) => {
+        console.error('Error deleting post:', err);
+        this.closeDeletePostModal();
+      }
+    });
+  }
+
+  closeDeletePostModal() {
+    this.showDeletePostModal.set(false);
+    this.deletingPostId.set(null);
+  }
+
+  toggleLike(post: Post) {
+    this.postLikingId.set(post.id);
+    const isLiked = this.postLikes()[post.id];
+    
+    this.postsService.likePost(post.id).subscribe({
+      next: () => {
+        this.postLikes.update(likes => ({ ...likes, [post.id]: !isLiked }));
+        post._count.likes += isLiked ? -1 : 1;
+        this.postLikingId.set(null);
+      },
+      error: (err) => {
+        console.error('Error liking post:', err);
+        this.postLikingId.set(null);
+      }
+    });
+  }
+
+  toggleReply(postId: string) {
+    // Se já está aberto com replyingToPost (formulário aberto), fecha
+    if (this.replyingToPost() === postId) {
+      this.cancelReply();
+      this.viewingRepliesPost.set(null);
+    } 
+    // Se estava só visualizando replies (sem form), abre o form de comentário
+    else if (this.viewingRepliesPost() === postId) {
+      this.replyingToPost.set(postId);
+      this.replyContent = '';
+    }
+    // Primeira vez que clica - mostra replies + link para comentar
+    else {
+      this.loadingReplies.set(true);
+      this.viewingRepliesPost.set(postId);
+      this.postsService.getReplies(postId).subscribe({
+        next: (data) => {
+          this.postReplies.set(data.replies || []);
+          this.loadingReplies.set(false);
+        },
+        error: () => this.loadingReplies.set(false)
+      });
+    }
+  }
+
+  toggleRepliesView(post: Post) {
+    if (this.viewingRepliesPost() === post.id) {
+      this.viewingRepliesPost.set(null);
+      this.postReplies.set([]);
+    } else {
+      this.viewingRepliesPost.set(post.id);
+      this.loadingReplies.set(true);
+      this.postsService.getReplies(post.id).subscribe({
+        next: (data) => {
+          this.postReplies.set(data.replies || []);
+          this.loadingReplies.set(false);
+        },
+        error: () => this.loadingReplies.set(false)
+      });
+    }
+  }
+
+  cancelReply() {
+    // Close reply form but keep viewing replies
+    this.replyingToPost.set(null);
+    this.replyContent = '';
+    // If we want to also close the list, uncomment below:
+    // this.viewingRepliesPost.set(null);
+    // this.postReplies.set([]);
+  }
+
+  toggleReplyToComment(commentId: string) {
+    if (this.replyingToComment() === commentId) {
+      this.cancelReplyToComment();
+    } else {
+      this.replyingToComment.set(commentId);
+      this.replyingToCommentContent = '';
+    }
+  }
+
+  cancelReplyToComment() {
+    this.replyingToComment.set(null);
+    this.replyingToCommentContent = '';
+  }
+
+  submitReplyToComment(commentId: string, postId: string) {
+    if (!this.replyingToCommentContent.trim()) return;
+    
+    this.isSubmittingReply.set(true);
+    this.postsService.createReply(postId, this.replyingToCommentContent, commentId).subscribe({
+      next: () => {
+        // Recarregar replies para mostrar a nova resposta
+        this.postsService.getReplies(postId).subscribe({
+          next: (data) => {
+            this.postReplies.set(data.replies || []);
+          }
+        });
+        this.cancelReplyToComment();
+        this.isSubmittingReply.set(false);
+      },
+      error: (err) => {
+        console.error('Error replying to comment:', err);
+        this.isSubmittingReply.set(false);
+      }
+    });
+  }
+
+  submitReply(postId: string) {
+    if (!this.replyContent.trim()) return;
+    
+    this.isSubmittingReply.set(true);
+    this.postsService.createReply(postId, this.replyContent).subscribe({
+      next: () => {
+        // Atualizar contagem de replies
+        const post = this.posts().find(p => p.id === postId);
+        if (post) {
+          post._count.replies += 1;
+          this.posts.update(posts => [...posts]);
+        }
+        
+        this.cancelReply();
+        this.isSubmittingReply.set(false);
+      },
+      error: (err) => {
+        console.error('Error creating reply:', err);
+        this.isSubmittingReply.set(false);
+      }
+    });
+  }
+
+  startEditReply(reply: any) {
+    this.editingReply.set(reply.id);
+    this.editReplyContent = reply.content;
+  }
+
+  cancelEditReply() {
+    this.editingReply.set(null);
+    this.editReplyContent = '';
+  }
+
+  saveEditReply(replyId: string, postId: string) {
+    if (!this.editReplyContent.trim()) return;
+    
+    this.savingReply.set(true);
+    this.postsService.updateReply(postId, replyId, this.editReplyContent).subscribe({
+      next: (updated) => {
+        this.postReplies.update(replies => 
+          replies.map(r => r.id === replyId ? updated : r)
+        );
+        this.cancelEditReply();
+        this.savingReply.set(false);
+      },
+      error: (err) => {
+        console.error('Error editing reply:', err);
+        this.savingReply.set(false);
+      }
+    });
+  }
+
+  deleteReply(replyId: string, postId: string) {
+    this.showDeleteModal.set(true);
+    this.deletingReplyId.set(replyId);
+    this.deletingReplyPostId.set(postId);
+  }
+
+  confirmDeleteReply() {
+    const replyId = this.deletingReplyId();
+    const postId = this.deletingReplyPostId();
+    
+    if (!replyId || !postId) return;
+    
+    this.postsService.deleteReply(postId, replyId).subscribe({
+      next: () => {
+        this.postReplies.update(replies => 
+          replies.map(r => {
+            // Check if it's a nested reply (child of a reply)
+            if (r.children && r.children.some((c: any) => c.id === replyId)) {
+              r.children = r.children.filter((c: any) => c.id !== replyId);
+            }
+            return r;
+          }).filter(r => r.id !== replyId) // Also filter top-level replies
+        );
+        // Atualizar contagem
+        const post = this.posts().find(p => p.id === postId);
+        if (post) {
+          post._count.replies = Math.max(0, post._count.replies - 1);
+          this.posts.update(posts => [...posts]);
+        }
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        console.error('Error deleting reply:', err);
+        this.closeDeleteModal();
+      }
+    });
+  }
+
+closeDeleteModal() {
+    this.showDeleteModal.set(false);
+    this.deletingReplyId.set(null);
+    this.deletingReplyPostId.set(null);
+  }
+  
+  // Nested reply editing
+  startEditNestedReply(reply: any) {
+    this.editingNestedReply.set(reply.id);
+    this.editNestedReplyContent = reply.content;
+  }
+  
+  cancelEditNestedReply() {
+    this.editingNestedReply.set(null);
+    this.editNestedReplyContent = '';
+  }
+  
+  saveEditNestedReply(replyId: string, postId: string) {
+    if (!this.editNestedReplyContent.trim()) return;
+    
+    this.savingReply.set(true);
+    this.postsService.updateReply(postId, replyId, this.editNestedReplyContent).subscribe({
+      next: (updated) => {
+        // Find the parent reply and update the child
+        this.postReplies.update(replies => 
+          replies.map(r => {
+            if (r.children) {
+              r.children = r.children.map((c: any) => 
+                c.id === replyId ? { ...c, content: this.editNestedReplyContent } : c
+              );
+            }
+            return r;
+          })
+        );
+        this.cancelEditNestedReply();
+        this.savingReply.set(false);
+      },
+      error: (err) => {
+        console.error('Error editing nested reply:', err);
+        this.savingReply.set(false);
+      }
+    });
+  }
+  
+  deleteNestedReply(replyId: string, postId: string) {
+    this.showDeleteModal.set(true);
+    this.deletingReplyId.set(replyId);
+    this.deletingReplyPostId.set(postId);
+  }
+  
+  formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'agora';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    return date.toLocaleDateString('pt-BR');
+  }
+}

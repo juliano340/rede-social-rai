@@ -1,0 +1,93 @@
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+
+# ===========================
+# Build outputs
+# ===========================
+dist/
+build/
+
+# ===========================
+# Backend
+# ===========================
+backend/dist/
+backend/*.log
+backend/*.db
+backend/*.db-journal
+
+# ===========================
+# Frontend
+# ===========================
+frontend/.angular/
+frontend/dist/
+frontend/tmp/
+frontend/cache/
+
+# ===========================
+# Package managers
+# ===========================
+# frontend/package-lock.json  # Comente se quiser versionar
+# frontend/yarn.lock
+
+# ===========================
+# Environment
+# ===========================
+.env
+.env.local
+.env.*.local
+
+# ===========================
+# IDE
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ===========================
+# Database (Prisma/SQLite)
+# ===========================
+*.db
+*.db-journal
+
+# ===========================
+# Test & Coverage
+# ===========================
+coverage/
+.nyc_output/
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+
+# ===========================
+# Temp
+# ===========================
+tmp/
+temp/
+*.tmp
+
+# ===========================
+# Secrets/Keys
+# ===========================
+*.pem
+*.key
+
+# ===========================
+# Misc
+# ===========================
+*.tsbuildinfo
+cache/
+.parcel-cache/
