@@ -152,7 +152,7 @@ import { AuthService } from '../../services/auth.service';
                       
                       <!-- Show comment link -->
                       @if (replyingToPost() !== post.id) {
-                        <button class="add-reply-link" (click)="toggleReply(post.id)">
+                        <button class="add-reply-link" (click)="openReplyForm(post.id)">
                           💬 Comentar
                         </button>
                       }
@@ -1392,6 +1392,13 @@ export class HomeComponent implements OnInit {
         error: () => this.loadingReplies.set(false)
       });
     }
+  }
+
+  openReplyForm(postId: string) {
+    // Abre o formulário de comentário
+    this.viewingRepliesPost.set(postId);
+    this.replyingToPost.set(postId);
+    this.replyContent = '';
   }
 
   cancelReply() {
