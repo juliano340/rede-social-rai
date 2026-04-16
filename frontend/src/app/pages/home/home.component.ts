@@ -98,9 +98,13 @@ import { AuthService } from '../../services/auth.service';
             @for (post of posts(); track post.id) {
               <article class="post" [class.deleting]="deletingPostId() === post.id">
                 <div class="post-avatar">
-                  <div class="avatar-placeholder" aria-hidden="true">
-                    {{ (post.author.name[0] || '?').toUpperCase() }}
-                  </div>
+                  @if (post.author.avatar) {
+                    <img [src]="'http://localhost:3000' + post.author.avatar" alt="Avatar" class="avatar-image">
+                  } @else {
+                    <div class="avatar-placeholder" aria-hidden="true">
+                      {{ (post.author.name[0] || '?').toUpperCase() }}
+                    </div>
+                  }
                 </div>
                 <div class="post-content">
                   <div class="post-header">
@@ -187,7 +191,11 @@ import { AuthService } from '../../services/auth.service';
                         @for (reply of postReplies(); track reply.id) {
                           <div class="reply-item">
                             <div class="reply-avatar">
-                              {{ (reply.author.name[0] || '?').toUpperCase() }}
+                              @if (reply.author.avatar) {
+                                <img [src]="'http://localhost:3000' + reply.author.avatar" alt="Avatar" class="avatar-image">
+                              } @else {
+                                {{ (reply.author.name[0] || '?').toUpperCase() }}
+                              }
                             </div>
                             <div class="reply-content">
                               <div class="reply-header">
@@ -251,7 +259,11 @@ import { AuthService } from '../../services/auth.service';
                                   @for (child of reply.children; track child.id) {
                                     <div class="reply-item nested">
                                       <div class="reply-avatar small">
-                                        {{ (child.author.name[0] || '?').toUpperCase() }}
+                                        @if (child.author.avatar) {
+                                          <img [src]="'http://localhost:3000' + child.author.avatar" alt="Avatar" class="avatar-image">
+                                        } @else {
+                                          {{ (child.author.name[0] || '?').toUpperCase() }}
+                                        }
                                       </div>
                                       <div class="reply-content">
                                         <div class="reply-header">
@@ -572,6 +584,13 @@ import { AuthService } from '../../services/auth.service';
     
     .post-avatar {
       flex-shrink: 0;
+      
+      .avatar-image {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
     }
     
     .avatar-placeholder {
@@ -809,6 +828,14 @@ import { AuthService } from '../../services/auth.service';
         font-weight: 600;
         font-size: 12px;
         flex-shrink: 0;
+        overflow: hidden;
+        
+        .avatar-image {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
       }
       
       .reply-content {
@@ -1017,6 +1044,14 @@ import { AuthService } from '../../services/auth.service';
               font-weight: 600;
               font-size: 10px;
               flex-shrink: 0;
+              overflow: hidden;
+              
+              .avatar-image {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                object-fit: cover;
+              }
             }
             
             .reply-text {

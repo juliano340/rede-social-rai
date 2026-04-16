@@ -44,7 +44,11 @@ import { UsersService, User } from '../../services/users.service';
             @for (user of results(); track user.id) {
               <a [routerLink]="['/profile', user.username]" class="user-card">
                 <div class="user-avatar">
-                  {{ (user.name[0] || '?').toUpperCase() }}
+                  @if (user.avatar) {
+                    <img [src]="'http://localhost:3000' + user.avatar" alt="Avatar" class="avatar-image">
+                  } @else {
+                    {{ (user.name[0] || '?').toUpperCase() }}
+                  }
                 </div>
                 <div class="user-info">
                   <span class="user-name">{{ user.name }}</span>
@@ -72,7 +76,11 @@ import { UsersService, User } from '../../services/users.service';
                 @for (user of suggestedUsers(); track user.id) {
                   <a [routerLink]="['/profile', user.username]" class="user-card">
                     <div class="user-avatar">
-                      {{ (user.name[0] || '?').toUpperCase() }}
+                      @if (user.avatar) {
+                        <img [src]="'http://localhost:3000' + user.avatar" alt="Avatar" class="avatar-image">
+                      } @else {
+                        {{ (user.name[0] || '?').toUpperCase() }}
+                      }
                     </div>
                     <div class="user-info">
                       <span class="user-name">{{ user.name }}</span>
@@ -173,6 +181,14 @@ import { UsersService, User } from '../../services/users.service';
       font-weight: 600;
       font-size: 18px;
       flex-shrink: 0;
+      overflow: hidden;
+      
+      .avatar-image {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
     }
     
     .user-info {
