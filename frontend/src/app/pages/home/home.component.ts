@@ -1620,6 +1620,6 @@ closeDeleteModal() {
     if (minutes < 60) return `${minutes}m`;
     if (hours < 24) return `${hours}h`;
     if (days < 7) return `${days}d`;
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 }

@@ -134,9 +134,13 @@ interface Post {
             @for (post of posts(); track post.id) {
               <article class="post">
                 <div class="post-avatar">
-                  <div class="avatar-placeholder small">
-                    {{ (post.author.name[0] || '?').toUpperCase() }}
-                  </div>
+                  @if (post.author.avatar) {
+                    <img [src]="'http://localhost:3000' + post.author.avatar" alt="Avatar" class="avatar-image">
+                  } @else {
+                    <div class="avatar-placeholder small">
+                      {{ (post.author.name[0] || '?').toUpperCase() }}
+                    </div>
+                  }
                 </div>
                 <div class="post-content">
                   <div class="post-header">
@@ -212,7 +216,11 @@ interface Post {
                         @for (reply of postReplies(); track reply.id) {
                           <div class="reply-item">
                             <div class="reply-avatar">
-                              {{ (reply.author.name[0] || '?').toUpperCase() }}
+                              @if (reply.author.avatar) {
+                                <img [src]="'http://localhost:3000' + reply.author.avatar" alt="Avatar" class="avatar-image">
+                              } @else {
+                                {{ (reply.author.name[0] || '?').toUpperCase() }}
+                              }
                             </div>
                             <div class="reply-content">
                               <div class="reply-header">
@@ -252,7 +260,11 @@ interface Post {
                                   @for (child of reply.children; track child.id) {
                                     <div class="reply-item nested">
                                       <div class="reply-avatar small">
-                                        {{ (child.author.name[0] || '?').toUpperCase() }}
+                                        @if (child.author.avatar) {
+                                          <img [src]="'http://localhost:3000' + child.author.avatar" alt="Avatar" class="avatar-image">
+                                        } @else {
+                                          {{ (child.author.name[0] || '?').toUpperCase() }}
+                                        }
                                       </div>
                                       <div class="reply-content">
                                         <div class="reply-header">
@@ -423,44 +435,112 @@ interface Post {
         height: 44px;
         font-size: 16px;
       }
-    }
-    
-    .avatar-wrapper {
-      position: relative;
-      
-      &.can-upload {
-        cursor: pointer;
-        
-        &:hover .avatar-overlay {
-          opacity: 1;
-        }
-      }
       
       .avatar-image {
-        width: 96px;
-        height: 96px;
+        width: 100%;
+        height: 100%;
         border-radius: 50%;
         object-fit: cover;
-        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+      }
+    }
+    
+    .posts {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .post {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      background: var(--background-secondary);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      
+      &:hover {
+        background: var(--background-tertiary);
+      }
+    }
+    
+    .post-avatar {
+      flex-shrink: 0;
+      
+      .avatar-image {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    }
+    
+    .post-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    
+    .author-name {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .author-username, .post-time {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    .post-text {
+      margin: 8px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+    
+    .post-actions {
+      display: flex;
+      gap: 16px;
+    }
+    
+    .action-btn {
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 6px 8px;
+      border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+      
+      &:hover {
+        background: rgba(224, 36, 94, 0.1);
+        color: var(--error);
       }
       
-      .avatar-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 96px;
-        height: 96px;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.2s;
-        
-        .camera-icon {
-          font-size: 24px;
-        }
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      &.like.liked {
+        color: #e0245e;
+      }
+      
+      &.reply:hover {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      
+      .icon {
+        font-size: 18px;
       }
     }
     
@@ -487,7 +567,7 @@ interface Post {
         line-height: 1.5;
       }
       
-      .stats {
+.stats {
         display: flex;
         gap: 24px;
         margin-bottom: 16px;
@@ -509,204 +589,14 @@ interface Post {
             }
           }
         }
-        
-        .stat-value {
-          font-weight: 700;
-          color: var(--text-primary);
-          font-size: 16px;
-        }
-        
-        .stat-label {
-          color: var(--text-secondary);
-          font-size: 14px;
-        }
       }
-      
-      .follow-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 24px;
-        border-radius: var(--radius-full);
-        font-weight: 600;
-        font-size: 15px;
-        margin: 12px 0;
-        transition: all 0.2s;
-        
-        background: var(--primary);
-        color: white;
-        border: none;
-        
-        &:hover:not(:disabled) {
-          background: var(--primary-hover);
-          transform: translateY(-1px);
-        }
-        
-        &.following {
-          background: var(--background-secondary);
-          color: var(--text-primary);
-          border: 1px solid var(--border);
-          
-          &:hover {
-            background: var(--error-light);
-            color: var(--error);
-            border-color: var(--error);
-          }
-        }
-        
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      }
+    }
+    
+    .loading-replies {
+      text-align: center;
+      padding: 20px;
       
       .spinner-sm {
-        width: 14px;
-        height: 14px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-top-color: white;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      
-      .joined {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--text-tertiary);
-        font-size: 14px;
-        
-        .join-icon {
-          font-size: 14px;
-        }
-      }
-    }
-    
-    .profile-posts {
-      h2 {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 16px;
-        padding-left: 16px;
-      }
-    }
-    
-    .post {
-      display: flex;
-      gap: 12px;
-      padding: 16px;
-      background: var(--background-secondary);
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-      
-      &:hover {
-        background: var(--background-tertiary);
-      }
-    }
-    
-    .post-content {
-      flex: 1;
-      min-width: 0;
-      
-      .post-header {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-bottom: 6px;
-      }
-      
-      .author-name {
-        font-weight: 700;
-        color: var(--text-primary);
-      }
-      
-      .author-username, .post-time {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-      
-      .post-text {
-        margin: 0 0 12px;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-      
-      .post-actions {
-        display: flex;
-        gap: 20px;
-        
-        .action-btn {
-          background: none;
-          border: none;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: var(--text-secondary);
-          font-size: 14px;
-          cursor: pointer;
-          padding: 4px 8px;
-          border-radius: var(--radius-md);
-          transition: all 0.15s;
-          
-          .icon {
-            font-size: 16px;
-          }
-          
-          &:hover {
-            background: var(--error-light);
-          }
-          
-          &.liked {
-            color: var(--error);
-          }
-          
-          &:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        }
-        
-        .action-item {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: var(--text-secondary);
-          font-size: 14px;
-          
-          .action-icon {
-            font-size: 16px;
-          }
-        }
-      }
-    }
-    
-    .loading-state {
-      text-align: center;
-      padding: 60px 20px;
-      
-      &.small {
-        padding: 40px 20px;
-      }
-      
-      p {
-        color: var(--text-secondary);
-        margin-top: 12px;
-      }
-      
-      .spinner-lg {
-        width: 40px;
-        height: 40px;
-        border: 3px solid var(--border);
-        border-top-color: var(--primary);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin: 0 auto;
-      }
-      
-      .spinner {
         width: 24px;
         height: 24px;
         border: 2px solid var(--border);
@@ -717,37 +607,280 @@ interface Post {
       }
     }
     
+    .no-replies {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 20px;
+    }
+    
+    .reply-item {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+    
+    .reply-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #0d8ecf);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      flex-shrink: 0;
+      overflow: hidden;
+      
+      .avatar-image {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    }
+    
+    .spinner-sm {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
     
-    .empty-state, .error-state {
-      text-align: center;
-      padding: 60px 20px;
+    .reply-content {
+      flex: 1;
+      min-width: 0;
       
-      .empty-icon, .error-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
+      .reply-header {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 4px;
       }
       
-      p {
-        font-size: 16px;
+      .reply-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+      
+      .reply-username {
         color: var(--text-secondary);
-        margin-bottom: 16px;
+        font-size: 14px;
       }
-    }
-    
-    .btn-secondary {
-      display: inline-block;
-      padding: 10px 20px;
-      background: var(--background-secondary);
-      color: var(--text-primary);
-      border-radius: var(--radius-full);
-      font-weight: 500;
-      text-decoration: none;
       
-      &:hover {
-        background: var(--border);
+      .reply-text {
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+      
+      .reply-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+        
+        .reply-edit-btn, .reply-delete-btn {
+          background: none;
+          border: none;
+          font-size: 12px;
+          cursor: pointer;
+          padding: 2px 6px;
+          border-radius: var(--radius-sm);
+          color: var(--text-secondary);
+          
+          &:hover {
+            background: var(--background-secondary);
+          }
+        }
+        
+        .reply-delete-btn {
+          color: var(--error);
+        }
+      }
+      
+      .reply-to-reply-btn {
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 2px 6px;
+        margin-top: 4px;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      
+      .reply-to-reply-form {
+        margin-top: 8px;
+        
+        textarea {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 8px;
+          font-size: 13px;
+          resize: none;
+          min-height: 40px;
+          color: var(--text-primary);
+          background: var(--background);
+          
+          &:focus {
+            outline: none;
+            border-color: var(--primary);
+          }
+        }
+        
+        .reply-actions {
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+          margin-top: 6px;
+          
+          .cancel-btn, .submit-reply-btn {
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+          }
+          
+          .cancel-btn {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            
+            &:hover {
+              background: var(--border);
+            }
+          }
+          
+          .submit-reply-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+            
+            &:disabled {
+              opacity: 0.5;
+            }
+          }
+        }
+      }
+      
+      .edit-reply-form {
+        margin-top: 8px;
+        
+        textarea {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 8px;
+          font-size: 14px;
+          resize: none;
+          min-height: 50px;
+          color: var(--text-primary);
+          background: var(--background);
+          
+          &:focus {
+            outline: none;
+            border-color: var(--primary);
+          }
+        }
+        
+        .edit-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+          
+          .cancel-edit, .save-edit {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            cursor: pointer;
+          }
+          
+          .cancel-edit {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            
+            &:hover {
+              background: var(--border);
+            }
+          }
+          
+          .save-edit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+            
+            &:disabled {
+              opacity: 0.5;
+            }
+          }
+        }
+      }
+      
+      .nested-replies {
+        margin-top: 8px;
+        padding-left: 12px;
+        border-left: 2px solid var(--border);
+        
+        .reply-item.nested {
+          padding: 8px 0;
+          border-bottom: 1px solid var(--border);
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          .reply-avatar.small {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #0d8ecf);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 10px;
+            flex-shrink: 0;
+            overflow: hidden;
+            
+            .avatar-image {
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              object-fit: cover;
+            }
+          }
+          
+          .reply-text {
+            color: var(--text-primary);
+            font-size: 14px;
+          }
+        }
       }
     }
     
@@ -796,16 +929,6 @@ interface Post {
       .loading-replies {
         text-align: center;
         padding: 20px;
-        
-        .spinner-sm {
-          width: 24px;
-          height: 24px;
-          border: 2px solid var(--border);
-          border-top-color: var(--primary);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          margin: 0 auto;
-        }
       }
       
       .no-replies {
@@ -813,327 +936,84 @@ interface Post {
         color: var(--text-secondary);
         padding: 20px;
       }
+    }
+    
+    .reply-form {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--background-secondary);
+      border-radius: var(--radius-md);
       
-      .reply-item {
-        display: flex;
-        gap: 10px;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--border);
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        font-size: 14px;
+        resize: none;
+        min-height: 60px;
+        color: var(--text-primary);
+        background: var(--background);
         
-        &:last-child {
-          border-bottom: none;
+        &:focus {
+          outline: none;
+          border-color: var(--primary);
         }
       }
       
-      .reply-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary), #0d8ecf);
-        color: white;
+      .reply-actions {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 12px;
-        flex-shrink: 0;
-      }
-      
-      .reply-content {
-        flex: 1;
-        min-width: 0;
+        margin-top: 8px;
         
-        .reply-header {
-          display: flex;
-          gap: 6px;
-          margin-bottom: 4px;
+        .char-count {
+          color: var(--text-tertiary);
+          font-size: 12px;
         }
         
-        .reply-name {
-          font-weight: 600;
-          color: var(--text-primary);
-          font-size: 14px;
-        }
-        
-        .reply-username {
-          color: var(--text-secondary);
-          font-size: 14px;
-        }
-        
-        .reply-text {
-          color: var(--text-primary);
-          font-size: 14px;
-        }
-        
-        .reply-form {
-          margin-top: 12px;
-          padding: 12px;
-          background: var(--background);
-          border-radius: var(--radius-md);
-          border: 1px solid var(--border);
-          
-          textarea {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 10px;
-            font-size: 14px;
-            resize: none;
-            min-height: 60px;
-            
-            &:focus {
-              outline: none;
-              border-color: var(--primary);
-            }
-          }
-          
-          .reply-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            
-            .char-count {
-              color: var(--text-secondary);
-              font-size: 13px;
-            }
-            
-            .reply-buttons {
-              display: flex;
-              gap: 8px;
-            }
-            
-            .cancel-btn {
-              background: var(--background-secondary);
-              color: var(--text-primary);
-              border: 1px solid var(--border);
-              padding: 6px 12px;
-              border-radius: var(--radius-full);
-              font-size: 14px;
-              cursor: pointer;
-              
-              &:hover {
-                background: var(--border);
-              }
-            }
-            
-            .submit-reply-btn {
-              background: var(--primary);
-              color: white;
-              border: none;
-              padding: 6px 12px;
-              border-radius: var(--radius-full);
-              font-size: 14px;
-              font-weight: 500;
-              cursor: pointer;
-              
-              &:hover:not(:disabled) {
-                background: var(--primary-hover);
-              }
-              
-              &:disabled {
-                opacity: 0.5;
-              }
-            }
-          }
-        }
-        
-        .edit-reply-form {
-          margin-top: 8px;
-          
-          textarea {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 8px;
-            font-size: 14px;
-            resize: none;
-            min-height: 50px;
-            
-            &:focus {
-              outline: none;
-              border-color: var(--primary);
-            }
-          }
-          
-          .edit-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-          }
-          
-          .cancel-edit, .save-edit {
-            padding: 4px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            cursor: pointer;
-          }
-          
-          .cancel-edit {
-            background: var(--background-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-            
-            &:hover {
-              background: var(--border);
-            }
-          }
-          
-          .save-edit {
-            background: var(--primary);
-            color: white;
-            border: none;
-            
-            &:hover:not(:disabled) {
-              background: var(--primary-hover);
-            }
-            
-            &:disabled {
-              opacity: 0.5;
-            }
-          }
-        }
-        
-        .reply-actions {
+        .reply-buttons {
           display: flex;
           gap: 8px;
-          margin-top: 4px;
+        }
+        
+        .cancel-btn {
+          background: var(--background-secondary);
+          color: var(--text-primary);
+          border: 1px solid var(--border);
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          font-size: 14px;
+          cursor: pointer;
           
-          .reply-edit-btn, .reply-delete-btn {
-            background: none;
-            border: none;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            
-            &:hover {
-              background: var(--background-secondary);
-            }
+          &:hover {
+            background: var(--border);
+          }
+        }
+        
+        .submit-reply-btn {
+          background: var(--primary);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          
+          &:hover:not(:disabled) {
+            background: var(--primary-hover);
           }
           
-.reply-delete-btn {
-              color: var(--error);
-            }
-          }
-          
-          .nested-replies {
-            margin-top: 8px;
-            padding-left: 12px;
-            border-left: 2px solid var(--border);
-          }
-          
-          .reply-item.nested {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
-          }
-          
-          .reply-item.nested .reply-avatar.small {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #0d8ecf);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 10px;
-            flex-shrink: 0;
-          }
-          
-          .reply-to-reply-btn {
-           background: none;
-           border: none;
-           font-size: 12px;
-           cursor: pointer;
-           padding: 2px 6px;
-           border-radius: var(--radius-sm);
-           color: var(--primary);
-           margin-left: 8px;
-           
-           &:hover {
-             background: var(--background-secondary);
-           }
-         }
-         
-         .reply-to-reply-form {
-           margin-top: 8px;
-           padding: 10px;
-           background: var(--background);
-           border-radius: var(--radius-sm);
-           border: 1px solid var(--border);
-           
-           textarea {
-             width: 100%;
-             border: 1px solid var(--border);
-             border-radius: var(--radius-sm);
-             padding: 8px;
-             font-size: 13px;
-             resize: none;
-             min-height: 50px;
-             
-             &:focus {
-               outline: none;
-               border-color: var(--primary);
-             }
-           }
-           
-           .reply-to-reply-actions {
-             display: flex;
-             justify-content: space-between;
-             align-items: center;
-             margin-top: 6px;
-             
-             .char-count {
-               color: var(--text-secondary);
-               font-size: 12px;
-             }
-             
-             .reply-buttons {
-               display: flex;
-               gap: 6px;
-             }
-             
-             .cancel-btn {
-               background: var(--background-secondary);
-               color: var(--text-primary);
-               border: 1px solid var(--border);
-               padding: 4px 10px;
-               border-radius: var(--radius-full);
-               font-size: 13px;
-               cursor: pointer;
-               
-               &:hover {
-                 background: var(--border);
-               }
-             }
-             
-.submit-reply-btn {
-                background: var(--primary);
-                color: white;
-                border: none;
-                padding: 4px 10px;
-                border-radius: var(--radius-full);
-                font-size: 13px;
-                font-weight: 500;
-                cursor: pointer;
-                
-                &:hover:not(:disabled) {
-                  background: var(--primary-hover);
-                }
-                
-                &:disabled {
-                  opacity: 0.5;
-                }
-              }
-            }
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
           }
         }
       }
-      
-@media (max-width: 480px) {
+    }
+    
+    @media (max-width: 480px) {
       .profile-card {
         padding: 16px;
       }
@@ -1148,16 +1028,6 @@ interface Post {
         width: 80px;
         height: 80px;
         font-size: 28px;
-      }
-      
-      .profile-info {
-        .stats {
-          justify-content: center;
-        }
-        
-        .joined {
-          justify-content: center;
-        }
       }
     }
     
@@ -1710,15 +1580,7 @@ export class ProfileComponent implements OnInit {
         }
       },
       error: () => this.postsLoading.set(false)
-    });
-  }
-
-  formatDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('pt-BR', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
+});
   }
   
   triggerFileInput() {
@@ -1764,5 +1626,11 @@ export class ProfileComponent implements OnInit {
         alert('Erro ao fazer upload da imagem. Tente novamente.');
       }
     });
+  }
+  
+  formatDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 }
