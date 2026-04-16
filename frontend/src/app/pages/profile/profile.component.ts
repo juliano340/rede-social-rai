@@ -1411,20 +1411,15 @@ export class ProfileComponent implements OnInit {
   }
 
   toggleReply(postId: string) {
-    // Se já está aberto com replyingToPost (formulário aberto), fecha
-    if (this.replyingToPost() === postId) {
-      this.cancelReply();
+    // Toggle: se já está visualizando, fecha; senão, abre a lista
+    if (this.viewingRepliesPost() === postId) {
       this.viewingRepliesPost.set(null);
-    } 
-    // Se estava só visualizando replies (sem form), abre o form de comentário
-    else if (this.viewingRepliesPost() === postId) {
-      this.replyingToPost.set(postId);
-      this.replyContent = '';
-    }
-    // Primeira vez que clica - mostra replies + link para comentar
-    else {
+      this.postReplies.set([]);
+      this.cancelReply(); // Fecha o formulário se estiver aberto
+    } else {
       this.loadingReplies.set(true);
       this.viewingRepliesPost.set(postId);
+      this.cancelReply(); // Garante que o formulário está fechado
       this.postsService.getReplies(postId).subscribe({
         next: (data) => {
           this.postReplies.set(data.replies || []);
