@@ -1,13 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -17,7 +18,7 @@ import { AuthService } from '../../services/auth.service';
           <p>Bem-vindo de volta!</p>
         </div>
         
-        <form (ngSubmit)="login()" class="auth-form">
+        <form [formGroup]="loginForm" (ngSubmit)="login()" class="auth-form">
           <div class="form-group">
             <label for="email">Email</label>
             <div class="input-wrapper">
@@ -25,13 +26,20 @@ import { AuthService } from '../../services/auth.service';
               <input 
                 type="email" 
                 id="email" 
-                [(ngModel)]="email" 
-                name="email"
-                required
+                formControlName="email"
                 placeholder="seu@email.com"
                 autocomplete="email"
               >
             </div>
+            @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+              <span class="field-error">
+                @if (loginForm.get('email')?.hasError('required')) {
+                  Email é obrigatório
+                } @else if (loginForm.get('email')?.hasError('email')) {
+                  Email inválido
+                }
+              </span>
+            }
           </div>
           
           <div class="form-group">
@@ -41,13 +49,18 @@ import { AuthService } from '../../services/auth.service';
               <input 
                 type="password" 
                 id="password" 
-                [(ngModel)]="password" 
-                name="password"
-                required
+                formControlName="password"
                 placeholder="••••••••"
                 autocomplete="current-password"
               >
             </div>
+            @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+              <span class="field-error">
+                @if (loginForm.get('password')?.hasError('required')) {
+                  Senha é obrigatória
+                }
+              </span>
+            }
           </div>
           
           @if (error()) {
@@ -59,7 +72,7 @@ import { AuthService } from '../../services/auth.service';
           
           <button 
             type="submit" 
-            [disabled]="isLoading() || !email || !password"
+            [disabled]="isLoading() || loginForm.invalid"
             [class.loading]="isLoading()"
           >
             @if (isLoading()) {
@@ -260,28 +273,37 @@ import { AuthService } from '../../services/auth.service';
   `]
 })
 export class LoginComponent {
-  email = '';
-  password = '';
+  loginForm = new FormGroup({
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required] })
+  });
   isLoading = signal(false);
   error = signal('');
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   login() {
-    if (!this.email || !this.password) return;
+    this.loginForm.markAllAsTouched();
+    if (this.loginForm.invalid) return;
+    
+    const { email, password } = this.loginForm.getRawValue();
     
     this.isLoading.set(true);
     this.error.set('');
 
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(email, password).subscribe({
       next: () => {
+        this.toast.success('Login realizado com sucesso!');
         this.router.navigate(['/home']);
       },
       error: (err) => {
-        this.error.set(err.error?.message || 'Erro ao fazer login. Tente novamente.');
+        const msg = err.error?.message || 'Erro ao fazer login. Tente novamente.';
+        this.error.set(msg);
+        this.toast.error(msg);
         this.isLoading.set(false);
       }
     });

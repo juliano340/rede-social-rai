@@ -11,8 +11,10 @@ export interface User {
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+  id: string;
+  username: string;
+  email: string;
+  name: string;
 }
 
 @Injectable({
@@ -30,29 +32,24 @@ export class AuthService {
       email,
       password,
       name
-    }).pipe(tap(response => this.handleAuth(response)));
+    }, { withCredentials: true }).pipe(tap(response => this.handleAuth(response)));
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, {
       email,
       password
-    }).pipe(tap(response => this.handleAuth(response)));
+    }, { withCredentials: true }).pipe(tap(response => this.handleAuth(response)));
   }
 
   logout(): void {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
     this.currentUserSignal.set(null);
     this.router.navigate(['/login']);
   }
 
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  }
-
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    return !!this.currentUserSignal();
   }
 
   currentUser() {
@@ -60,9 +57,8 @@ export class AuthService {
   }
 
   private handleAuth(response: AuthResponse): void {
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    this.currentUserSignal.set(response.user);
+    localStorage.setItem('user', JSON.stringify(response));
+    this.currentUserSignal.set(response);
   }
 
   private getUserFromStorage(): User | null {

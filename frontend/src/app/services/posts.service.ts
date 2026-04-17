@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 export interface Post {
   id: string;
@@ -19,10 +20,8 @@ export interface Post {
 
 export interface PostsResponse {
   posts: Post[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 @Injectable({
@@ -33,27 +32,27 @@ export class PostsService {
 
   constructor(private http: HttpClient) {}
 
-  getPosts(page = 1, limit = 20): Observable<PostsResponse> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
-    
+  getPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
+    let params = new HttpParams().set('limit', limit.toString());
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params });
   }
 
-  getFollowingPosts(page = 1, limit = 20): Observable<PostsResponse> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
-    
+  getFollowingPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
+    let params = new HttpParams().set('limit', limit.toString());
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params });
   }
 
-  getUserPosts(userId: string, page = 1, limit = 20): Observable<PostsResponse> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
-    
+  getUserPosts(userId: string, cursor?: string, limit = 20): Observable<PostsResponse> {
+    let params = new HttpParams().set('limit', limit.toString());
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params });
   }
 
@@ -93,5 +92,3 @@ export class PostsService {
     return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`);
   }
 }
-
-import { Observable } from 'rxjs';

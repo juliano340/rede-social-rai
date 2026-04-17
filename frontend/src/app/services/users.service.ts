@@ -67,4 +67,8 @@ export class UsersService {
     formData.append('file', file);
     return this.http.post<{ avatar: string }>(`${this.apiUrl}/users/me/avatar`, formData);
   }
+
+  updateAvatarUrl(url: string): Observable<{ avatar: string }> {
+    return this.http.patch<{ avatar: string }>(`${this.apiUrl}/users/me/avatar-url`, { url });
+  }
 }

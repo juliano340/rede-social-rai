@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -6,6 +7,8 @@ import { UsersService } from './users.service';
 import { JwtService } from '@nestjs/jwt';
 import { UploadsService } from '../uploads/uploads.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateAvatarUrlDto } from './dto/update-avatar-url.dto';
 
 interface UploadedFile {
   buffer: Buffer;
@@ -29,31 +32,39 @@ export class UsersController {
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  async updateMe(@User() user: any, @Body() data: any) {
+  async updateMe(@User() user: any, @Body() data: UpdateUserDto) {
     return this.usersService.update(user.userId, data);
   }
 
   @Post('me/avatar')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('file', {
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+    },
+  }))
   async uploadAvatar(@User() user: any, @UploadedFile() file: UploadedFile) {
     if (!file) {
-      return { error: 'No file uploaded' };
+      throw new BadRequestException('No file uploaded');
     }
-    
-    // Validate file type
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.mimetype)) {
-      return { error: 'Invalid file type. Only images are allowed.' };
+      throw new BadRequestException('Invalid file type. Only images are allowed.');
     }
-    
-    // Process and save avatar
+
     const avatarPath = await this.uploadsService.processAndSaveAvatar(file, user.userId);
-    
-    // Update user avatar in database
+
     await this.usersService.updateAvatar(user.userId, avatarPath);
-    
+
     return { avatar: avatarPath };
+  }
+
+  @Patch('me/avatar-url')
+  @UseGuards(JwtAuthGuard)
+  async updateAvatarUrl(@User() user: any, @Body() dto: UpdateAvatarUrlDto) {
+    return this.usersService.updateAvatarUrl(user.userId, dto.url);
   }
 
   @Get('search')
@@ -100,6 +111,7 @@ export class UsersController {
 
   @Post(':id/follow')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async follow(@Param('id') followingId: string, @User() user: any) {
     return this.usersService.follow(user.userId, followingId);
   }

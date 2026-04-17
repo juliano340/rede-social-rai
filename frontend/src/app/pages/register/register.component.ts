@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -332,7 +333,8 @@ export class RegisterComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   onNameChange(value: string) {
@@ -384,10 +386,13 @@ export class RegisterComponent {
 
     this.authService.register(this.username, this.email, this.password, this.name).subscribe({
       next: () => {
+        this.toast.success('Conta criada com sucesso!');
         this.router.navigate(['/home']);
       },
       error: (err) => {
-        this.error.set(err.error?.message || 'Erro ao criar conta. Tente novamente.');
+        const msg = err.error?.message || 'Erro ao criar conta. Tente novamente.';
+        this.error.set(msg);
+        this.toast.error(msg);
         this.isLoading.set(false);
       }
     });

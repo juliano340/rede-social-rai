@@ -1,10 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { isIP } from 'node:net';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private uploadsService: UploadsService,
+  ) {}
 
   private normalizeBioLink(value?: string): string | undefined {
     if (value === undefined) return undefined;
@@ -88,7 +95,7 @@ export class UsersService {
   async update(userId: string, data: { name?: string; bio?: string; bioLink?: string }) {
     const bioLink = this.normalizeBioLink(data.bioLink);
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
@@ -104,9 +111,19 @@ export class UsersService {
         avatar: true,
       },
     });
+
+    await this.invalidateUserCache(result.username);
+    return result;
   }
 
   async findByUsername(username: string) {
+    const cacheKey = `user:username:${username}`;
+    const cached = await this.cacheManager.get<{
+      id: string; username: string; name: string | null; bio: string | null; bioLink: string | null; avatar: string | null; createdAt: Date;
+      _count: { posts: number; followers: number; following: number };
+    }>(cacheKey);
+    if (cached) return cached;
+
     const user = await this.prisma.user.findUnique({
       where: { username },
       select: {
@@ -131,6 +148,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    await this.cacheManager.set(cacheKey, user, 300000);
     return user;
   }
 
@@ -153,6 +171,13 @@ export class UsersService {
   }
 
   async getProfileByUsername(username: string, currentUserId: string) {
+    const cacheKey = `profile:username:${username}:${currentUserId}`;
+    const cached = await this.cacheManager.get<{
+      id: string; username: string; name: string | null; bio: string | null; bioLink: string | null; avatar: string | null; createdAt: Date;
+      _count: { posts: number; followers: number; following: number }; isFollowing: boolean;
+    }>(cacheKey);
+    if (cached) return cached;
+
     const user = await this.findByUsername(username);
     
     const isFollowing = await this.prisma.follow.findUnique({
@@ -164,41 +189,110 @@ export class UsersService {
       },
     });
 
-    return {
+    const result = {
       ...user,
       isFollowing: !!isFollowing,
     };
+
+    await this.cacheManager.set(cacheKey, result, 300000);
+    return result;
   }
 
   async updateAvatar(userId: string, avatarPath: string) {
-    // Delete old avatar if exists
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { avatar: true },
     });
     
-    if (user?.avatar) {
-      // Avatar path is stored, will be handled by uploads service
-    }
-    
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id: userId },
       data: { avatar: avatarPath },
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          bio: true,
-          bioLink: true,
-          avatar: true,
-        },
-      });
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        bio: true,
+        bioLink: true,
+        avatar: true,
+      },
+    });
+
+    await this.invalidateUserCache(result.username);
+    return result;
+  }
+
+  private validateAvatarUrl(url: string): void {
+    try {
+      const parsed = new URL(url);
+      
+      if (!/^https?:$/.test(parsed.protocol)) {
+        throw new BadRequestException('Avatar URL must use http or https protocol');
+      }
+
+      const host = parsed.hostname.toLowerCase();
+
+      const isLocalhost = host === 'localhost' || host.endsWith('.localhost');
+      const isInternalHostname = host.endsWith('.local') || (!host.includes('.') && isIP(host) === 0);
+      const isLoopbackIpv4 = /^127\./.test(host);
+      const isPrivateIpv4 =
+        /^10\./.test(host) ||
+        /^192\.168\./.test(host) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) ||
+        /^169\.254\./.test(host) ||
+        /^0\./.test(host);
+      const isBlockedIpv6 = host === '::1' || /^fe80:/i.test(host) || /^fc/i.test(host) || /^fd/i.test(host);
+
+      if (isLocalhost || isInternalHostname || isLoopbackIpv4 || isPrivateIpv4 || isBlockedIpv6) {
+        throw new BadRequestException('Avatar URL cannot point to localhost, private, or internal networks');
+      }
+
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      const path = parsed.pathname.toLowerCase();
+      const hasExtension = validExtensions.some(ext => path.endsWith(ext));
+      const hasImageQuery = /(\?|&)(jpg|jpeg|png|gif|webp)=/i.test(parsed.search);
+
+      if (!hasExtension && !hasImageQuery) {
+        throw new BadRequestException('Avatar URL must point to an image file (jpg, jpeg, png, gif, webp)');
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Invalid avatar URL format');
+    }
+  }
+
+  async updateAvatarUrl(userId: string, url: string) {
+    this.validateAvatarUrl(url);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatar: true },
+    });
+
+    if (user?.avatar && user.avatar.startsWith('/uploads/')) {
+      this.uploadsService.deleteAvatar(user.avatar);
+    }
+
+    const result = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: url },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        bio: true,
+        bioLink: true,
+        avatar: true,
+      },
+    });
+
+    await this.invalidateUserCache(result.username);
+    return result;
   }
 
   async updateProfile(userId: string, data: { name?: string; bio?: string; bioLink?: string; avatar?: string }) {
     const bioLink = this.normalizeBioLink(data.bioLink);
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
@@ -216,6 +310,14 @@ export class UsersService {
         avatar: true,
       },
     });
+
+    await this.invalidateUserCache(result.username);
+
+    return result;
+  }
+
+  private async invalidateUserCache(username: string) {
+    await this.cacheManager.del(`user:username:${username}`);
   }
 
   async follow(followerId: string, followingId: string) {

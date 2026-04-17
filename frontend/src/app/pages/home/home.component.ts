@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PostsService, Post } from '../../services/posts.service';
 import { AuthService } from '../../services/auth.service';
+import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, SkeletonComponent],
   template: `
     <div class="home-page">
       <h1>Feed</h1>
@@ -78,9 +79,20 @@ import { AuthService } from '../../services/auth.service';
       
       <div class="posts-container">
         @if (isLoading()) {
-          <div class="loading-state">
-            <div class="spinner-lg"></div>
-            <p>Carregando publicações...</p>
+          <div class="skeleton-feed">
+            @for (i of [1,2,3,4,5]; track i) {
+              <div class="skeleton-post">
+                <div class="skeleton-post-header">
+                  <app-skeleton type="avatar" />
+                  <div class="skeleton-post-header-text">
+                    <app-skeleton type="text" width="120px" />
+                    <app-skeleton type="text" width="80px" height="12px" />
+                  </div>
+                </div>
+                <app-skeleton type="text" />
+                <app-skeleton type="text" width="60%" />
+              </div>
+            }
           </div>
         } @else if (loadError()) {
           <div class="error-state" role="alert">
@@ -99,7 +111,7 @@ import { AuthService } from '../../services/auth.service';
               <article class="post" [class.deleting]="deletingPostId() === post.id">
                 <div class="post-avatar">
                   @if (post.author.avatar) {
-                    <img [src]="'http://localhost:3000' + post.author.avatar" alt="Avatar" class="avatar-image">
+                    <img [src]="getAvatarUrl(post.author.avatar)" alt="Avatar" class="avatar-image">
                   } @else {
                     <div class="avatar-placeholder" aria-hidden="true">
                       {{ (post.author.name[0] || '?').toUpperCase() }}
@@ -515,6 +527,34 @@ import { AuthService } from '../../services/auth.service';
       to { transform: rotate(360deg); }
     }
     
+    .skeleton-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .skeleton-post {
+      background: var(--background-secondary);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skeleton-post-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .skeleton-post-header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .loading-state, .error-state {
       text-align: center;
       padding: 60px 20px;
@@ -1592,7 +1632,13 @@ closeDeleteModal() {
     this.deletingReplyId.set(replyId);
     this.deletingReplyPostId.set(postId);
   }
-  
+
+  getAvatarUrl(avatar: string | null): string {
+    if (!avatar) return '';
+    if (avatar.startsWith('http')) return avatar;
+    return 'http://localhost:3000' + avatar;
+  }
+
   formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     const now = new Date();

@@ -56,7 +56,7 @@ interface Post {
             <div class="avatar-wrapper" [class.can-upload]="isOwnProfile()">
               @if (profile()?.avatar) {
                 <img
-                  [src]="'http://localhost:3000' + profile()!.avatar"
+                  [src]="getAvatarUrl(profile()?.avatar)"
                   alt="Avatar"
                   class="avatar-image"
                 />
@@ -66,7 +66,7 @@ interface Post {
                 </div>
               }
               @if (isOwnProfile()) {
-                <div class="avatar-overlay" (click)="triggerFileInput()">
+                <div class="avatar-overlay" (click)="openAvatarModal()">
                   <span class="camera-icon">📷</span>
                 </div>
                 <input
@@ -164,7 +164,7 @@ interface Post {
                 <div class="post-avatar">
                   @if (post.author.avatar) {
                     <img
-                      [src]="'http://localhost:3000' + post.author.avatar"
+                      [src]="getAvatarUrl(post.author.avatar)"
                       alt="Avatar"
                       class="avatar-image"
                     />
@@ -581,12 +581,53 @@ interface Post {
                 } @else {
                   Salvar
                 }
-              </button>
-            </div>
+</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Avatar modal -->
+  @if (showAvatarModal()) {
+    <div class="modal-overlay" (click)="closeAvatarModal()">
+      <div class="edit-profile-modal avatar-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Alterar foto de perfil</h2>
+          <button class="modal-close" (click)="closeAvatarModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="avatar-option" (click)="triggerFileInput()">
+            <span class="option-icon">📁</span>
+            <span class="option-label">Enviar arquivo</span>
+          </div>
+          <div class="avatar-option-divider">
+            <span>ou</span>
+          </div>
+          <div class="avatar-url-option">
+            <label>Link da imagem</label>
+            <input
+              type="url"
+              [(ngModel)]="avatarUrlInput"
+              placeholder="https://exemplo.com/foto.jpg"
+            />
+            <button
+              class="btn-save"
+              (click)="saveAvatarUrl()"
+              [disabled]="!avatarUrlInput.trim() || isUploadingAvatar()"
+            >
+              @if (isUploadingAvatar()) {
+                <span class="spinner-sm"></span>
+                Salvando...
+              } @else {
+                Salvar
+              }
+            </button>
           </div>
         </div>
-      }
+      </div>
     </div>
+  }
+</div>
   `,
   styles: [
     `
@@ -1608,7 +1649,117 @@ interface Post {
           }
         }
       }
-    `,
+
+      .avatar-modal {
+        max-width: 360px;
+
+        .avatar-option {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover {
+            background: var(--background-secondary);
+          }
+
+          .option-icon {
+            font-size: 20px;
+          }
+
+          .option-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+          }
+        }
+
+        .avatar-option-divider {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 12px 0;
+          color: var(--text-tertiary);
+          font-size: 13px;
+
+          &::before,
+          &::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+          }
+        }
+
+      .avatar-url-option {
+        label {
+          display: block;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+          margin-bottom: 8px;
+        }
+
+        input {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 10px 12px;
+          font-size: 14px;
+          color: var(--text-primary);
+          background: var(--background);
+          margin-bottom: 12px;
+
+          &:focus {
+            outline: none;
+            border-color: var(--primary);
+          }
+
+          &::placeholder {
+            color: var(--text-tertiary);
+          }
+        }
+
+        .btn-save {
+          width: 100%;
+          background: var(--primary);
+          color: white;
+          border: none;
+          padding: 10px 16px;
+          border-radius: var(--radius-md);
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover:not(:disabled) {
+            background: var(--primary-hover);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+
+        .spinner-sm {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin-right: 6px;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+`,
   ],
 })
 export class ProfileComponent implements OnInit {
@@ -1650,6 +1801,8 @@ export class ProfileComponent implements OnInit {
 
   // Avatar upload
   isUploadingAvatar = signal(false);
+  showAvatarModal = signal(false);
+  avatarUrlInput = '';
 
   // Edit profile modal
   showEditModal = signal(false);
@@ -1997,14 +2150,8 @@ export class ProfileComponent implements OnInit {
   loadProfile(username: string) {
     this.loading.set(true);
 
-    let headers = new HttpHeaders();
-    const token = this.authService.getToken();
-    if (token) {
-      headers = headers.set("Authorization", `Bearer ${token}`);
-    }
-
     this.http
-      .get<any>(`http://localhost:3000/users/${username}`, { headers })
+      .get<any>(`http://localhost:3000/users/${username}`, { withCredentials: true })
       .subscribe({
         next: (data) => {
           this.profile.set(data);
@@ -2086,14 +2233,74 @@ export class ProfileComponent implements OnInit {
 
     this.usersService.uploadAvatar(file).subscribe({
       next: (response) => {
-        // Update profile with new avatar
         this.profile.update((p) => (p ? { ...p, avatar: response.avatar } : p));
+        this.updateAvatarInPosts(response.avatar);
         this.isUploadingAvatar.set(false);
+        this.closeAvatarModal();
       },
       error: (err) => {
         console.error("Error uploading avatar:", err);
         this.isUploadingAvatar.set(false);
         alert("Erro ao fazer upload da imagem. Tente novamente.");
+      },
+    });
+  }
+
+  updateAvatarInPosts(newAvatar: string) {
+    const currentUsername = this.profile()?.username;
+    if (!currentUsername) return;
+
+    this.posts.update((posts) =>
+      posts.map((post) => {
+        if (post.author.username === currentUsername) {
+          return { ...post, author: { ...post.author, avatar: newAvatar } };
+        }
+        return post;
+      })
+    );
+
+    this.postReplies.update((replies) =>
+      replies.map((reply) => {
+        if (reply.author.username === currentUsername) {
+          return { ...reply, author: { ...reply.author, avatar: newAvatar } };
+        }
+        return reply;
+      })
+    );
+  }
+
+  getAvatarUrl(avatar: string | null | undefined): string {
+    if (!avatar) return '';
+    if (avatar.startsWith('http')) return avatar;
+    return 'http://localhost:3000' + avatar;
+  }
+
+  openAvatarModal() {
+    this.showAvatarModal.set(true);
+    this.avatarUrlInput = '';
+  }
+
+  closeAvatarModal() {
+    this.showAvatarModal.set(false);
+    this.avatarUrlInput = '';
+  }
+
+  saveAvatarUrl() {
+    if (!this.avatarUrlInput.trim()) return;
+
+    this.isUploadingAvatar.set(true);
+    this.usersService.updateAvatarUrl(this.avatarUrlInput.trim()).subscribe({
+      next: (response) => {
+        this.profile.update((p) => (p ? { ...p, avatar: response.avatar } : p));
+        this.updateAvatarInPosts(response.avatar);
+        this.isUploadingAvatar.set(false);
+        this.closeAvatarModal();
+      },
+      error: (err) => {
+        console.error("Error updating avatar:", err);
+        this.isUploadingAvatar.set(false);
+        const message = err.error?.message || 'Erro ao salvar URL da imagem. Verifique se é uma URL válida de imagem.';
+        alert(message);
       },
     });
   }

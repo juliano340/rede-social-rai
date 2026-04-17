@@ -3,11 +3,12 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
+import { ToastComponent } from './shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink],
+  imports: [CommonModule, RouterOutlet, RouterLink, ToastComponent],
   template: `
     <div class="app-container">
       <nav class="navbar" role="navigation" aria-label="Navegação principal">
@@ -62,6 +63,7 @@ import { ThemeService } from './services/theme.service';
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
+      <app-toast />
     </div>
   `,
   styles: [`

@@ -1,57 +1,39 @@
-import { Injectable, UnauthorizedException, ConflictException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-
-// Rate limiting por IP
-const loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
-const MAX_ATTEMPTS = 5;
-const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutos
+import { RefreshTokenService } from './refresh-token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private refreshTokenService: RefreshTokenService,
   ) {}
 
-  private checkRateLimit(clientIp: string) {
-    const record = loginAttempts.get(clientIp);
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
 
-    if (record) {
-      if (record.lockedUntil && Date.now() < record.lockedUntil) {
-        const minutesLeft = Math.ceil((record.lockedUntil - Date.now()) / 60000);
-        throw new HttpException(
-          `Muitas tentativas de login. Tente novamente em ${minutesLeft} minuto(s).`,
-          HttpStatus.TOO_MANY_REQUESTS
-        );
-      }
-      if (record.lockedUntil && Date.now() >= record.lockedUntil) {
-        loginAttempts.delete(clientIp);
-      }
-    }
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
   }
 
-  private recordFailedAttempt(clientIp: string) {
-    const record = loginAttempts.get(clientIp) || { count: 0, lockedUntil: 0 };
-    record.count += 1;
-
-    if (record.count >= MAX_ATTEMPTS) {
-      record.lockedUntil = Date.now() + LOCK_DURATION_MS;
-    }
-
-    loginAttempts.set(clientIp, record);
-  }
-
-  private clearFailedAttempts(clientIp: string) {
-    loginAttempts.delete(clientIp);
-  }
-
-  async register(dto: RegisterDto, clientIp: string) {
-    this.checkRateLimit(clientIp);
-    // Validacao manual - backup caso ValidationPipe nao funcione
+  async register(dto: RegisterDto, clientIp: string, res: Response) {
     if (!dto.name || dto.name.trim().length === 0) {
       throw new ConflictException('Nome é obrigatório');
     }
@@ -87,7 +69,7 @@ export class AuthService {
       throw new ConflictException('Email ou username já existe');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
       data: {
@@ -98,54 +80,89 @@ export class AuthService {
       },
     });
 
-    const token = this.generateToken(user.id, user.username);
+    const accessToken = this.generateAccessToken(user.id, user.username);
+    const refreshToken = await this.refreshTokenService.generateToken(user.id);
+
+    this.setAuthCookies(res, accessToken, refreshToken);
 
     return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-      },
-      token,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
     };
   }
 
-  async login(dto: LoginDto, clientIp: string) {
-    this.checkRateLimit(clientIp);
-
+  async login(dto: LoginDto, clientIp: string, res: Response) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user) {
-      this.recordFailedAttempt(clientIp);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      this.recordFailedAttempt(clientIp);
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    this.clearFailedAttempts(clientIp);
+    const accessToken = this.generateAccessToken(user.id, user.username);
+    const refreshToken = await this.refreshTokenService.generateToken(user.id);
 
-    const token = this.generateToken(user.id, user.username);
+    this.setAuthCookies(res, accessToken, refreshToken);
 
     return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-      },
-      token,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
     };
   }
 
-  private generateToken(userId: string, username: string): string {
+  async refresh(refreshToken: string, res: Response) {
+    const tokenData = await this.refreshTokenService.validateToken(refreshToken);
+    
+    if (!tokenData) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: tokenData.userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await this.refreshTokenService.revokeToken(refreshToken);
+
+    const accessToken = this.generateAccessToken(user.id, user.username);
+    const newRefreshToken = await this.refreshTokenService.generateToken(user.id);
+
+    this.setAuthCookies(res, accessToken, newRefreshToken);
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+    };
+  }
+
+  async logout(refreshToken: string | undefined, res: Response) {
+    if (refreshToken) {
+      await this.refreshTokenService.revokeToken(refreshToken);
+    }
+
+    res.clearCookie('token', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private generateAccessToken(userId: string, username: string): string {
     return this.jwtService.sign({ sub: userId, username });
   }
 }

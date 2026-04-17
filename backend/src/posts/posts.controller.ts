@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -10,6 +11,7 @@ export class PostsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async create(@User() user: any, @Body('content') content: string) {
     return this.postsService.create(user.userId, content);
   }
@@ -17,41 +19,33 @@ export class PostsController {
   @Get()
   @Public()
   async findAll(
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.postsService.findAll(
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
-    );
+    const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
+    return this.postsService.findAll(cursor, parsedLimit);
   }
 
   @Get('following')
   @UseGuards(JwtAuthGuard)
   async findFollowing(
     @User() user: any,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.postsService.findFollowing(
-      user.userId,
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
-    );
+    const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
+    return this.postsService.findFollowing(user.userId, cursor, parsedLimit);
   }
 
   @Get('user/:userId')
   @Public()
   async findByUser(
     @Param('userId') userId: string,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.postsService.findByUser(
-      userId,
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
-    );
+    const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
+    return this.postsService.findByUser(userId, cursor, parsedLimit);
   }
 
   @Get(':id')
@@ -68,6 +62,7 @@ export class PostsController {
 
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async like(@Param('id') id: string, @User() user: any) {
     return this.postsService.like(id, user.userId);
   }
@@ -80,6 +75,7 @@ export class PostsController {
 
   @Post(':id/reply')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async createReply(
     @Param('id') postId: string,
     @User() user: any,

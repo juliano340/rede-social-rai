@@ -5,6 +5,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
+  private async getCursorDate(cursor: string): Promise<Date> {
+    const post = await this.prisma.post.findUnique({
+      where: { id: cursor },
+      select: { createdAt: true },
+    });
+    if (!post) {
+      throw new NotFoundException('Cursor post not found');
+    }
+    return post.createdAt;
+  }
+
   async create(userId: string, content: string) {
     if (!content || content.trim().length === 0) {
       throw new BadRequestException('Post content cannot be empty');
@@ -38,47 +49,45 @@ export class PostsService {
     });
   }
 
-  async findAll(page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    
-    const [posts, total] = await Promise.all([
-      this.prisma.post.findMany({
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true,
-            },
-          },
-          _count: {
-            select: {
-              likes: true,
-              replies: true,
-            },
+  async findAll(cursor?: string, limit = 20) {
+    const take = limit + 1;
+
+    const where = cursor ? { createdAt: { lt: await this.getCursorDate(cursor) } } : {};
+
+    const posts = await this.prisma.post.findMany({
+      where,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
           },
         },
-      }),
-      this.prisma.post.count(),
-    ]);
+        _count: {
+          select: {
+            likes: true,
+            replies: true,
+          },
+        },
+      },
+    });
+
+    const hasMore = posts.length > limit;
+    const results = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore && results.length > 0 ? results[results.length - 1].id : null;
 
     return {
-      posts,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      posts: results,
+      nextCursor,
+      hasMore,
     };
   }
 
-  async findFollowing(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    
-    // Buscar IDs dos usuários que eu sigo
+  async findFollowing(userId: string, cursor?: string, limit = 20) {
     const following = await this.prisma.follow.findMany({
       where: { followerId: userId },
       select: { followingId: true },
@@ -86,89 +95,86 @@ export class PostsService {
     
     const followingIds = following.map(f => f.followingId);
     
-    // Se não segue ninguém, retorna vazio
     if (followingIds.length === 0) {
-      return {
-        posts: [],
-        total: 0,
-        page,
-        limit,
-        totalPages: 0,
-      };
+      return { posts: [], nextCursor: null, hasMore: false };
+    }
+
+    const take = limit + 1;
+    const where: any = { authorId: { in: followingIds } };
+    if (cursor) {
+      where.createdAt = { lt: await this.getCursorDate(cursor) };
     }
     
-    const [posts, total] = await Promise.all([
-      this.prisma.post.findMany({
-        where: { authorId: { in: followingIds } },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true,
-            },
-          },
-          _count: {
-            select: {
-              likes: true,
-              replies: true,
-            },
+    const posts = await this.prisma.post.findMany({
+      where,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
           },
         },
-      }),
-      this.prisma.post.count({
-        where: { authorId: { in: followingIds } },
-      }),
-    ]);
+        _count: {
+          select: {
+            likes: true,
+            replies: true,
+          },
+        },
+      },
+    });
+
+    const hasMore = posts.length > limit;
+    const results = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore && results.length > 0 ? results[results.length - 1].id : null;
 
     return {
-      posts,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      posts: results,
+      nextCursor,
+      hasMore,
     };
   }
 
-  async findByUser(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    
-    const [posts, total] = await Promise.all([
-      this.prisma.post.findMany({
-        where: { authorId: userId },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true,
-            },
-          },
-          _count: {
-            select: {
-              likes: true,
-              replies: true,
-            },
+  async findByUser(userId: string, cursor?: string, limit = 20) {
+    const take = limit + 1;
+    const where: any = { authorId: userId };
+    if (cursor) {
+      where.createdAt = { lt: await this.getCursorDate(cursor) };
+    }
+
+    const posts = await this.prisma.post.findMany({
+      where,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
           },
         },
-      }),
-      this.prisma.post.count({ where: { authorId: userId } }),
-    ]);
+        _count: {
+          select: {
+            likes: true,
+            replies: true,
+          },
+        },
+      },
+    });
+
+    const hasMore = posts.length > limit;
+    const results = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore && results.length > 0 ? results[results.length - 1].id : null;
 
     return {
-      posts,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      posts: results,
+      nextCursor,
+      hasMore,
     };
   }
 
