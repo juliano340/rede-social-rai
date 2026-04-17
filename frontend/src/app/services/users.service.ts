@@ -7,6 +7,7 @@ export interface User {
   username: string;
   name: string;
   bio: string | null;
+  bioLink: string | null;
   avatar: string | null;
   createdAt: string;
   _count?: {
@@ -57,7 +58,7 @@ export class UsersService {
     return this.http.get<UsersResponse>(`${this.apiUrl}/users/suggested?limit=${limit}`);
   }
   
-  updateProfile(data: { name?: string; bio?: string }): Observable<any> {
+  updateProfile(data: { name?: string; bio?: string; bioLink?: string }): Observable<any> {
     return this.http.patch(`${this.apiUrl}/users/me`, data);
   }
   

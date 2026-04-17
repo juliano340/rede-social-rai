@@ -30,8 +30,13 @@ import { AuthService } from '../../services/auth.service';
                 required
                 placeholder="Seu nome completo"
                 autocomplete="name"
+                maxlength="25"
+                (ngModelChange)="onNameChange($event)"
               >
             </div>
+            @if (nameError) {
+              <span class="field-error">{{ nameError }}</span>
+            }
           </div>
           
           <div class="form-group">
@@ -46,8 +51,13 @@ import { AuthService } from '../../services/auth.service';
                 required
                 placeholder="seudousername"
                 autocomplete="username"
+                maxlength="20"
+                (ngModelChange)="onUsernameChange($event)"
               >
             </div>
+            @if (usernameError) {
+              <span class="field-error">{{ usernameError }}</span>
+            }
           </div>
           
           <div class="form-group">
@@ -62,8 +72,12 @@ import { AuthService } from '../../services/auth.service';
                 required
                 placeholder="seu@email.com"
                 autocomplete="email"
+                maxlength="100"
               >
             </div>
+            @if (emailError) {
+              <span class="field-error">{{ emailError }}</span>
+            }
           </div>
           
           <div class="form-group">
@@ -77,6 +91,7 @@ import { AuthService } from '../../services/auth.service';
                 name="password"
                 required
                 minlength="6"
+                maxlength="50"
                 placeholder="••••••••"
                 autocomplete="new-password"
               >
@@ -308,21 +323,61 @@ export class RegisterComponent {
   password = '';
   isLoading = signal(false);
   error = signal('');
+  
+  // Validation errors
+  nameError = '';
+  usernameError = '';
+  emailError = '';
+  passwordError = '';
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
+  onNameChange(value: string) {
+    if (!value.trim()) {
+      this.nameError = 'Nome é obrigatório';
+    } else if (value.length > 25) {
+      this.nameError = 'Máximo 25 caracteres';
+      this.name = value.substring(0, 25);
+    } else {
+      this.nameError = '';
+    }
+  }
+
+  onUsernameChange(value: string) {
+    if (!value.trim()) {
+      this.usernameError = 'Username é obrigatório';
+    } else if (value.length < 3) {
+      this.usernameError = 'Mínimo 3 caracteres';
+    } else if (value.length > 20) {
+      this.usernameError = 'Máximo 20 caracteres';
+      this.username = value.substring(0, 20);
+    } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      this.usernameError = 'Apenas letras, números e underscore';
+      this.username = value.replace(/[^a-zA-Z0-9_]/g, '');
+    } else {
+      this.usernameError = '';
+    }
+  }
+
   isFormValid(): boolean {
     return this.name.trim().length > 0 &&
-           this.username.trim().length > 0 &&
+           this.name.length <= 25 &&
+           this.username.trim().length >= 3 &&
+           this.username.trim().length <= 20 &&
+           /^[a-zA-Z0-9_]+$/.test(this.username) &&
            this.email.trim().length > 0 &&
+           this.email.includes('@') &&
            this.password.length >= 6;
   }
 
   register() {
-    if (!this.isFormValid()) return;
+    if (!this.isFormValid()) {
+      this.error.set('Preencha todos os campos corretamente');
+      return;
+    }
     
     this.isLoading.set(true);
     this.error.set('');
