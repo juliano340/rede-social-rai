@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../shared/services/toast.service';
+import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideIconsModule],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -22,7 +23,7 @@ import { ToastService } from '../../shared/services/toast.service';
           <div class="form-group">
             <label for="name">Nome</label>
             <div class="input-wrapper">
-              <span class="input-icon">👤</span>
+              <lucide-icon name="user" [size]="20"></lucide-icon>
               <input 
                 type="text" 
                 id="name" 

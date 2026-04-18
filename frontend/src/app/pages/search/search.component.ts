@@ -4,17 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { UsersService, User } from '../../services/users.service';
+import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideIconsModule],
   template: `
     <div class="search-page">
       <div class="search-header">
         <h1>Buscar usuários</h1>
         <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
+          <lucide-icon name="search" [size]="20"></lucide-icon>
           <input 
             type="text" 
             [(ngModel)]="searchQuery" 
@@ -34,7 +35,7 @@ import { UsersService, User } from '../../services/users.service';
           </div>
         } @else if (searchPerformed() && results().length === 0) {
           <div class="empty-state">
-            <div class="empty-icon">🔍</div>
+            <lucide-icon name="search" [size]="48"></lucide-icon>
             <p>Nenhum usuário encontrado</p>
             <span>Tente buscar por outro termo</span>
           </div>

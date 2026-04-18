@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { AuthService } from "../../services/auth.service";
 import { UsersService, User } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
+import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
 
 interface UserProfile {
   id: string;
@@ -42,7 +43,7 @@ interface Post {
 @Component({
   selector: "app-profile",
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, LucideIconsModule],
   template: `
     <div class="profile-page">
       @if (loading()) {
@@ -140,7 +141,7 @@ interface Post {
                   </button>
                 }
                 <span class="joined">
-                  <span class="join-icon">📅</span>
+                  <lucide-icon name="calendar" [size]="14"></lucide-icon>
                   Entrou em {{ formatDate(profile()?.createdAt) }}
                 </span>
               </div>
@@ -213,9 +214,7 @@ interface Post {
                       [disabled]="postLikingId() === post.id"
                       (click)="toggleLike(post)"
                     >
-                      <span class="icon">{{
-                        postLikes()[post.id] ? "❤️" : "🤍"
-                      }}</span>
+                      <lucide-icon name="heart" [size]="18" [class.filled]="postLikes()[post.id]"></lucide-icon>
                       {{ post._count.likes }}
                     </button>
                     <button
@@ -226,7 +225,7 @@ interface Post {
                         viewingRepliesPost() === post.id
                       "
                     >
-                      <span class="icon">💬</span>
+                      <lucide-icon name="message-circle" [size]="18"></lucide-icon>
                       {{ post._count.replies }}
                     </button>
                     @if (authService.currentUser()?.id === post.author.id) {
@@ -235,13 +234,13 @@ interface Post {
                         (click)="startEditPost(post)"
                         [disabled]="editingPost() === post.id"
                       >
-                        <span class="icon">✏️</span>
+                        <lucide-icon name="pencil" [size]="18"></lucide-icon>
                       </button>
                       <button
                         class="action-btn delete"
                         (click)="deletePost(post.id)"
                       >
-                        <span class="icon">🗑</span>
+                        <lucide-icon name="trash-2" [size]="18"></lucide-icon>
                       </button>
                     }
                   </div>
@@ -255,7 +254,7 @@ interface Post {
                         class="close-replies"
                         (click)="toggleReply(post.id)"
                       >
-                        ✕
+                        <lucide-icon name="x" [size]="18"></lucide-icon>
                       </button>
 
                       <!-- Show comment link -->
@@ -264,7 +263,7 @@ interface Post {
                           class="add-reply-link"
                           (click)="openReplyForm(post.id)"
                         >
-                          💬 Comentar
+                          <lucide-icon name="message-circle" [size]="16"></lucide-icon> Comentar
                         </button>
                       }
 
@@ -509,7 +508,9 @@ interface Post {
           <div class="modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ modalTitle() }}</h2>
-              <button class="modal-close" (click)="closeModal()">✕</button>
+              <button class="modal-close" (click)="closeModal()">
+                <lucide-icon name="x" [size]="20"></lucide-icon>
+              </button>
             </div>
             <div class="modal-content">
               @if (modalLoading()) {
@@ -549,7 +550,9 @@ interface Post {
           <div class="edit-profile-modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>Editar perfil</h2>
-              <button class="modal-close" (click)="closeEditModal()">✕</button>
+              <button class="modal-close" (click)="closeEditModal()">
+                <lucide-icon name="x" [size]="20"></lucide-icon>
+              </button>
             </div>
             <div class="modal-body">
               <div class="form-group">
@@ -615,7 +618,9 @@ interface Post {
       <div class="edit-profile-modal avatar-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2>Alterar foto de perfil</h2>
-          <button class="modal-close" (click)="closeAvatarModal()">✕</button>
+          <button class="modal-close" (click)="closeAvatarModal()">
+            <lucide-icon name="x" [size]="20"></lucide-icon>
+          </button>
         </div>
         <div class="modal-body">
           <div class="avatar-option" (click)="triggerFileInput()">

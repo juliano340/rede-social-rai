@@ -5,11 +5,12 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { PostsService, Post } from '../../services/posts.service';
 import { AuthService } from '../../services/auth.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SkeletonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SkeletonComponent, LucideIconsModule],
   template: `
     <div class="home-page">
       <h1>Feed</h1>
@@ -154,7 +155,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                       [class.liked]="postLikes()[post.id]"
                       [disabled]="postLikingId() === post.id"
                     >
-                      <span class="icon">{{ postLikes()[post.id] ? '❤️' : '🤍' }}</span>
+                      <lucide-icon name="heart" [size]="18" [class.filled]="postLikes()[post.id]"></lucide-icon>
                       <span>{{ post._count.likes }}</span>
                     </button>
                     <button 
@@ -162,7 +163,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                       (click)="toggleReply(post.id)"
                       [class.active]="replyingToPost() === post.id || viewingRepliesPost() === post.id"
                     >
-                      <span class="icon">💬</span>
+                      <lucide-icon name="message-circle" [size]="18"></lucide-icon>
                       <span>{{ post._count.replies }}</span>
                     </button>
                     @if (authService.currentUser()?.id === post.author.id) {
@@ -171,14 +172,14 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                         (click)="startEditPost(post)"
                         [disabled]="editingPost() === post.id"
                       >
-                        <span class="icon">✏️</span>
+                        <lucide-icon name="pencil" [size]="18"></lucide-icon>
                       </button>
                       <button
                         class="action-btn delete"
                         (click)="deletePost(post.id)"
                         [disabled]="deletingPostId() === post.id"
                       >
-                        <span class="icon">🗑</span>
+                        <lucide-icon name="trash-2" [size]="18"></lucide-icon>
                       </button>
                     }
                   </div>
@@ -186,13 +187,13 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                   @if (viewingRepliesPost() === post.id || replyingToPost() === post.id) {
                     <div class="replies-list">
                       <button class="close-replies" (click)="toggleReply(post.id)">
-                        ✕
+                        <lucide-icon name="x" [size]="18"></lucide-icon>
                       </button>
                       
                       <!-- Show comment link -->
                       @if (replyingToPost() !== post.id) {
                         <button class="add-reply-link" (click)="openReplyForm(post.id)">
-                          💬 Comentar
+                          <lucide-icon name="message-circle" [size]="16"></lucide-icon> Comentar
                         </button>
                       }
                       
@@ -372,7 +373,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
     @if (showDeletePostModal()) {
       <div class="modal-overlay" (click)="closeDeletePostModal()">
         <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-          <div class="modal-icon">🗑️</div>
+          <lucide-icon name="trash-2" [size]="48" class="modal-icon"></lucide-icon>
           <h2>Excluir Postagem</h2>
           <p>Tem certeza que deseja excluir esta postagem? Esta ação não pode ser desfeita.</p>
           <div class="modal-actions">
@@ -750,6 +751,10 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
       
       &.like.liked {
         color: #e0245e;
+        
+        lucide-icon {
+          fill: currentColor;
+        }
       }
       
       &.reply:hover {
@@ -762,8 +767,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         color: var(--primary);
       }
 
-      .icon {
-        font-size: 18px;
+      lucide-icon {
+        color: currentColor;
       }
     }
     

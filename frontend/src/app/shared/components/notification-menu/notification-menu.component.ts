@@ -4,15 +4,16 @@ import { Router } from '@angular/router';
 import { NotificationService, Notification } from '../../../services/notification.service';
 import { AuthService } from '../../../services/auth.service';
 import { interval, Subscription } from 'rxjs';
+import { LucideIconsModule } from '../../icons/lucide-icons.module';
 
 @Component({
   selector: 'app-notification-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideIconsModule],
   template: `
     <div class="notification-container">
       <button class="notification-btn" (click)="toggleDropdown($event)">
-        <span class="bell-icon">🔔</span>
+        <lucide-icon name="bell" [size]="20"></lucide-icon>
         @if (unreadCount() > 0) {
           <span class="badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
         }

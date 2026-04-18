@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, LucideIconsModule],
   template: `
     <div class="landing-page">
       <div class="hero">
@@ -19,17 +20,17 @@ import { RouterLink } from '@angular/router';
         
         <div class="features">
           <div class="feature">
-            <span class="feature-icon">✨</span>
+            <lucide-icon name="sparkles" [size]="32"></lucide-icon>
             <h3>Compartilhe suas ideias</h3>
             <p>Publique pensamentos, fotos e muito mais com sua comunidade.</p>
           </div>
           <div class="feature">
-            <span class="feature-icon">🔍</span>
+            <lucide-icon name="search" [size]="32"></lucide-icon>
             <h3>Descubra conteúdo</h3>
             <p>Explore publicações de pessoas que você segue e além.</p>
           </div>
           <div class="feature">
-            <span class="feature-icon">💬</span>
+            <lucide-icon name="message-circle" [size]="32"></lucide-icon>
             <h3>Interaja</h3>
             <p>Comente, responda e construa conversas significativas.</p>
           </div>
