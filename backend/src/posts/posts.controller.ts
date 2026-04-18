@@ -11,7 +11,7 @@ export class PostsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
   async create(@User() user: any, @Body('content') content: string) {
     return this.postsService.create(user.userId, content);
   }

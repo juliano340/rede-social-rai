@@ -1535,7 +1535,11 @@ loadPosts() {
         setTimeout(() => this.submitSuccess.set(false), 3000);
       },
       error: (err) => {
-        this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
+        if (err.status === 429) {
+          this.submitError.set('Você está publicando muito rápido. Aguarde um momento.');
+        } else {
+          this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
+        }
         this.isSubmitting.set(false);
       }
     });
