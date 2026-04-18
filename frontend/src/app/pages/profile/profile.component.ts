@@ -28,6 +28,8 @@ interface UserProfile {
 interface Post {
   id: string;
   content: string;
+  mediaUrl?: string | null;
+  mediaType?: 'image' | 'youtube' | null;
   createdAt: string;
   author: {
     id: string;
@@ -188,6 +190,12 @@ interface Post {
                     }}</span>
                   </div>
                   <p class="post-text">{{ post.content }}</p>
+                  @if (post.mediaUrl && post.mediaType === 'image') {
+                    <img [src]="post.mediaUrl" alt="Mídia do post" class="post-media" />
+                  }
+                  @if (post.mediaUrl && post.mediaType === 'youtube' && getYouTubeEmbedUrl(post.mediaUrl)) {
+                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video"></iframe>
+                  }
                   @if (editingPost() === post.id) {
                     <div class="edit-post-form">
                       <textarea
@@ -195,6 +203,33 @@ interface Post {
                         maxlength="280"
                         class="edit-post-textarea"
                       ></textarea>
+                      <div class="media-type-selector">
+                        <button 
+                          [class.active]="editMediaType() === 'image'"
+                          (click)="setEditMediaType('image')"
+                        >
+                          <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
+                        </button>
+                        <button 
+                          [class.active]="editMediaType() === 'youtube'"
+                          (click)="setEditMediaType('youtube')"
+                        >
+                          <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
+                        </button>
+                      </div>
+                      @if (editMediaType()) {
+                        <input 
+                          type="text" 
+                          [(ngModel)]="editMediaUrl" 
+                          [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
+                          class="media-url-input"
+                        />
+                      }
+                      @if (editMediaUrl || post.mediaUrl) {
+                        <button class="remove-media-sm" (click)="removeEditMedia()">
+                          <lucide-icon name="x" [size]="14"></lucide-icon> Remover mídia
+                        </button>
+                      }
                       <div class="edit-post-actions">
                         <span class="char-count">{{ editPostContent.length }}/280</span>
                         <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
@@ -831,6 +866,79 @@ interface Post {
         white-space: pre-wrap;
         word-break: break-word;
         line-height: 1.6;
+      }
+
+      .media-type-selector {
+        display: flex;
+        gap: 8px;
+        margin: 8px 0;
+        
+        button {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px 10px;
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          background: var(--background);
+          color: var(--text-secondary);
+          font-size: 12px;
+          cursor: pointer;
+          
+          &.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+          }
+          
+          &:hover:not(.active) {
+            background: var(--background-secondary);
+          }
+        }
+      }
+      
+      .media-url-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-primary);
+        background: var(--background);
+        margin-bottom: 8px;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--primary);
+        }
+      }
+      
+      .remove-media-sm {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: none;
+        border: none;
+        color: var(--error);
+        font-size: 12px;
+        cursor: pointer;
+        margin-bottom: 8px;
+      }
+      
+      .post-media {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 10px;
+        margin-top: 8px;
+        object-fit: contain;
+      }
+      
+      .post-media-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 10px;
+        margin-top: 8px;
+        border: none;
       }
 
       .post-actions {
@@ -2194,6 +2302,8 @@ export class ProfileComponent implements OnInit {
 
   editingPost = signal<string | null>(null);
   editPostContent = '';
+  editMediaUrl = '';
+  editMediaType = signal<'image' | 'youtube' | null>(null);
 
   showDeletePostModal = signal(false);
   deletingPostId = signal<string | null>(null);
@@ -2416,20 +2526,27 @@ export class ProfileComponent implements OnInit {
   startEditPost(post: any) {
     this.editingPost.set(post.id);
     this.editPostContent = post.content;
+    this.editMediaUrl = post.mediaUrl || '';
+    this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
   }
 
   cancelEditPost() {
     this.editingPost.set(null);
     this.editPostContent = '';
+    this.editMediaUrl = '';
+    this.editMediaType.set(null);
   }
 
   saveEditPost(postId: string) {
     if (!this.editPostContent.trim()) return;
 
-    this.postsService.updatePost(postId, this.editPostContent).subscribe({
+    const mediaUrl = this.editMediaType() ? this.editMediaUrl : undefined;
+    const mediaType = this.editMediaType() || undefined;
+
+    this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType).subscribe({
       next: (updated) => {
         this.posts.update((posts) =>
-          posts.map((p) => (p.id === postId ? { ...p, content: updated.content } : p))
+          posts.map((p) => (p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType } : p))
         );
         this.cancelEditPost();
       },
@@ -2924,5 +3041,28 @@ error: (err) => {
         this.deleteError.set(msg);
       }
     });
+  }
+
+  getYouTubeEmbedUrl(url: string): string | null {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  }
+
+  isValidImageUrl(url: string): boolean {
+    if (!url) return false;
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  }
+
+  setEditMediaType(type: 'image' | 'youtube' | null) {
+    this.editMediaType.set(type);
+    if (type === null) {
+      this.editMediaUrl = '';
+    }
+  }
+
+  removeEditMedia() {
+    this.editMediaUrl = '';
+    this.editMediaType.set(null);
   }
 }

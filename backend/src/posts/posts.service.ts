@@ -20,7 +20,7 @@ export class PostsService {
     return post.createdAt;
   }
 
-  async create(userId: string, content: string) {
+  async create(userId: string, content: string, mediaUrl?: string, mediaType?: string) {
     if (!content || content.trim().length === 0) {
       throw new BadRequestException('Post content cannot be empty');
     }
@@ -33,6 +33,8 @@ export class PostsService {
       data: {
         content: content.trim(),
         authorId: userId,
+        mediaUrl,
+        mediaType,
       },
       include: {
         author: {
@@ -210,7 +212,7 @@ export class PostsService {
     return post;
   }
 
-  async update(postId: string, userId: string, content: string) {
+  async update(postId: string, userId: string, content: string, mediaUrl?: string, mediaType?: string) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -231,9 +233,18 @@ export class PostsService {
       throw new BadRequestException('Post content cannot exceed 280 characters');
     }
 
+    const updateData: any = { content: content.trim() };
+    
+    if (mediaUrl !== undefined) {
+      updateData.mediaUrl = mediaUrl || null;
+    }
+    if (mediaType !== undefined) {
+      updateData.mediaType = mediaType || null;
+    }
+
     const updated = await this.prisma.post.update({
       where: { id: postId },
-      data: { content: content.trim() },
+      data: updateData,
       include: {
         author: {
           select: {

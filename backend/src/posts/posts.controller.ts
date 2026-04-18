@@ -12,8 +12,26 @@ export class PostsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 2, ttl: 60000 } })
-  async create(@User() user: any, @Body('content') content: string) {
-    return this.postsService.create(user.userId, content);
+  async create(
+    @User() user: any,
+    @Body() body: { content: string; mediaUrl?: string; mediaType?: string }
+  ) {
+    const { content, mediaUrl, mediaType } = body;
+    
+    if (mediaUrl && !mediaType) {
+      throw new Error('Tipo de mídia é obrigatório quando URL é fornecida');
+    }
+    if (mediaType && !mediaUrl) {
+      throw new Error('URL da mídia é obrigatória quando tipo é fornecido');
+    }
+    if (mediaType && !['image', 'youtube'].includes(mediaType)) {
+      throw new Error('Tipo de mídia deve ser "image" ou "youtube"');
+    }
+    if (mediaUrl && mediaUrl.length > 500) {
+      throw new Error('URL da mídia deve ter no máximo 500 caracteres');
+    }
+    
+    return this.postsService.create(user.userId, content, mediaUrl, mediaType);
   }
 
   @Get()
@@ -65,9 +83,18 @@ export class PostsController {
   async update(
     @Param('id') id: string,
     @User() user: any,
-    @Body('content') content: string,
+    @Body() body: { content: string; mediaUrl?: string; mediaType?: string },
   ) {
-    return this.postsService.update(id, user.userId, content);
+    const { content, mediaUrl, mediaType } = body;
+    
+    if (mediaUrl && mediaUrl.length > 500) {
+      throw new Error('URL da mídia deve ter no máximo 500 caracteres');
+    }
+    if (mediaType && !['image', 'youtube', null].includes(mediaType)) {
+      throw new Error('Tipo de mídia deve ser "image" ou "youtube"');
+    }
+    
+    return this.postsService.update(id, user.userId, content, mediaUrl, mediaType);
   }
 
   @Post(':id/like')

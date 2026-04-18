@@ -25,6 +25,8 @@ import {
   AlertTriangle,
   Palette,
   ChevronRight,
+  Image,
+  Youtube,
 } from 'lucide-angular';
 
 @NgModule({
@@ -53,6 +55,8 @@ import {
       AlertTriangle,
       Palette,
       ChevronRight,
+      Image,
+      Youtube,
     }),
   ],
   exports: [LucideAngularModule],
