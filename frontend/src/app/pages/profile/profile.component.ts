@@ -2163,29 +2163,31 @@ export class ProfileComponent implements OnInit {
 
   loadPosts(username: string) {
     this.postsLoading.set(true);
-    this.http.get<any>(`http://localhost:3000/users/${username}`).subscribe({
+    this.http.get<any>(`http://localhost:3000/users/${username}`, { withCredentials: true }).subscribe({
       next: (data) => {
         if (data.id) {
           this.http
-            .get<any>(`http://localhost:3000/posts/user/${data.id}`)
+            .get<any>(`http://localhost:3000/posts/user/${data.id}`, { withCredentials: true })
             .subscribe({
               next: (res) => {
                 this.posts.set(res.posts || []);
-                // Carregar estados de like
-                res.posts?.forEach((post: Post) => {
-                  this.http
-                    .get<boolean>(
-                      `http://localhost:3000/posts/${post.id}/liked`,
-                    )
-                    .subscribe({
-                      next: (liked) => {
-                        this.postLikes.update((likes) => ({
-                          ...likes,
-                          [post.id]: liked,
-                        }));
-                      },
-                    });
-                });
+                if (this.authService.isLoggedIn()) {
+                  res.posts?.forEach((post: Post) => {
+                    this.http
+                      .get<boolean>(
+                        `http://localhost:3000/posts/${post.id}/liked`,
+                        { withCredentials: true },
+                      )
+                      .subscribe({
+                        next: (liked) => {
+                          this.postLikes.update((likes) => ({
+                            ...likes,
+                            [post.id]: liked,
+                          }));
+                        },
+                      });
+                  });
+                }
               },
               error: () => {},
               complete: () => this.postsLoading.set(false),

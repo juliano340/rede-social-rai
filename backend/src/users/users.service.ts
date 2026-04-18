@@ -350,7 +350,17 @@ export class UsersService {
       },
     });
 
-    this.notificationsService.createFollowNotification(followingId, followerId);
+    const existingNotification = await this.prisma.notification.findFirst({
+      where: {
+        type: 'FOLLOW',
+        userId: followingId,
+        actorId: followerId,
+      },
+    });
+
+    if (!existingNotification) {
+      this.notificationsService.createFollowNotification(followingId, followerId);
+    }
 
     return { following: true };
   }

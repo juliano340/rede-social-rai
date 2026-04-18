@@ -263,7 +263,18 @@ export class PostsService {
     });
 
     if (post.authorId !== userId) {
-      this.notificationsService.createLikeNotification(post.authorId, userId, postId);
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          type: 'LIKE',
+          userId: post.authorId,
+          actorId: userId,
+          postId,
+        },
+      });
+
+      if (!existingNotification) {
+        this.notificationsService.createLikeNotification(post.authorId, userId, postId);
+      }
     }
 
     return { liked: true };
