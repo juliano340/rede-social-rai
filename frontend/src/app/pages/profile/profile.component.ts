@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 import { AuthService } from "../../services/auth.service";
 import { UsersService, User } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
@@ -2345,7 +2346,8 @@ export class ProfileComponent implements OnInit {
     public authService: AuthService,
     private usersService: UsersService,
     private postsService: PostsService,
-    private toast: ToastService
+    private toast: ToastService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
@@ -3043,10 +3045,12 @@ error: (err) => {
     });
   }
 
-  getYouTubeEmbedUrl(url: string): string | null {
+  getYouTubeEmbedUrl(url: string): SafeResourceUrl | null {
     if (!url) return null;
     const match = url.match(/(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
-    return match ? `https://www.youtube.com/embed/${match[2]}` : null;
+    if (!match) return null;
+    const embedUrl = `https://www.youtube.com/embed/${match[2]}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
   }
 
   isValidImageUrl(url: string): boolean {

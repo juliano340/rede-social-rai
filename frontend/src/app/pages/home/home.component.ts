@@ -2,6 +2,7 @@ import { Component, OnInit, signal, ElementRef, ViewChild } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PostsService, Post } from '../../services/posts.service';
 import { AuthService } from '../../services/auth.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -1651,7 +1652,8 @@ export class HomeComponent implements OnInit {
     public authService: AuthService,
     private postsService: PostsService,
     private route: ActivatedRoute,
-    private toast: ToastService
+    private toast: ToastService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
@@ -1743,8 +1745,6 @@ loadPosts() {
     
     const mediaUrl = this.newMediaType() ? this.newMediaUrl : undefined;
     const mediaType = this.newMediaType() || undefined;
-    
-    console.log('Creating post:', { content: this.newPostContent, mediaUrl, mediaType });
     
     this.postsService.createPost(this.newPostContent, mediaUrl, mediaType).subscribe({
       next: (post) => {
@@ -2098,12 +2098,12 @@ closeDeleteModal() {
     return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  getYouTubeEmbedUrl(url: string): string | null {
+  getYouTubeEmbedUrl(url: string): SafeResourceUrl | null {
     if (!url) return null;
-    console.log('getYouTubeEmbedUrl called with:', url);
     const match = url.match(/(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
-    console.log('match result:', match);
-    return match ? `https://www.youtube.com/embed/${match[2]}` : null;
+    if (!match) return null;
+    const embedUrl = `https://www.youtube.com/embed/${match[2]}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
   }
 
   isValidImageUrl(url: string): boolean {
