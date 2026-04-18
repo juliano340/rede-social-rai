@@ -74,7 +74,7 @@ import { ToastService } from '../../shared/services/toast.service';
                     @if (newMediaType() === 'image' && isValidImageUrl(newMediaUrl)) {
                       <img [src]="newMediaUrl" alt="Preview" class="media-preview" />
                     }
-                    @if (newMediaType() === 'youtube' && getYouTubeEmbedUrl(newMediaUrl)) {
+                    @if (newMediaType() === 'youtube') {
                       <iframe [src]="getYouTubeEmbedUrl(newMediaUrl)" frameborder="0" allowfullscreen class="media-preview-video"></iframe>
                     }
                   </div>
@@ -175,7 +175,7 @@ import { ToastService } from '../../shared/services/toast.service';
                   @if (post.mediaUrl && post.mediaType === 'image') {
                     <img [src]="post.mediaUrl" alt="Mídia do post" class="post-media" />
                   }
-                  @if (post.mediaUrl && post.mediaType === 'youtube' && getYouTubeEmbedUrl(post.mediaUrl)) {
+                  @if (post.mediaUrl && post.mediaType === 'youtube') {
                     <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video"></iframe>
                   }
                   @if (editingPost() === post.id) {
