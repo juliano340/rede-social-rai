@@ -11,7 +11,7 @@ import { interval, Subscription } from 'rxjs';
   imports: [CommonModule],
   template: `
     <div class="notification-container">
-      <button class="notification-btn" (click)="toggleDropdown()">
+      <button class="notification-btn" (click)="toggleDropdown($event)">
         <span class="bell-icon">🔔</span>
         @if (unreadCount() > 0) {
           <span class="badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
@@ -266,23 +266,25 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
   loading = signal(false);
 
   private pollingSubscription?: Subscription;
+  private boundCloseOnOutsideClick: (event: Event) => void;
 
   constructor(
     private notificationService: NotificationService,
     private authService: AuthService,
     private router: Router,
-  ) {}
+  ) {
+    this.boundCloseOnOutsideClick = this.closeOnOutsideClick.bind(this);
+  }
 
   ngOnInit() {
     this.loadUnreadCount();
     this.startPolling();
-
-    document.addEventListener('click', this.closeOnOutsideClick.bind(this));
+    document.addEventListener('click', this.boundCloseOnOutsideClick);
   }
 
   ngOnDestroy() {
     this.stopPolling();
-    document.removeEventListener('click', this.closeOnOutsideClick.bind(this));
+    document.removeEventListener('click', this.boundCloseOnOutsideClick);
   }
 
   private startPolling() {
@@ -300,12 +302,16 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
   }
 
   private closeOnOutsideClick(event: Event) {
-    if (this.isOpen()) {
+    const target = event.target as HTMLElement;
+    const container = document.querySelector('.notification-container');
+    
+    if (this.isOpen() && container && !container.contains(target)) {
       this.isOpen.set(false);
     }
   }
 
-  toggleDropdown() {
+  toggleDropdown(event: Event) {
+    event.stopPropagation();
     this.isOpen.update(v => !v);
     if (this.isOpen()) {
       this.loadNotifications();
