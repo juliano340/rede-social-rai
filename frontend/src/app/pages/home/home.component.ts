@@ -6,6 +6,7 @@ import { PostsService, Post } from '../../services/posts.service';
 import { AuthService } from '../../services/auth.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
+import { ToastService } from '../../shared/services/toast.service';
 
 @Component({
   selector: 'app-home',
@@ -1433,7 +1434,8 @@ export class HomeComponent implements OnInit {
   constructor(
     public authService: AuthService,
     private postsService: PostsService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -1602,61 +1604,16 @@ loadPosts() {
         post._count.likes += isLiked ? -1 : 1;
         this.postLikingId.set(null);
       },
-      error: (err) => {
-        console.error('Error liking post:', err);
-        this.postLikingId.set(null);
+error: (err) => {
+        console.error('Error creating reply:', err);
+        this.isSubmittingReply.set(false);
+        if (err.status === 429) {
+          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
+        } else {
+          this.toast.error('Erro ao publicar comentário. Tente novamente.');
+        }
       }
     });
-  }
-
-  toggleReply(postId: string) {
-    // Toggle: se já está visualizando, fecha; senão, abre a lista
-    if (this.viewingRepliesPost() === postId) {
-      this.viewingRepliesPost.set(null);
-      this.postReplies.set([]);
-      this.cancelReply(); // Fecha o formulário se estiver aberto
-    } else {
-      this.loadingReplies.set(true);
-      this.viewingRepliesPost.set(postId);
-      this.cancelReply(); // Garante que o formulário está fechado
-      this.postsService.getReplies(postId).subscribe({
-        next: (data) => {
-          this.postReplies.set(data.replies || []);
-          this.loadingReplies.set(false);
-        },
-        error: () => this.loadingReplies.set(false)
-      });
-    }
-  }
-
-  openReplyForm(postId: string) {
-    // Abre o formulário de comentário
-    this.viewingRepliesPost.set(postId);
-    this.replyingToPost.set(postId);
-    this.replyContent = '';
-  }
-
-  cancelReply() {
-    // Close reply form but keep viewing replies
-    this.replyingToPost.set(null);
-    this.replyContent = '';
-    // If we want to also close the list, uncomment below:
-    // this.viewingRepliesPost.set(null);
-    // this.postReplies.set([]);
-  }
-
-  toggleReplyToComment(commentId: string) {
-    if (this.replyingToComment() === commentId) {
-      this.cancelReplyToComment();
-    } else {
-      this.replyingToComment.set(commentId);
-      this.replyingToCommentContent = '';
-    }
-  }
-
-  cancelReplyToComment() {
-    this.replyingToComment.set(null);
-    this.replyingToCommentContent = '';
   }
 
   submitReplyToComment(commentId: string, postId: string) {
@@ -1678,6 +1635,10 @@ loadPosts() {
         this.isSubmittingReply.set(false);
         if (err.status === 401) {
           this.authService.logout();
+        } else if (err.status === 429) {
+          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
+        } else {
+          this.toast.error('Erro ao responder comentário. Tente novamente.');
         }
       }
     });
@@ -1709,6 +1670,11 @@ loadPosts() {
       error: (err) => {
         console.error('Error creating reply:', err);
         this.isSubmittingReply.set(false);
+        if (err.status === 429) {
+          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
+        } else {
+          this.toast.error('Erro ao publicar comentário. Tente novamente.');
+        }
       }
     });
   }
@@ -1828,6 +1794,38 @@ closeDeleteModal() {
     this.showDeleteModal.set(true);
     this.deletingReplyId.set(replyId);
     this.deletingReplyPostId.set(postId);
+  }
+
+  toggleReply(postId: string) {
+    if (this.replyingToPost() === postId) {
+      this.replyingToPost.set(null);
+    } else {
+      this.replyingToPost.set(postId);
+    }
+  }
+
+  openReplyForm(postId: string) {
+    this.replyingToPost.set(postId);
+    this.replyContent = '';
+  }
+
+  cancelReply() {
+    this.replyingToPost.set(null);
+    this.replyContent = '';
+  }
+
+  toggleReplyToComment(commentId: string) {
+    if (this.replyingToComment() === commentId) {
+      this.replyingToComment.set(null);
+    } else {
+      this.replyingToComment.set(commentId);
+      this.replyingToCommentContent = '';
+    }
+  }
+
+  cancelReplyToComment() {
+    this.replyingToComment.set(null);
+    this.replyingToCommentContent = '';
   }
 
   getAvatarUrl(avatar: string | null): string {

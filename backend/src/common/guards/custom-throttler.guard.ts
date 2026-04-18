@@ -5,13 +5,10 @@ import { ExecutionContext } from '@nestjs/common';
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Record<string, any>): Promise<string> {
+    const user = req.user;
+    if (user && user.userId) {
+      return `user_${user.userId}`;
+    }
     return req.ip || req.connection?.remoteAddress || 'unknown';
-  }
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const ip = request.ip || request.connection?.remoteAddress || 'unknown';
-    
-    return super.canActivate(context);
   }
 }

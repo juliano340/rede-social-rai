@@ -85,7 +85,7 @@ export class PostsController {
 
   @Post(':id/reply')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
   async createReply(
     @Param('id') postId: string,
     @User() user: any,

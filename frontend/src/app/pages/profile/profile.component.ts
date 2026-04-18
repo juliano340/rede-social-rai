@@ -7,6 +7,7 @@ import { AuthService } from "../../services/auth.service";
 import { UsersService, User } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
 import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
+import { ToastService } from "../../shared/services/toast.service";
 
 interface UserProfile {
   id: string;
@@ -651,11 +652,39 @@ interface Post {
             </button>
           </div>
         </div>
+</div>
+  </div>
+}
+
+@if (showDeletePostModal()) {
+  <div class="modal-overlay" (click)="closeDeletePostModal()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <lucide-icon name="trash-2" [size]="48" class="modal-icon"></lucide-icon>
+      <h2>Excluir Postagem</h2>
+      <p>Tem certeza que deseja excluir esta postagem? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="modal-cancel" (click)="closeDeletePostModal()">Cancelar</button>
+        <button class="modal-confirm" (click)="confirmDeletePost()">Excluir</button>
       </div>
     </div>
-  }
+  </div>
+}
+
+@if (showDeleteReplyModal()) {
+  <div class="modal-overlay" (click)="closeDeleteReplyModal()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <lucide-icon name="trash-2" [size]="48" class="modal-icon"></lucide-icon>
+      <h2>Excluir Resposta</h2>
+      <p>Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="modal-cancel" (click)="closeDeleteReplyModal()">Cancelar</button>
+        <button class="modal-confirm" (click)="confirmDeleteReply()">Excluir</button>
+      </div>
+    </div>
+  </div>
+}
 </div>
-  `,
+`,
   styles: [
     `
       .profile-page {
@@ -2161,6 +2190,9 @@ export class ProfileComponent implements OnInit {
   editingPost = signal<string | null>(null);
   editPostContent = '';
 
+  showDeletePostModal = signal(false);
+  deletingPostId = signal<string | null>(null);
+
   loading = signal(true);
   postsLoading = signal(true);
   isFollowingLoading = signal(false);
@@ -2198,6 +2230,7 @@ export class ProfileComponent implements OnInit {
     public authService: AuthService,
     private usersService: UsersService,
     private postsService: PostsService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -2350,14 +2383,27 @@ export class ProfileComponent implements OnInit {
   }
 
   deletePost(postId: string) {
-    if (!confirm('Tem certeza que deseja excluir este post?')) return;
+    this.deletingPostId.set(postId);
+    this.showDeletePostModal.set(true);
+  }
+
+  closeDeletePostModal() {
+    this.showDeletePostModal.set(false);
+    this.deletingPostId.set(null);
+  }
+
+  confirmDeletePost() {
+    const postId = this.deletingPostId();
+    if (!postId) return;
 
     this.postsService.deletePost(postId).subscribe({
       next: () => {
         this.posts.update((posts) => posts.filter((p) => p.id !== postId));
+        this.closeDeletePostModal();
       },
       error: (err) => {
         console.error('Error deleting post:', err);
+        this.closeDeletePostModal();
       },
     });
   }
@@ -2482,6 +2528,11 @@ export class ProfileComponent implements OnInit {
       error: (err) => {
         console.error("Error creating reply:", err);
         this.isSubmittingReply.set(false);
+        if (err.status === 429) {
+          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
+        } else {
+          this.toast.error('Erro ao publicar comentário. Tente novamente.');
+        }
       },
     });
   }
@@ -2520,6 +2571,11 @@ export class ProfileComponent implements OnInit {
         error: (err) => {
           console.error("Error creating nested reply:", err);
           this.isSubmittingReply.set(false);
+          if (err.status === 429) {
+            this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
+          } else {
+            this.toast.error('Erro ao responder comentário. Tente novamente.');
+          }
         },
       });
   }
