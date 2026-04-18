@@ -1821,11 +1821,10 @@ loadPosts() {
     if (this.editMediaType() && this.editMediaUrl) {
       mediaUrl = this.editMediaUrl;
       mediaType = this.editMediaType() || undefined;
-    } else if (!this.editMediaType() && !this.editMediaUrl) {
-      mediaUrl = null;
-      mediaType = null;
+    } else if (!this.editMediaType() && !this.editMediaUrl && this.editingPost()) {
+      mediaUrl = undefined;
+      mediaType = undefined;
     }
-    // Se editingPost está ativo mas não tem mídia, mantém a existente (undefined)
 
     this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType).subscribe({
       next: (updated) => {
