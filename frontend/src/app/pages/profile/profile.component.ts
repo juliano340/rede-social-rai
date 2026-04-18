@@ -1269,8 +1269,10 @@ interface Post {
 
           .edit-actions {
             display: flex;
+            align-items: center;
             gap: 4px;
             margin-top: 4px;
+            justify-content: flex-end;
 
             .cancel-edit,
             .save-edit {

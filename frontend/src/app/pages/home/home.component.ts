@@ -1046,8 +1046,10 @@ import { ToastService } from '../../shared/services/toast.service';
           
           .edit-actions {
             display: flex;
+            align-items: center;
             gap: 4px;
             margin-top: 4px;
+            justify-content: flex-end;
           }
           
           .cancel-edit, .save-edit {
@@ -1240,8 +1242,10 @@ import { ToastService } from '../../shared/services/toast.service';
               
               .edit-actions {
                 display: flex;
+                align-items: center;
                 gap: 4px;
                 margin-top: 4px;
+                justify-content: flex-end;
               }
               
               .cancel-edit, .save-edit {
