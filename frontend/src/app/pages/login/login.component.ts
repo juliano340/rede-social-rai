@@ -13,8 +13,8 @@ import { ToastService } from '../../shared/services/toast.service';
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-header">
-          <div class="logo-mini">R</div>
-          <h1>Entrar no RAI</h1>
+<div class="logo-mini">J</div>
+      <h1>Entrar no JVerso</h1>
           <p>Bem-vindo de volta!</p>
         </div>
         

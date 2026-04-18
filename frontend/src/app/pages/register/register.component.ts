@@ -13,9 +13,9 @@ import { ToastService } from '../../shared/services/toast.service';
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-header">
-          <div class="logo-mini">R</div>
-          <h1>Criar conta</h1>
-          <p>Junte-se à comunidade RAI!</p>
+<div class="logo-mini">J</div>
+      <h1>Criar conta</h1>
+      <p>Junte-se à comunidade JVerso!</p>
         </div>
         
         <form (ngSubmit)="register()" class="auth-form">
