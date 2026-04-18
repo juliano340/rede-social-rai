@@ -12,6 +12,7 @@ export class NotificationsService {
     userId: string;
     actorId: string;
     postId?: string;
+    replyId?: string;
   }) {
     if (data.userId === data.actorId) {
       return null;
@@ -23,6 +24,7 @@ export class NotificationsService {
         userId: data.userId,
         actorId: data.actorId,
         postId: data.postId,
+        replyId: data.replyId,
       },
       include: {
         actor: {
@@ -37,6 +39,12 @@ export class NotificationsService {
           select: {
             id: true,
             content: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
           },
         },
       },
@@ -124,12 +132,13 @@ export class NotificationsService {
     });
   }
 
-  async createReplyNotification(postAuthorId: string, actorId: string, postId: string) {
+  async createReplyNotification(postAuthorId: string, actorId: string, postId: string, replyId?: string) {
     return this.create({
       type: 'REPLY',
       userId: postAuthorId,
       actorId,
       postId,
+      replyId,
     });
   }
 

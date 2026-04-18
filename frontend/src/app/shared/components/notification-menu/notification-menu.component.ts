@@ -371,10 +371,17 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
 
     this.isOpen.set(false);
 
-    if (notification.type === 'FOLLOW') {
-      this.router.navigate(['/profile', notification.actor.username]);
-    } else if (notification.post?.author?.username) {
+    if (notification.type === 'LIKE' && notification.post?.author?.username) {
       this.router.navigate(['/profile', notification.post.author.username]);
+    } else if (notification.type === 'FOLLOW') {
+      this.router.navigate(['/profile', notification.actor.username]);
+    } else if (notification.type === 'REPLY') {
+      this.router.navigate(['/home'], {
+        queryParams: {
+          postId: notification.postId,
+          ...(notification.replyId ? { replyId: notification.replyId } : {}),
+        },
+      });
     }
   }
 

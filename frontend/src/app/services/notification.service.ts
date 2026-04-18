@@ -22,6 +22,7 @@ export interface Notification {
       username: string;
     };
   };
+  replyId?: string;
   read: boolean;
   createdAt: string;
 }

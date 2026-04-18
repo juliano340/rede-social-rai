@@ -1,7 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { PostsService, Post } from '../../services/posts.service';
 import { AuthService } from '../../services/auth.service';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -108,7 +108,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         } @else {
           <div class="posts">
             @for (post of posts(); track post.id) {
-              <article class="post" [class.deleting]="deletingPostId() === post.id">
+              <article class="post" [class.deleting]="deletingPostId() === post.id" [class.highlight-post]="highlightPostId() === post.id" [attr.id]="'post-' + post.id">
                 <div class="post-avatar">
                   @if (post.author.avatar) {
                     <img [src]="getAvatarUrl(post.author.avatar)" alt="Avatar" class="avatar-image">
@@ -201,7 +201,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                         <p class="no-replies">Nenhuma resposta ainda.</p>
                       } @else {
                         @for (reply of postReplies(); track reply.id) {
-                          <div class="reply-item">
+                          <div class="reply-item" [class.highlight-reply]="highlightReplyId() === reply.id" [attr.id]="'reply-' + reply.id">
                             <div class="reply-avatar">
                               @if (reply.author.avatar) {
                                 <img [src]="'http://localhost:3000' + reply.author.avatar" alt="Avatar" class="avatar-image">
@@ -360,6 +360,20 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 .home-page h1 {
       font-size: 20px;
       font-weight: 700;
+    }
+    
+    .highlight-post {
+      animation: highlight-fade 3s ease-out;
+    }
+    
+    .highlight-reply {
+      animation: highlight-fade 3s ease-out;
+      border-radius: 8px;
+    }
+    
+    @keyframes highlight-fade {
+      0% { background: rgba(99, 102, 241, 0.2); }
+      100% { background: transparent; }
     }
     
     .feed-tabs {
@@ -1303,17 +1317,55 @@ export class HomeComponent implements OnInit {
   replyingToComment = signal<string | null>(null);
   replyingToCommentContent = '';
   
+  highlightPostId = signal<string | null>(null);
+  highlightReplyId = signal<string | null>(null);
+
   // Nested reply editing/deletion
   editingNestedReply = signal<string | null>(null);
   editNestedReplyContent = '';
 
   constructor(
     public authService: AuthService,
-    private postsService: PostsService
+    private postsService: PostsService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     this.loadPosts();
+    this.route.queryParams.subscribe(params => {
+      const postId = params['postId'];
+      const replyId = params['replyId'];
+      if (postId) {
+        this.highlightPostId.set(postId);
+        if (replyId) {
+          this.highlightReplyId.set(replyId);
+          this.viewingRepliesPost.set(postId);
+          this.postsService.getReplies(postId).subscribe({
+            next: (data) => {
+              this.postReplies.set(data.replies || []);
+              setTimeout(() => this.scrollToReply(replyId), 300);
+            }
+          });
+        }
+        setTimeout(() => this.scrollToPost(postId), 100);
+      }
+    });
+  }
+
+  private scrollToPost(postId: string) {
+    const el = document.getElementById('post-' + postId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => this.highlightPostId.set(null), 3000);
+    }
+  }
+
+  private scrollToReply(replyId: string) {
+    const el = document.getElementById('reply-' + replyId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => this.highlightReplyId.set(null), 3000);
+    }
   }
 
   canSubmit(): boolean {

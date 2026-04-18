@@ -369,7 +369,7 @@ export class PostsService {
     });
 
     if (post.authorId !== userId) {
-      this.notificationsService.createReplyNotification(post.authorId, userId, postId);
+      this.notificationsService.createReplyNotification(post.authorId, userId, postId, reply.id);
     }
 
     return reply;

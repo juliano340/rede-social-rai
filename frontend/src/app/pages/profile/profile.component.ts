@@ -279,14 +279,7 @@ interface Post {
                           <div class="reply-item">
                             <div class="reply-avatar">
                               @if (reply.author.avatar) {
-                                <img
-                                  [src]="
-                                    'http://localhost:3000' +
-                                    reply.author.avatar
-                                  "
-                                  alt="Avatar"
-                                  class="avatar-image"
-                                />
+<img [src]="getAvatarUrl(reply.author.avatar)" alt="Avatar" class="avatar-image" />
                               } @else {
                                 {{
                                   (reply.author.name[0] || "?").toUpperCase()
@@ -362,14 +355,7 @@ interface Post {
                                     <div class="reply-item nested">
                                       <div class="reply-avatar small">
                                         @if (child.author.avatar) {
-                                          <img
-                                            [src]="
-                                              'http://localhost:3000' +
-                                              child.author.avatar
-                                            "
-                                            alt="Avatar"
-                                            class="avatar-image"
-                                          />
+<img [src]="getAvatarUrl(child.author.avatar)" alt="Avatar" class="avatar-image" />
                                         } @else {
                                           {{
                                             (
@@ -918,10 +904,55 @@ interface Post {
               }
             }
           }
-        }
-      }
+}
+  }
 
-      .loading-replies {
+  .follow-btn {
+    padding: 10px 24px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    &.following {
+      background: var(--background-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      box-shadow: none;
+
+      &:hover:not(:disabled) {
+        background: var(--error-light);
+        color: var(--error);
+        border-color: var(--error);
+      }
+    }
+
+    .spinner-sm {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  .loading-replies {
         text-align: center;
         padding: 20px;
 

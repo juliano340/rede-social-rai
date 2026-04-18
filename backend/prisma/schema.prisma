@@ -105,15 +105,16 @@ model RefreshToken {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  type      String
-  userId    String
-  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  actorId   String
-  actor     User     @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
-  postId    String?
-  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  read      Boolean  @default(false)
+  id String @id @default(uuid())
+  type String
+  userId String
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actorId String
+  actor User @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  postId String?
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  replyId String?
+  read Boolean @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
