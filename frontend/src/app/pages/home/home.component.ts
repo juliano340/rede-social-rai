@@ -1532,7 +1532,6 @@ loadPosts() {
     this.isSubmittingReply.set(true);
     this.postsService.createReply(postId, this.replyingToCommentContent, commentId).subscribe({
       next: () => {
-        // Recarregar replies para mostrar a nova resposta
         this.postsService.getReplies(postId).subscribe({
           next: (data) => {
             this.postReplies.set(data.replies || []);
@@ -1544,6 +1543,9 @@ loadPosts() {
       error: (err) => {
         console.error('Error replying to comment:', err);
         this.isSubmittingReply.set(false);
+        if (err.status === 401) {
+          this.authService.logout();
+        }
       }
     });
   }

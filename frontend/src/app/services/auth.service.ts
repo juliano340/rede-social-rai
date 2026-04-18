@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, throwError } from 'rxjs';
 
 export interface User {
   id: string;
@@ -44,6 +44,25 @@ export class AuthService {
   }
 
   logout(): void {
+    this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe();
+    localStorage.removeItem('user');
+    this.currentUserSignal.set(null);
+    this.router.navigate(['/landing']);
+  }
+
+  refresh(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }).pipe(
+      tap(() => {
+        this.refreshCurrentUser();
+      }),
+      catchError(err => {
+        this.forceLogout();
+        return throwError(() => err);
+      })
+    );
+  }
+
+  forceLogout(): void {
     localStorage.removeItem('user');
     this.currentUserSignal.set(null);
     this.router.navigate(['/landing']);
@@ -63,6 +82,9 @@ export class AuthService {
         localStorage.setItem('user', JSON.stringify(user));
         this.currentUserSignal.set(user);
       },
+      error: () => {
+        this.forceLogout();
+      }
     });
   }
 
