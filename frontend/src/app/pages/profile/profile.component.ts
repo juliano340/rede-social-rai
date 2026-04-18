@@ -195,7 +195,7 @@ interface Post {
                     <img [src]="post.mediaUrl" alt="Mídia do post" class="post-media" />
                   }
                   @if (post.mediaUrl && post.mediaType === 'youtube') {
-                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video"></iframe>
+                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video" loading="lazy"></iframe>
                   }
                   @if (editingPost() === post.id) {
                     <div class="edit-post-form">

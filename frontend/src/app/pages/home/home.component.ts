@@ -76,12 +76,15 @@ import { ToastService } from '../../shared/services/toast.service';
                       <img [src]="newMediaUrl" alt="Preview" class="media-preview" />
                     }
                     @if (newMediaType() === 'youtube') {
-                      <iframe [src]="getYouTubeEmbedUrl(newMediaUrl)" frameborder="0" allowfullscreen class="media-preview-video"></iframe>
+                      <iframe [src]="getYouTubeEmbedUrl(newMediaUrl)" frameborder="0" allowfullscreen class="media-preview-video" loading="lazy"></iframe>
                     }
+                    <button class="remove-media" (click)="removeNewMedia()">Remover mídia</button>
                   </div>
                 }
+                @if (!newMediaUrl) {
+                  <button class="remove-media" (click)="removeNewMedia()">Cancelar</button>
+                }
               }
-              <button class="remove-media" (click)="removeNewMedia()">Remover mídia</button>
             </div>
           } @else {
             <button class="add-media-btn" (click)="showMediaInput.set(true)">
@@ -177,7 +180,7 @@ import { ToastService } from '../../shared/services/toast.service';
                     <img [src]="post.mediaUrl" alt="Mídia do post" class="post-media" />
                   }
                   @if (post.mediaUrl && post.mediaType === 'youtube') {
-                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video"></iframe>
+                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video" loading="lazy"></iframe>
                   }
                   @if (editingPost() === post.id) {
                     <div class="edit-post-form">
