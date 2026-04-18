@@ -15,7 +15,7 @@ export class UsersService {
     private notificationsService: NotificationsService,
   ) {}
 
-  private normalizeBioLink(value?: string): string | undefined {
+  private normalizeBioLink(value?: string): string | null | undefined {
     if (value === undefined) return undefined;
     if (typeof value !== 'string') {
       throw new BadRequestException(
@@ -24,7 +24,7 @@ export class UsersService {
     }
 
     const raw = value.trim();
-    if (!raw) return undefined;
+    if (!raw) return null;
 
     try {
       const url = new URL(raw);
@@ -95,13 +95,18 @@ export class UsersService {
   }
 
   async update(userId: string, data: { name?: string; bio?: string; bioLink?: string }) {
+    if (data.name !== undefined && !data.name.trim()) {
+      throw new BadRequestException('Nome não pode ficar em branco.');
+    }
+
     const bioLink = this.normalizeBioLink(data.bioLink);
+    const bio = data.bio !== undefined ? (data.bio.trim() || null) : undefined;
 
     const result = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.bio !== undefined ? { bio: data.bio } : {}),
+        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+        ...(bio !== undefined ? { bio } : {}),
         ...(bioLink !== undefined ? { bioLink } : {}),
       },
       select: {
@@ -292,13 +297,18 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, data: { name?: string; bio?: string; bioLink?: string; avatar?: string }) {
+    if (data.name !== undefined && !data.name.trim()) {
+      throw new BadRequestException('Nome não pode ficar em branco.');
+    }
+
     const bioLink = this.normalizeBioLink(data.bioLink);
+    const bio = data.bio !== undefined ? (data.bio.trim() || null) : undefined;
 
     const result = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.bio !== undefined ? { bio: data.bio } : {}),
+        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+        ...(bio !== undefined ? { bio } : {}),
         ...(bioLink !== undefined ? { bioLink } : {}),
         ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
       },

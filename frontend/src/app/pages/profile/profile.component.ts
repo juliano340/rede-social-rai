@@ -2401,6 +2401,11 @@ export class ProfileComponent implements OnInit {
   saveProfile() {
     if (this.savingProfile()) return;
 
+    if (!this.editName.trim()) {
+      this.savingProfile.set(false);
+      return;
+    }
+
     const normalizedBioLink = this.normalizeBioLink(this.editBioLink);
     if (this.editBioLink.trim() && !normalizedBioLink) {
       this.bioLinkError = "Use um link público válido (ex: https://seusite.com).";
@@ -2413,9 +2418,9 @@ export class ProfileComponent implements OnInit {
 
     this.usersService
       .updateProfile({
-        name: this.editName.trim() || undefined,
-        bio: this.editBio.trim() || undefined,
-        bioLink: normalizedBioLink || undefined,
+        name: this.editName.trim(),
+        bio: this.editBio,
+        bioLink: this.editBioLink.trim() || '',
       })
       .subscribe({
         next: (updated) => {
