@@ -1064,6 +1064,7 @@ import { ToastService } from '../../shared/services/toast.service';
           .cancel-edit {
             background: var(--background-secondary);
             border: 1px solid var(--border);
+            color: var(--text-primary);
             
             &:hover {
               background: var(--border);
@@ -1257,14 +1258,15 @@ import { ToastService } from '../../shared/services/toast.service';
                 cursor: pointer;
               }
               
-              .cancel-edit {
-                background: var(--background-secondary);
-                border: 1px solid var(--border);
-                
-                &:hover {
-                  background: var(--border);
-                }
+.cancel-edit {
+              background: var(--background-secondary);
+              border: 1px solid var(--border);
+              color: var(--text-primary);
+              
+              &:hover {
+                background: var(--border);
               }
+            }
               
               .save-edit {
                 background: var(--primary);

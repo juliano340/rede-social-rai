@@ -1285,6 +1285,7 @@ interface Post {
             .cancel-edit {
               background: var(--background-secondary);
               border: 1px solid var(--border);
+              color: var(--text-primary);
 
               &:hover {
                 background: var(--border);
