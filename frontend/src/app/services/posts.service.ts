@@ -37,7 +37,7 @@ export class PostsService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params, withCredentials: true });
   }
 
   getFollowingPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
@@ -45,7 +45,7 @@ export class PostsService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params, withCredentials: true });
   }
 
   getUserPosts(userId: string, cursor?: string, limit = 20): Observable<PostsResponse> {
@@ -53,19 +53,23 @@ export class PostsService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params, withCredentials: true });
   }
 
   createPost(content: string): Observable<Post> {
-    return this.http.post<Post>(`${this.apiUrl}/posts`, { content });
+    return this.http.post<Post>(`${this.apiUrl}/posts`, { content }, { withCredentials: true });
   }
 
   deletePost(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${id}`);
+    return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true });
   }
 
   likePost(id: string): Observable<{ liked: boolean }> {
-    return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {});
+    return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true });
+  }
+
+  isLiked(id: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/posts/${id}/liked`, { withCredentials: true });
   }
 
   createReply(postId: string, content: string, parentId?: string): Observable<any> {
@@ -73,7 +77,7 @@ export class PostsService {
     if (parentId) {
       body.parentId = parentId;
     }
-    return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body);
+    return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true });
   }
 
   getReplies(postId: string, page = 1, limit = 20): Observable<any> {
@@ -81,14 +85,14 @@ export class PostsService {
       .set('page', page.toString())
       .set('limit', limit.toString());
     
-    return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params });
+    return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 
   updateReply(postId: string, replyId: string, content: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content });
+    return this.http.put<any>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content }, { withCredentials: true });
   }
 
   deleteReply(postId: string, replyId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`);
+    return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { withCredentials: true });
   }
 }

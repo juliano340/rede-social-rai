@@ -1322,11 +1322,11 @@ export class HomeComponent implements OnInit {
            !this.isSubmitting();
   }
 
-  loadPosts() {
+loadPosts() {
     this.isLoading.set(true);
     this.loadError.set(null);
     
-    const feed = this.feedType();
+    const feed = this.feedType(); 
     const request = feed === 'following' 
       ? this.postsService.getFollowingPosts()
       : this.postsService.getPosts();
@@ -1335,6 +1335,16 @@ export class HomeComponent implements OnInit {
       next: (response) => {
         this.posts.set(response.posts);
         this.isLoading.set(false);
+
+        if (this.authService.isLoggedIn()) {
+          response.posts.forEach((post: any) => {
+            this.postsService.isLiked(post.id).subscribe({
+              next: (liked: any) => {
+                this.postLikes.update(likes => ({ ...likes, [post.id]: liked }));
+              },
+            });
+          });
+        }
       },
       error: (err) => {
         this.loadError.set('Não foi possível carregar as publicações.');
