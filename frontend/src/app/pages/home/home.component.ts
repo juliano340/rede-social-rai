@@ -1744,6 +1744,8 @@ loadPosts() {
     const mediaUrl = this.newMediaType() ? this.newMediaUrl : undefined;
     const mediaType = this.newMediaType() || undefined;
     
+    console.log('Creating post:', { content: this.newPostContent, mediaUrl, mediaType });
+    
     this.postsService.createPost(this.newPostContent, mediaUrl, mediaType).subscribe({
       next: (post) => {
         this.posts.update(posts => [post, ...posts]);
@@ -2098,7 +2100,9 @@ closeDeleteModal() {
 
   getYouTubeEmbedUrl(url: string): string | null {
     if (!url) return null;
+    console.log('getYouTubeEmbedUrl called with:', url);
     const match = url.match(/(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    console.log('match result:', match);
     return match ? `https://www.youtube.com/embed/${match[2]}` : null;
   }
 
