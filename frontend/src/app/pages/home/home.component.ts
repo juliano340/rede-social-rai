@@ -1046,12 +1046,12 @@ import { ToastService } from '../../shared/services/toast.service';
           
           .edit-actions {
             display: flex;
-            gap: 8px;
-            margin-top: 8px;
+            gap: 4px;
+            margin-top: 4px;
           }
           
           .cancel-edit, .save-edit {
-            padding: 4px 12px;
+            padding: 4px 10px;
             border-radius: var(--radius-sm);
             font-size: 13px;
             cursor: pointer;
@@ -1059,7 +1059,6 @@ import { ToastService } from '../../shared/services/toast.service';
           
           .cancel-edit {
             background: var(--background-secondary);
-            color: var(--text-primary);
             border: 1px solid var(--border);
             
             &:hover {
@@ -1241,12 +1240,12 @@ import { ToastService } from '../../shared/services/toast.service';
               
               .edit-actions {
                 display: flex;
-                gap: 8px;
-                margin-top: 8px;
+                gap: 4px;
+                margin-top: 4px;
               }
               
               .cancel-edit, .save-edit {
-                padding: 4px 12px;
+                padding: 4px 10px;
                 border-radius: var(--radius-sm);
                 font-size: 13px;
                 cursor: pointer;
@@ -1254,7 +1253,6 @@ import { ToastService } from '../../shared/services/toast.service';
               
               .cancel-edit {
                 background: var(--background-secondary);
-                color: var(--text-primary);
                 border: 1px solid var(--border);
                 
                 &:hover {
