@@ -1815,8 +1815,17 @@ loadPosts() {
   saveEditPost(postId: string) {
     if (!this.editPostContent.trim()) return;
 
-    const mediaUrl = this.editMediaType() ? this.editMediaUrl : undefined;
-    const mediaType = this.editMediaType() || undefined;
+    let mediaUrl: string | undefined;
+    let mediaType: string | undefined;
+    
+    if (this.editMediaType() && this.editMediaUrl) {
+      mediaUrl = this.editMediaUrl;
+      mediaType = this.editMediaType() || undefined;
+    } else if (!this.editMediaType() && !this.editMediaUrl) {
+      mediaUrl = null;
+      mediaType = null;
+    }
+    // Se editingPost está ativo mas não tem mídia, mantém a existente (undefined)
 
     this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType).subscribe({
       next: (updated) => {
@@ -2136,6 +2145,5 @@ closeDeleteModal() {
 
   removeEditMedia() {
     this.editMediaUrl = '';
-    this.editMediaType.set(null);
   }
 }
