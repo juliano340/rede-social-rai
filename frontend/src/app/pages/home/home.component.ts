@@ -867,11 +867,13 @@ import { ToastService } from '../../shared/services/toast.service';
 
       .edit-post-actions {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
+        gap: 8px;
         margin-top: 8px;
 
         .char-count {
+          margin-right: auto;
           font-size: 12px;
           color: var(--text-tertiary);
         }
