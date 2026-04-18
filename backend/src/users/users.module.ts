@@ -4,11 +4,13 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { AuthModule } from '../auth/auth.module';
 import { UploadsModule } from '../uploads/uploads.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     AuthModule,
     UploadsModule,
+    NotificationsModule,
     CacheModule.register({ ttl: 300000 }),
   ],
   controllers: [UsersController],

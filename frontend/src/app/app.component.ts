@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
+import { NotificationMenuComponent } from './shared/components/notification-menu/notification-menu.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, ToastComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, ToastComponent, NotificationMenuComponent],
   template: `
     <div class="app-container">
       <nav class="navbar" role="navigation" aria-label="Navegação principal">
@@ -17,7 +18,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
             <span class="logo-icon">R</span>
             <span class="logo-text">RAI</span>
           </a>
-          
+
           @if (authService.isLoggedIn()) {
             <div class="nav-links">
               <a routerLink="/home" class="nav-link" routerLinkActive="active">
@@ -32,8 +33,9 @@ import { ToastComponent } from './shared/components/toast/toast.component';
                 <span class="nav-icon">👤</span>
                 <span>Perfil</span>
               </a>
-              <button 
-                class="theme-toggle" 
+              <app-notification-menu />
+              <button
+                class="theme-toggle"
                 (click)="themeService.toggle()"
                 [attr.aria-label]="themeService.isDark() ? 'Mudar para modo claro' : 'Mudar para modo escuro'"
               >
@@ -46,8 +48,8 @@ import { ToastComponent } from './shared/components/toast/toast.component';
             </div>
           } @else {
             <div class="nav-links">
-              <button 
-                class="theme-toggle" 
+              <button
+                class="theme-toggle"
                 (click)="themeService.toggle()"
                 [attr.aria-label]="themeService.isDark() ? 'Mudar para modo claro' : 'Mudar para modo escuro'"
               >
@@ -59,7 +61,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
           }
         </div>
       </nav>
-      
+
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>

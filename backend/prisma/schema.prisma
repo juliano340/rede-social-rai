@@ -19,12 +19,14 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  posts         Post[]
-  likedPosts    Like[]
-  following     Follow[]       @relation("Following")
-  followers     Follow[]       @relation("Followers")
-  replies       Reply[]
-  refreshTokens RefreshToken[]
+  posts              Post[]
+  likedPosts         Like[]
+  following          Follow[]       @relation("Following")
+  followers          Follow[]       @relation("Followers")
+  replies            Reply[]
+  refreshTokens      RefreshToken[]
+  notifications      Notification[] @relation("UserNotifications")
+  notificationActor  Notification[] @relation("ActorNotifications")
 }
 
 model Post {
@@ -33,11 +35,11 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  likes   Like[]
-  replies Reply[]
+  authorId      String
+  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes         Like[]
+  replies       Reply[]
+  notifications Notification[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -100,4 +102,20 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

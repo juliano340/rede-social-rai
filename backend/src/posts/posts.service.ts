@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   private async getCursorDate(cursor: string): Promise<Date> {
     const post = await this.prisma.post.findUnique({
@@ -258,6 +262,10 @@ export class PostsService {
       },
     });
 
+    if (post.authorId !== userId) {
+      this.notificationsService.createLikeNotification(post.authorId, userId, postId);
+    }
+
     return { liked: true };
   }
 
@@ -335,7 +343,7 @@ export class PostsService {
       replyData.parentId = parentId;
     }
 
-    return this.prisma.reply.create({
+    const reply = await this.prisma.reply.create({
       data: replyData,
       include: {
         author: {
@@ -348,6 +356,12 @@ export class PostsService {
         },
       },
     });
+
+    if (post.authorId !== userId) {
+      this.notificationsService.createReplyNotification(post.authorId, userId, postId);
+    }
+
+    return reply;
   }
 
   async getReplies(postId: string, page = 1, limit = 20) {

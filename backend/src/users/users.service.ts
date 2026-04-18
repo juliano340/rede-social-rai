@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { isIP } from 'node:net';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadsService } from '../uploads/uploads.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 
@@ -11,6 +12,7 @@ export class UsersService {
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private uploadsService: UploadsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   private normalizeBioLink(value?: string): string | undefined {
@@ -335,20 +337,21 @@ export class UsersService {
     });
 
     if (existingFollow) {
-      // Unfollow
       await this.prisma.follow.delete({
         where: { id: existingFollow.id },
       });
       return { following: false };
     }
 
-    // Follow
     await this.prisma.follow.create({
       data: {
         followerId,
         followingId,
       },
     });
+
+    this.notificationsService.createFollowNotification(followingId, followerId);
+
     return { following: true };
   }
 

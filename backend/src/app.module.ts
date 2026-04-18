@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './auth/guards/auth.guard';
 import { UsersModule } from './users/users.module';
 import { PostsModule } from './posts/posts.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 
 @Module({
@@ -28,6 +29,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     UsersModule,
     PostsModule,
     UploadsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
