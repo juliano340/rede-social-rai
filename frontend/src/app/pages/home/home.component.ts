@@ -1807,7 +1807,21 @@ closeDeleteModal() {
       this.replyingToPost.set(null);
     } else {
       this.replyingToPost.set(postId);
+      this.loadReplies(postId);
     }
+  }
+
+  loadReplies(postId: string) {
+    this.loadingReplies.set(true);
+    this.postsService.getReplies(postId).subscribe({
+      next: (data) => {
+        this.postReplies.set(data.replies || []);
+        this.loadingReplies.set(false);
+      },
+      error: () => {
+        this.loadingReplies.set(false);
+      }
+    });
   }
 
   openReplyForm(postId: string) {
