@@ -122,27 +122,28 @@ interface Post {
                 </div>
               </div>
 
-              @if (!isOwnProfile() && authService.isLoggedIn()) {
-                <button
-                  class="follow-btn"
-                  [class.following]="profile()?.isFollowing"
-                  [disabled]="isFollowingLoading()"
-                  (click)="toggleFollow()"
-                >
-                  @if (isFollowingLoading()) {
-                    <span class="spinner-sm"></span>
-                  } @else if (profile()?.isFollowing) {
-                    Seguindo
-                  } @else {
-                    Seguir
-                  }
-                </button>
-              }
-
-              <span class="joined">
-                <span class="join-icon">📅</span>
-                Entrou em {{ formatDate(profile()?.createdAt) }}
-              </span>
+              <div class="profile-actions">
+                @if (!isOwnProfile() && authService.isLoggedIn()) {
+                  <button
+                    class="follow-btn"
+                    [class.following]="profile()?.isFollowing"
+                    [disabled]="isFollowingLoading()"
+                    (click)="toggleFollow()"
+                  >
+                    @if (isFollowingLoading()) {
+                      <span class="spinner-sm"></span>
+                    } @else if (profile()?.isFollowing) {
+                      Seguindo
+                    } @else {
+                      Seguir
+                    }
+                  </button>
+                }
+                <span class="joined">
+                  <span class="join-icon">📅</span>
+                  Entrou em {{ formatDate(profile()?.createdAt) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -949,6 +950,22 @@ interface Post {
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
+    }
+  }
+
+  .profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .joined {
+    font-size: 13px;
+    color: var(--text-tertiary);
+
+    .join-icon {
+      margin-right: 4px;
     }
   }
 
