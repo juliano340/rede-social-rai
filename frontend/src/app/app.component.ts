@@ -29,8 +29,12 @@ import { NotificationMenuComponent } from './shared/components/notification-menu
                 <span class="nav-icon">🔍</span>
                 <span>Buscar</span>
               </a>
-              <a [routerLink]="['/profile', authService.currentUser()?.username]" class="nav-link" routerLinkActive="active">
-                <span class="nav-icon">👤</span>
+              <a [routerLink]="['/profile', authService.currentUser()?.username]" class="nav-link nav-profile" routerLinkActive="active">
+                @if (authService.currentUser()?.avatar) {
+                  <img [src]="getAvatarUrl(authService.currentUser()!.avatar)" alt="Avatar" class="nav-avatar">
+                } @else {
+                  <span class="nav-icon">👤</span>
+                }
                 <span>Perfil</span>
               </a>
               <app-notification-menu />
@@ -204,6 +208,21 @@ import { NotificationMenuComponent } from './shared/components/notification-menu
       margin: 0 auto;
       padding: 24px 20px;
     }
+
+    .nav-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+    }
+
+    .nav-profile {
+      .nav-avatar {
+        width: 28px;
+        height: 28px;
+      }
+    }
     
     @media (max-width: 480px) {
       .nav-content {
@@ -233,7 +252,13 @@ export class AppComponent {
     public authService: AuthService,
     public themeService: ThemeService
   ) {}
-  
+
+  getAvatarUrl(avatar: string | null | undefined): string {
+    if (!avatar) return '';
+    if (avatar.startsWith('http')) return avatar;
+    return 'http://localhost:3000' + avatar;
+  }
+
   logout() {
     this.authService.logout();
   }

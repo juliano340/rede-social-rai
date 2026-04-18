@@ -8,6 +8,7 @@ export interface User {
   username: string;
   email: string;
   name: string;
+  avatar?: string | null;
 }
 
 export interface AuthResponse {
@@ -56,9 +57,19 @@ export class AuthService {
     return this.currentUserSignal();
   }
 
+  refreshCurrentUser(): void {
+    this.http.get<User>(`${this.apiUrl}/users/me`, { withCredentials: true }).subscribe({
+      next: (user) => {
+        localStorage.setItem('user', JSON.stringify(user));
+        this.currentUserSignal.set(user);
+      },
+    });
+  }
+
   private handleAuth(response: AuthResponse): void {
     localStorage.setItem('user', JSON.stringify(response));
     this.currentUserSignal.set(response);
+    this.refreshCurrentUser();
   }
 
   private getUserFromStorage(): User | null {
