@@ -50,7 +50,7 @@ import { interval, Subscription } from 'rxjs';
                       <img [src]="getAvatarUrl(notification.actor.avatar)" alt="Avatar">
                     } @else {
                       <div class="avatar-placeholder">
-                        {{ (notification.actor.name?.[0] || notification.actor.username[0]).toUpperCase() }}
+                        {{ ((notification.actor.name && notification.actor.name[0]) || notification.actor.username[0]).toUpperCase() }}
                       </div>
                     }
                   </div>
