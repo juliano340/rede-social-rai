@@ -4,11 +4,12 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../shared/services/toast.service';
+import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideIconsModule],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -22,7 +23,7 @@ import { ToastService } from '../../shared/services/toast.service';
           <div class="form-group">
             <label for="email">Email</label>
             <div class="input-wrapper">
-              <span class="input-icon">📧</span>
+              <lucide-icon name="mail" [size]="20" class="input-icon"></lucide-icon>
               <input 
                 type="email" 
                 id="email" 
@@ -45,7 +46,7 @@ import { ToastService } from '../../shared/services/toast.service';
           <div class="form-group">
             <label for="password">Senha</label>
             <div class="input-wrapper">
-              <span class="input-icon">🔒</span>
+              <lucide-icon name="lock" [size]="20" class="input-icon"></lucide-icon>
               <input 
                 type="password" 
                 id="password" 
@@ -166,8 +167,10 @@ import { ToastService } from '../../shared/services/toast.service';
         .input-icon {
           position: absolute;
           left: 14px;
-          font-size: 16px;
-          opacity: 0.6;
+          width: 20px;
+          height: 20px;
+          color: var(--text-tertiary);
+          pointer-events: none;
         }
         
         input {

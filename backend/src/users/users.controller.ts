@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
@@ -89,20 +90,28 @@ export class UsersController {
   @Public()
   async getProfile(
     @Param('username') username: string,
+    @Req() req: Request,
     @Headers('authorization') authHeader: string
   ) {
     let userId: string | null = null;
-    
+
+    // 1. Tentar extrair do header Authorization
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       try {
         const payload = this.jwtService.verify(token);
         userId = payload.sub;
-      } catch (e) {
-        // token inválido, permanece null
-      }
+      } catch (e) {}
     }
-    
+
+    // 2. Se não achou, tentar extrair do cookie
+    if (!userId && req.cookies?.token) {
+      try {
+        const payload = this.jwtService.verify(req.cookies.token);
+        userId = payload.sub;
+      } catch (e) {}
+    }
+
     if (userId) {
       return this.usersService.getProfileByUsername(username, userId);
     }

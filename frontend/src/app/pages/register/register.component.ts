@@ -23,7 +23,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           <div class="form-group">
             <label for="name">Nome</label>
             <div class="input-wrapper">
-              <lucide-icon name="user" [size]="20"></lucide-icon>
+              <lucide-icon name="user" [size]="20" class="input-icon"></lucide-icon>
               <input 
                 type="text" 
                 id="name" 
@@ -65,7 +65,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           <div class="form-group">
             <label for="email">Email</label>
             <div class="input-wrapper">
-              <span class="input-icon">📧</span>
+              <lucide-icon name="mail" [size]="20" class="input-icon"></lucide-icon>
               <input 
                 type="email" 
                 id="email" 
@@ -85,7 +85,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           <div class="form-group">
             <label for="password">Senha</label>
             <div class="input-wrapper">
-              <span class="input-icon">🔒</span>
+              <lucide-icon name="lock" [size]="20" class="input-icon"></lucide-icon>
               <input 
                 type="password" 
                 id="password" 
@@ -196,7 +196,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         font-size: var(--font-size-sm);
       }
       
-      .input-wrapper {
+        .input-wrapper {
         position: relative;
         display: flex;
         align-items: center;
@@ -204,10 +204,10 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         .input-icon {
           position: absolute;
           left: 14px;
-          font-size: 16px;
-          opacity: 0.6;
           width: 20px;
-          text-align: center;
+          height: 20px;
+          color: var(--text-tertiary);
+          pointer-events: none;
         }
         
         input {

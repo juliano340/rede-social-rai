@@ -47,7 +47,11 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
                 (click)="themeService.toggle()"
                 [attr.aria-label]="themeService.isDark() ? 'Mudar para modo claro' : 'Mudar para modo escuro'"
               >
-                {{ themeService.isDark() ? '☀️' : '🌙' }}
+                @if (themeService.isDark()) {
+                  <lucide-icon name="sun" [size]="20"></lucide-icon>
+                } @else {
+                  <lucide-icon name="moon" [size]="20"></lucide-icon>
+                }
               </button>
               <a routerLink="/login" class="nav-link-sm">Entrar</a>
               <a routerLink="/register" class="btn-primary">Cadastrar</a>
@@ -85,6 +89,10 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
             <a [routerLink]="['/profile', authService.currentUser()?.username]" class="menu-item" (click)="closeMenu()">
               <lucide-icon name="user" [size]="18"></lucide-icon>
               <span>Meu Perfil</span>
+            </a>
+            <a routerLink="/settings" class="menu-item" (click)="closeMenu()">
+              <lucide-icon name="settings" [size]="18"></lucide-icon>
+              <span>Configurações</span>
             </a>
             <div class="menu-divider"></div>
             <button class="menu-item" (click)="themeService.toggle()">
@@ -191,7 +199,7 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      color: var(--text-secondary);
+      color: var(--text-primary);
       transition: all 0.15s;
       text-decoration: none;
       
@@ -260,6 +268,7 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
       border-radius: var(--radius-md);
       cursor: pointer;
       transition: background 0.15s;
+      color: var(--text-primary);
       
       &:hover {
         background: var(--background-secondary);
@@ -544,9 +553,13 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
           background: #c71d2f;
         }
       }
-    }
-    
-    @media (max-width: 480px) {
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 480px) {
       .nav-content {
         padding: 10px 12px;
       }

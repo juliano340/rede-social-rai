@@ -68,7 +68,7 @@ interface Post {
               }
               @if (isOwnProfile()) {
                 <div class="avatar-overlay" (click)="openAvatarModal()">
-                  <span class="camera-icon">📷</span>
+                  <lucide-icon name="camera" [size]="24" class="camera-icon"></lucide-icon>
                 </div>
                 <input
                   type="file"
@@ -85,7 +85,7 @@ interface Post {
                   <h1>{{ profile()?.name }}</h1>
                   @if (isOwnProfile()) {
                     <button class="edit-profile-btn" (click)="openEditModal()">
-                      ⚙️
+                      <lucide-icon name="settings" [size]="16"></lucide-icon>
                     </button>
                   }
                 </div>
@@ -157,7 +157,7 @@ interface Post {
             </div>
           } @else if (posts().length === 0) {
             <div class="empty-state">
-              <div class="empty-icon">📝</div>
+              <lucide-icon name="file-text" [size]="48" class="empty-icon"></lucide-icon>
               <p>Nenhuma publicação ainda.</p>
             </div>
           } @else {
@@ -504,7 +504,7 @@ interface Post {
 
       <!-- Modal de seguidores/seguindo -->
       @if (showModal()) {
-        <div class="modal-overlay" (click)="closeModal()">
+        <div class="modal-overlay" (click)="$event.stopPropagation()">
           <div class="modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ modalTitle() }}</h2>
@@ -546,7 +546,7 @@ interface Post {
 
       <!-- Modal de edição de perfil -->
       @if (showEditModal()) {
-        <div class="modal-overlay" (click)="closeEditModal()">
+        <div class="modal-overlay" (click)="$event.stopPropagation()">
           <div class="edit-profile-modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>Editar perfil</h2>
@@ -614,7 +614,7 @@ interface Post {
 
   <!-- Avatar modal -->
   @if (showAvatarModal()) {
-    <div class="modal-overlay" (click)="closeAvatarModal()">
+    <div class="modal-overlay" (click)="$event.stopPropagation()">
       <div class="edit-profile-modal avatar-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2>Alterar foto de perfil</h2>
@@ -711,7 +711,7 @@ interface Post {
           transition: opacity 0.2s;
 
           .camera-icon {
-            font-size: 24px;
+            color: white;
           }
         }
       }
@@ -964,6 +964,10 @@ interface Post {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: white;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    min-width: 100px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
     &:hover:not(:disabled) {
       transform: translateY(-1px);
@@ -986,12 +990,17 @@ interface Post {
         color: var(--error);
         border-color: var(--error);
       }
+
+      .spinner-sm {
+        border-color: rgba(0, 0, 0, 0.2);
+        border-top-color: var(--text-primary);
+      }
     }
 
     .spinner-sm {
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
+      border: 2px solid rgba(255, 255, 255, 0.3);
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -1810,6 +1819,186 @@ interface Post {
             }
           }
         }
+
+        .danger-zone {
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid var(--error);
+
+          .btn-delete-account {
+            width: 100%;
+            padding: 10px 16px;
+            background: var(--error-light);
+            color: var(--error);
+            border: 1px solid var(--error);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+
+            &:hover {
+              background: var(--error);
+              color: white;
+            }
+          }
+        }
+      }
+
+      .delete-account-modal {
+        background: var(--background);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 440px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          border-bottom: 1px solid var(--border);
+
+          h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+          }
+
+          .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-md);
+
+            &:hover {
+              background: var(--background-secondary);
+            }
+          }
+        }
+
+        .modal-body {
+          padding: 20px;
+
+          .warning-banner {
+            display: flex;
+            gap: 12px;
+            padding: 14px;
+            background: var(--error-light);
+            border: 1px solid rgba(224, 36, 94, 0.2);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+
+            .warning-icon {
+              color: var(--error);
+              flex-shrink: 0;
+              margin-top: 2px;
+            }
+
+            p {
+              font-size: 14px;
+              color: var(--error);
+              line-height: 1.5;
+              margin: 0;
+            }
+          }
+
+          .form-group {
+            label {
+              display: block;
+              font-size: 14px;
+              font-weight: 500;
+              color: var(--text-primary);
+              margin-bottom: 6px;
+            }
+
+            input {
+              width: 100%;
+              border: 1px solid var(--border);
+              border-radius: var(--radius-sm);
+              padding: 10px 12px;
+              font-size: 15px;
+              color: var(--text-primary);
+              background: var(--background);
+              transition: border-color 0.15s;
+
+              &:focus {
+                outline: none;
+                border-color: var(--error);
+              }
+
+              &::placeholder {
+                color: var(--text-tertiary);
+              }
+            }
+
+            .field-error {
+              display: block;
+              font-size: 13px;
+              color: var(--error);
+              margin-top: 6px;
+            }
+          }
+        }
+
+        .modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 16px 20px;
+          border-top: 1px solid var(--border);
+
+          .btn-cancel {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+
+            &:hover {
+              background: var(--border);
+            }
+          }
+
+          .btn-delete {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            &:hover:not(:disabled) {
+              background: #c71d2f;
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+
+            .spinner-sm {
+              width: 14px;
+              height: 14px;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+              border-top-color: white;
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            }
+          }
+        }
       }
 
       .avatar-modal {
@@ -1920,9 +2109,28 @@ interface Post {
         }
       }
     }
-  }
-`,
-  ],
+}
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      
+      .empty-icon {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        color: var(--text-tertiary);
+      }
+      
+      p {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+    }
+  `
+  ]
 })
 export class ProfileComponent implements OnInit {
   profile = signal<UserProfile | null>(null);
@@ -1939,7 +2147,7 @@ export class ProfileComponent implements OnInit {
   editNestedReplyContent = "";
   savingNestedReply = signal(false);
   savingReply = signal(false);
-  showDeleteModal = signal(false);
+  showDeleteReplyModal = signal(false);
   deletingReplyId = signal<string | null>(null);
   deletingReplyPostId = signal<string | null>(null);
   replyingToPost = signal<string | null>(null);
@@ -1977,6 +2185,12 @@ export class ProfileComponent implements OnInit {
   editBioLink = "";
   bioLinkError = "";
   savingProfile = signal(false);
+
+  // Delete account
+  showDeleteAccountModal = signal(false);
+  deletePassword = '';
+  deleteLoading = signal(false);
+  deleteError = signal('');
 
   constructor(
     private route: ActivatedRoute,
@@ -2104,7 +2318,7 @@ export class ProfileComponent implements OnInit {
   }
 
   deleteReply(replyId: string, postId: string) {
-    this.showDeleteModal.set(true);
+    this.showDeleteReplyModal.set(true);
     this.deletingReplyId.set(replyId);
     this.deletingReplyPostId.set(postId);
   }
@@ -2120,17 +2334,17 @@ export class ProfileComponent implements OnInit {
         this.postReplies.update((replies) =>
           replies.filter((r) => r.id !== replyId),
         );
-        this.closeDeleteModal();
+        this.closeDeleteReplyModal();
       },
       error: (err) => {
         console.error("Error deleting reply:", err);
-        this.closeDeleteModal();
+        this.closeDeleteReplyModal();
       },
     });
   }
 
-  closeDeleteModal() {
-    this.showDeleteModal.set(false);
+  closeDeleteReplyModal() {
+    this.showDeleteReplyModal.set(false);
     this.deletingReplyId.set(null);
     this.deletingReplyPostId.set(null);
   }
@@ -2213,7 +2427,7 @@ export class ProfileComponent implements OnInit {
   }
 
   deleteNestedReply(replyId: string, postId: string) {
-    this.showDeleteModal.set(true);
+    this.showDeleteReplyModal.set(true);
     this.deletingReplyId.set(replyId);
     this.deletingReplyPostId.set(postId);
   }
@@ -2613,11 +2827,41 @@ export class ProfileComponent implements OnInit {
           this.closeEditModal();
           this.savingProfile.set(false);
         },
-        error: (err) => {
+error: (err) => {
           console.error("Error updating profile:", err);
           this.savingProfile.set(false);
           alert("Erro ao salvar perfil. Tente novamente.");
         },
       });
+  }
+
+  openDeleteAccountModal() {
+    this.deletePassword = '';
+    this.deleteError.set('');
+    this.showDeleteAccountModal.set(true);
+  }
+
+  closeDeleteAccountModal() {
+    this.showDeleteAccountModal.set(false);
+    this.deletePassword = '';
+    this.deleteError.set('');
+  }
+
+  confirmDeleteAccount() {
+    if (!this.deletePassword.trim()) return;
+    
+    this.deleteLoading.set(true);
+    this.deleteError.set('');
+    
+    this.authService.deleteAccount(this.deletePassword).subscribe({
+      next: () => {
+        this.closeDeleteAccountModal();
+      },
+      error: (err) => {
+        this.deleteLoading.set(false);
+        const msg = err.error?.message || 'Erro ao excluir conta. Tente novamente.';
+        this.deleteError.set(msg);
+      }
+    });
   }
 }

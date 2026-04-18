@@ -15,7 +15,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       <div class="search-header">
         <h1>Buscar usuários</h1>
         <div class="search-input-wrapper">
-          <lucide-icon name="search" [size]="20"></lucide-icon>
+          <lucide-icon name="search" [size]="20" class="search-icon"></lucide-icon>
           <input 
             type="text" 
             [(ngModel)]="searchQuery" 
@@ -46,7 +46,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
               <a [routerLink]="['/profile', user.username]" class="user-card">
                 <div class="user-avatar">
                   @if (user.avatar) {
-                    <img [src]="'http://localhost:3000' + user.avatar" alt="Avatar" class="avatar-image">
+                    <img [src]="getAvatarUrl(user.avatar)" alt="Avatar" class="avatar-image">
                   } @else {
                     {{ (user.name[0] || '?').toUpperCase() }}
                   }
@@ -78,7 +78,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
                   <a [routerLink]="['/profile', user.username]" class="user-card">
                     <div class="user-avatar">
                       @if (user.avatar) {
-                        <img [src]="'http://localhost:3000' + user.avatar" alt="Avatar" class="avatar-image">
+                        <img [src]="getAvatarUrl(user.avatar)" alt="Avatar" class="avatar-image">
                       } @else {
                         {{ (user.name[0] || '?').toUpperCase() }}
                       }
@@ -118,7 +118,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         margin-bottom: 16px;
       }
       
-      .search-input-wrapper {
+        .search-input-wrapper {
         position: relative;
         
         .search-icon {
@@ -126,7 +126,8 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           left: 14px;
           top: 50%;
           transform: translateY(-50%);
-          font-size: 16px;
+          color: var(--text-tertiary);
+          pointer-events: none;
         }
         
         input {
@@ -246,8 +247,10 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       padding: 60px 20px;
       
       .empty-icon {
-        font-size: 48px;
+        width: 48px;
+        height: 48px;
         margin-bottom: 16px;
+        color: var(--text-tertiary);
       }
       
       p {
@@ -352,6 +355,12 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.searchSubject.complete();
+  }
+
+  getAvatarUrl(avatar: string | null): string {
+    if (!avatar) return '';
+    if (avatar.startsWith('http')) return avatar;
+    return 'http://localhost:3000' + avatar;
   }
 
   onSearchChange(value: string) {

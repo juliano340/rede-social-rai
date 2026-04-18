@@ -156,10 +156,36 @@ export class AuthService {
       await this.refreshTokenService.revokeToken(refreshToken);
     }
 
-    res.clearCookie('token', { path: '/' });
-    res.clearCookie('refreshToken', { path: '/' });
+    res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
 
     return { message: 'Logged out successfully' };
+  }
+
+  async deleteAccount(userId: string, password: string, res: Response) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      throw new UnauthorizedException('Senha incorreta');
+    }
+
+    await this.refreshTokenService.revokeAllUserTokens(userId);
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+
+    return { message: 'Conta excluída com sucesso' };
   }
 
   private generateAccessToken(userId: string, username: string): string {

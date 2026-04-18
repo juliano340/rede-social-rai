@@ -47,7 +47,7 @@ export class AuthService {
     this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe();
     localStorage.removeItem('user');
     this.currentUserSignal.set(null);
-    this.router.navigate(['/landing']);
+    this.router.navigate(['/login']);
   }
 
   refresh(): Observable<any> {
@@ -65,7 +65,14 @@ export class AuthService {
   forceLogout(): void {
     localStorage.removeItem('user');
     this.currentUserSignal.set(null);
-    this.router.navigate(['/landing']);
+    this.router.navigate(['/login']);
+  }
+
+  deleteAccount(password: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/auth/account`, {
+      body: { password },
+      withCredentials: true
+    });
   }
 
   isLoggedIn(): boolean {

@@ -102,7 +102,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           </div>
         } @else if (posts().length === 0) {
           <div class="empty-state">
-            <div class="empty-icon">📝</div>
+            <lucide-icon name="file-text" [size]="48" class="empty-icon"></lucide-icon>
             <p>Nenhuma publicação ainda.</p>
             <span>Seja o primeiro a compartilhar algo!</span>
           </div>
@@ -626,8 +626,10 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       padding: 60px 20px;
       
       .empty-icon {
-        font-size: 48px;
+        width: 48px;
+        height: 48px;
         margin-bottom: 16px;
+        color: var(--text-tertiary);
       }
       
       p {

@@ -89,6 +89,7 @@ import { LucideIconsModule } from '../../icons/lucide-icons.module';
       justify-content: center;
       position: relative;
       transition: background 0.15s;
+      color: var(--text-primary);
 
       &:hover {
         background: var(--background-secondary);

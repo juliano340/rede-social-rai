@@ -1,10 +1,13 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
+import { Controller, Post, Delete, Body, HttpCode, HttpStatus, Req, Res, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { Public } from './decorators/public.decorator';
+import { JwtAuthGuard } from './guards/auth.guard';
+import { User } from './decorators/user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -36,9 +39,22 @@ export class AuthController {
   }
 
   @Post('logout')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
     return this.authService.logout(refreshToken, res);
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
+  async deleteAccount(
+    @User() user: any,
+    @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    return this.authService.deleteAccount(user.userId, dto.password, res);
   }
 }
