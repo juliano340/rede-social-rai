@@ -819,6 +819,7 @@ import { ToastService } from '../../shared/services/toast.service';
             padding: 6px 12px;
             border-radius: var(--radius-full);
             font-size: 14px;
+            color: var(--text-primary);
             
             &:hover {
               background: var(--background-secondary);
@@ -882,6 +883,7 @@ import { ToastService } from '../../shared/services/toast.service';
           border-radius: var(--radius-full);
           font-size: 14px;
           cursor: pointer;
+          color: var(--text-primary);
 
           &:hover {
             background: var(--background-secondary);
