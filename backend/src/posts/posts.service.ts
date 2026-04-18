@@ -383,7 +383,7 @@ export class PostsService {
         where: { postId, parentId: null }, // Only top-level replies
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'asc' },
         include: {
           author: {
             select: {

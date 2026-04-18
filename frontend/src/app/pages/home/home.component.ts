@@ -114,7 +114,7 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                     <img [src]="getAvatarUrl(post.author.avatar)" alt="Avatar" class="avatar-image">
                   } @else {
                     <div class="avatar-placeholder" aria-hidden="true">
-                      {{ (post.author.name[0] || '?').toUpperCase() }}
+                      {{ ((post.author.name && post.author.name[0]) || '?').toUpperCase() }}
                     </div>
                   }
                 </div>
@@ -204,9 +204,9 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                           <div class="reply-item" [class.highlight-reply]="highlightReplyId() === reply.id" [attr.id]="'reply-' + reply.id">
                             <div class="reply-avatar">
                               @if (reply.author.avatar) {
-                                <img [src]="'http://localhost:3000' + reply.author.avatar" alt="Avatar" class="avatar-image">
+                                <img [src]="getAvatarUrl(reply.author.avatar)" alt="Avatar" class="avatar-image">
                               } @else {
-                                {{ (reply.author.name[0] || '?').toUpperCase() }}
+                                {{ ((reply.author.name && reply.author.name[0]) || '?').toUpperCase() }}
                               }
                             </div>
                             <div class="reply-content">
@@ -272,9 +272,9 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                                     <div class="reply-item nested">
                                       <div class="reply-avatar small">
                                         @if (child.author.avatar) {
-                                          <img [src]="'http://localhost:3000' + child.author.avatar" alt="Avatar" class="avatar-image">
+                                          <img [src]="getAvatarUrl(child.author.avatar)" alt="Avatar" class="avatar-image">
                                         } @else {
-                                          {{ (child.author.name[0] || '?').toUpperCase() }}
+                                          {{ ((child.author.name && child.author.name[0]) || '?').toUpperCase() }}
                                         }
                                       </div>
                                       <div class="reply-content">
