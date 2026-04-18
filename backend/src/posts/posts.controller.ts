@@ -60,6 +60,16 @@ export class PostsController {
     return this.postsService.delete(id, user.userId);
   }
 
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  async update(
+    @Param('id') id: string,
+    @User() user: any,
+    @Body('content') content: string,
+  ) {
+    return this.postsService.update(id, user.userId, content);
+  }
+
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })

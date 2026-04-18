@@ -127,6 +127,26 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                     <span class="post-time">{{ formatDate(post.createdAt) }}</span>
                   </div>
                   <p class="post-text">{{ post.content }}</p>
+                  @if (editingPost() === post.id) {
+                    <div class="edit-post-form">
+                      <textarea
+                        [(ngModel)]="editPostContent"
+                        maxlength="280"
+                        class="edit-post-textarea"
+                      ></textarea>
+                      <div class="edit-post-actions">
+                        <span class="char-count">{{ editPostContent.length }}/280</span>
+                        <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
+                        <button
+                          class="save-btn"
+                          (click)="saveEditPost(post.id)"
+                          [disabled]="!editPostContent.trim() || editPostContent.length > 280"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </div>
+                  }
                   <div class="post-actions">
                     <button 
                       class="action-btn like" 
@@ -146,8 +166,15 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                       <span>{{ post._count.replies }}</span>
                     </button>
                     @if (authService.currentUser()?.id === post.author.id) {
-                      <button 
-                        class="action-btn delete" 
+                      <button
+                        class="action-btn edit"
+                        (click)="startEditPost(post)"
+                        [disabled]="editingPost() === post.id"
+                      >
+                        <span class="icon">✏️</span>
+                      </button>
+                      <button
+                        class="action-btn delete"
                         (click)="deletePost(post.id)"
                         [disabled]="deletingPostId() === post.id"
                       >
@@ -729,7 +756,12 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         background: var(--primary-light);
         color: var(--primary);
       }
-      
+
+      &.edit:hover {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+
       .icon {
         font-size: 18px;
       }
@@ -805,7 +837,71 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
         }
       }
     }
-    
+
+    .edit-post-form {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--background-secondary);
+      border-radius: var(--radius-md);
+
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        font-size: 14px;
+        resize: none;
+        min-height: 60px;
+        color: var(--text-primary);
+        background: var(--background);
+      }
+
+      .edit-post-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+
+        .char-count {
+          font-size: 12px;
+          color: var(--text-tertiary);
+        }
+
+        .cancel-btn {
+          background: none;
+          border: 1px solid var(--border);
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          font-size: 14px;
+          cursor: pointer;
+
+          &:hover {
+            background: var(--background-secondary);
+          }
+        }
+
+        .save-btn {
+          background: var(--primary);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+
+          &:hover:not(:disabled) {
+            background: var(--primary-hover);
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+
     .replies-list {
       margin-top: 12px;
       padding: 12px;
@@ -1320,6 +1416,9 @@ export class HomeComponent implements OnInit {
   highlightPostId = signal<string | null>(null);
   highlightReplyId = signal<string | null>(null);
 
+  editingPost = signal<string | null>(null);
+  editPostContent = '';
+
   // Nested reply editing/deletion
   editingNestedReply = signal<string | null>(null);
   editNestedReplyContent = '';
@@ -1457,6 +1556,33 @@ loadPosts() {
   closeDeletePostModal() {
     this.showDeletePostModal.set(false);
     this.deletingPostId.set(null);
+  }
+
+  startEditPost(post: Post) {
+    this.editingPost.set(post.id);
+    this.editPostContent = post.content;
+  }
+
+  cancelEditPost() {
+    this.editingPost.set(null);
+    this.editPostContent = '';
+  }
+
+  saveEditPost(postId: string) {
+    if (!this.editPostContent.trim()) return;
+
+    this.postsService.updatePost(postId, this.editPostContent).subscribe({
+      next: (updated) => {
+        this.posts.update(posts =>
+          posts.map(p => p.id === postId ? { ...p, content: updated.content } : p)
+        );
+        this.cancelEditPost();
+      },
+      error: (err) => {
+        console.error('Error editing post:', err);
+        this.cancelEditPost();
+      }
+    });
   }
 
   toggleLike(post: Post) {

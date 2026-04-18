@@ -171,7 +171,7 @@ interface Post {
                     />
                   } @else {
                     <div class="avatar-placeholder small">
-                      {{ (post.author.name[0] || "?").toUpperCase() }}
+                      {{ ((post.author.name && post.author.name[0]) || "?").toUpperCase() }}
                     </div>
                   }
                 </div>
@@ -186,6 +186,26 @@ interface Post {
                     }}</span>
                   </div>
                   <p class="post-text">{{ post.content }}</p>
+                  @if (editingPost() === post.id) {
+                    <div class="edit-post-form">
+                      <textarea
+                        [(ngModel)]="editPostContent"
+                        maxlength="280"
+                        class="edit-post-textarea"
+                      ></textarea>
+                      <div class="edit-post-actions">
+                        <span class="char-count">{{ editPostContent.length }}/280</span>
+                        <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
+                        <button
+                          class="save-btn"
+                          (click)="saveEditPost(post.id)"
+                          [disabled]="!editPostContent.trim() || editPostContent.length > 280"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </div>
+                  }
                   <div class="post-actions">
                     <button
                       class="action-btn like"
@@ -209,6 +229,21 @@ interface Post {
                       <span class="icon">💬</span>
                       {{ post._count.replies }}
                     </button>
+                    @if (authService.currentUser()?.id === post.author.id) {
+                      <button
+                        class="action-btn edit"
+                        (click)="startEditPost(post)"
+                        [disabled]="editingPost() === post.id"
+                      >
+                        <span class="icon">✏️</span>
+                      </button>
+                      <button
+                        class="action-btn delete"
+                        (click)="deletePost(post.id)"
+                      >
+                        <span class="icon">🗑</span>
+                      </button>
+                    }
                   </div>
 
                   @if (
@@ -798,6 +833,11 @@ interface Post {
         }
 
         &.reply:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+        }
+
+        &.edit:hover {
           background: var(--primary-light);
           color: var(--primary);
         }
@@ -1395,6 +1435,75 @@ interface Post {
         }
       }
 
+      .edit-post-form {
+        margin-top: 12px;
+        padding: 12px;
+        background: var(--background-secondary);
+        border-radius: var(--radius-md);
+
+        textarea {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 10px;
+          font-size: 14px;
+          resize: none;
+          min-height: 60px;
+          color: var(--text-primary);
+          background: var(--background);
+
+          &:focus {
+            outline: none;
+            border-color: var(--primary);
+          }
+        }
+
+        .edit-post-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 8px;
+
+          .char-count {
+            color: var(--text-tertiary);
+            font-size: 12px;
+          }
+
+          .cancel-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            cursor: pointer;
+
+            &:hover {
+              background: var(--border);
+            }
+          }
+
+          .save-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+
+            &:hover:not(:disabled) {
+              background: var(--primary-hover);
+            }
+
+            &:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+
       @media (max-width: 480px) {
         .profile-card {
           padding: 16px;
@@ -1835,6 +1944,10 @@ export class ProfileComponent implements OnInit {
   // Nested reply (replying to a comment)
   replyingToComment = signal<string | null>(null);
   replyingToCommentContent = "";
+
+  editingPost = signal<string | null>(null);
+  editPostContent = '';
+
   loading = signal(true);
   postsLoading = signal(true);
   isFollowingLoading = signal(false);
@@ -2015,6 +2128,46 @@ export class ProfileComponent implements OnInit {
     this.showDeleteModal.set(false);
     this.deletingReplyId.set(null);
     this.deletingReplyPostId.set(null);
+  }
+
+  deletePost(postId: string) {
+    if (!confirm('Tem certeza que deseja excluir este post?')) return;
+
+    this.postsService.deletePost(postId).subscribe({
+      next: () => {
+        this.posts.update((posts) => posts.filter((p) => p.id !== postId));
+      },
+      error: (err) => {
+        console.error('Error deleting post:', err);
+      },
+    });
+  }
+
+  startEditPost(post: any) {
+    this.editingPost.set(post.id);
+    this.editPostContent = post.content;
+  }
+
+  cancelEditPost() {
+    this.editingPost.set(null);
+    this.editPostContent = '';
+  }
+
+  saveEditPost(postId: string) {
+    if (!this.editPostContent.trim()) return;
+
+    this.postsService.updatePost(postId, this.editPostContent).subscribe({
+      next: (updated) => {
+        this.posts.update((posts) =>
+          posts.map((p) => (p.id === postId ? { ...p, content: updated.content } : p))
+        );
+        this.cancelEditPost();
+      },
+      error: (err) => {
+        console.error('Error editing post:', err);
+        this.cancelEditPost();
+      },
+    });
   }
 
   // Nested reply editing methods

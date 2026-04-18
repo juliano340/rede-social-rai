@@ -210,6 +210,51 @@ export class PostsService {
     return post;
   }
 
+  async update(postId: string, userId: string, content: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.authorId !== userId) {
+      throw new BadRequestException('You can only edit your own posts');
+    }
+
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Post content cannot be empty');
+    }
+
+    if (content.length > 280) {
+      throw new BadRequestException('Post content cannot exceed 280 characters');
+    }
+
+    const updated = await this.prisma.post.update({
+      where: { id: postId },
+      data: { content: content.trim() },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+            replies: true,
+          },
+        },
+      },
+    });
+
+    return updated;
+  }
+
   async delete(postId: string, userId: string) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },

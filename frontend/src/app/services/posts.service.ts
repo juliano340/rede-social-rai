@@ -64,6 +64,10 @@ export class PostsService {
     return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true });
   }
 
+  updatePost(id: string, content: string): Observable<Post> {
+    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, { content }, { withCredentials: true });
+  }
+
   likePost(id: string): Observable<{ liked: boolean }> {
     return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true });
   }
