@@ -360,7 +360,7 @@ import { ToastService } from '../../shared/services/toast.service';
     @if (showDeleteModal()) {
       <div class="modal-overlay" (click)="closeDeleteModal()">
         <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-          <div class="modal-icon">⚠️</div>
+          <lucide-icon name="alert-triangle" [size]="48" class="modal-icon"></lucide-icon>
           <h2>Excluir Resposta</h2>
           <p>Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.</p>
           <div class="modal-actions">
