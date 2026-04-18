@@ -1520,6 +1520,7 @@ interface Post {
             border-radius: var(--radius-full);
             font-size: 14px;
             cursor: pointer;
+            color: var(--text-primary);
 
             &:hover {
               background: var(--border);
