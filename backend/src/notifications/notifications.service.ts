@@ -65,6 +65,12 @@ export class NotificationsService {
             select: {
               id: true,
               content: true,
+              author: {
+                select: {
+                  id: true,
+                  username: true,
+                },
+              },
             },
           },
         },

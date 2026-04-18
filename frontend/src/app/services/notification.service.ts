@@ -17,6 +17,10 @@ export interface Notification {
   post?: {
     id: string;
     content: string;
+    author?: {
+      id: string;
+      username: string;
+    };
   };
   read: boolean;
   createdAt: string;
