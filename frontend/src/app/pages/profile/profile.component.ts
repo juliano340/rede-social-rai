@@ -2365,7 +2365,7 @@ export class ProfileComponent implements OnInit {
   editMediaUrl = '';
   editMediaType = signal<'image' | 'youtube' | null>(null);
   
-  editLinkUrl = signal<string>('');
+  editLinkUrl = signal<string | null>(null);
 
   showDeletePostModal = signal(false);
   deletingPostId = signal<string | null>(null);
@@ -2592,7 +2592,7 @@ startEditPost(post: any) {
   this.editMediaUrl = post.mediaUrl || '';
   this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
   
-  this.editLinkUrl.set(post.linkUrl ? post.linkUrl : '');
+  this.editLinkUrl.set(post.linkUrl ? post.linkUrl : null);
 }
 
 cancelEditPost() {
@@ -3175,6 +3175,6 @@ getDomain(url: string): string {
 }
 
 clearEditLinkPreview() {
-  this.editLinkUrl.set('');
+  this.editLinkUrl.set(null);
 }
 }
