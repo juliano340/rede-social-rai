@@ -25,12 +25,14 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </a>
               <app-notification-menu />
-              <button class="avatar-btn" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen()" aria-label="Menu do usuário">
+              <a [routerLink]="['/profile', authService.currentUser()?.username]" class="nav-avatar-link" aria-label="Ver meu perfil">
                 @if (authService.currentUser()?.avatar) {
                   <img [src]="getAvatarUrl(authService.currentUser()!.avatar)" alt="Avatar" class="nav-avatar">
                 } @else {
                   <span class="avatar-placeholder">{{ (authService.currentUser()?.name && authService.currentUser()!.name[0]) || '?' }}</span>
                 }
+              </a>
+              <button class="chevron-btn" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen()" aria-label="Abrir menu do usuário">
                 <span class="chevron" [class.open]="menuOpen()">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </span>
@@ -213,22 +215,37 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
       }
     }
     
-    .avatar-btn {
+    .nav-avatar-link {
       display: flex;
       align-items: center;
-      gap: 4px;
+      text-decoration: none;
+      padding: 2px;
+      border-radius: 50%;
+      transition: all 0.15s;
+
+      &:hover {
+        opacity: 0.9;
+        transform: scale(1.05);
+      }
+    }
+
+    .chevron-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
       background: none;
       border: none;
       cursor: pointer;
-      padding: 2px 8px 2px 2px;
-      border-radius: 20px;
+      border-radius: 50%;
       transition: background 0.15s;
-      
+
       &:hover {
         background: var(--background-secondary);
       }
     }
-    
+
     .nav-avatar {
       width: 32px;
       height: 32px;
