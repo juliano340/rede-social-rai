@@ -431,7 +431,7 @@ interface Post {
                                     class="reply-delete-btn"
                                     (click)="deleteReply(reply.id, post.id)"
                                   >
-                                    Excluir
+                                    <lucide-icon name="trash-2" [size]="14"></lucide-icon>
                                   </button>
                                 </div>
                               }
@@ -532,7 +532,7 @@ interface Post {
                                                 )
                                               "
                                             >
-                                              Excluir
+                                              <lucide-icon name="trash-2" [size]="14"></lucide-icon>
                                             </button>
                                           </div>
                                         }

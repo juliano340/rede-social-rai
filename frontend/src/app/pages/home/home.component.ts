@@ -63,8 +63,8 @@ import { ToastService } from '../../shared/services/toast.service';
                   <lucide-icon name="youtube" [size]="16"></lucide-icon> YouTube
                 </button>
                 <button 
-                  [class.active]="newMediaType() === 'link'"
-                  (click)="setNewMediaType('link')"
+                  [class.active]="newLinkUrl() !== null"
+                  (click)="newLinkUrl() !== null ? clearNewLink() : newLinkUrl.set('')"
                 >
                   <lucide-icon name="link" [size]="16"></lucide-icon> Link
                 </button>
@@ -73,7 +73,7 @@ import { ToastService } from '../../shared/services/toast.service';
                 <input 
                   type="text" 
                   [(ngModel)]="newMediaUrl" 
-                  [placeholder]="newMediaType() === 'link' ? 'URL do site externo' : (newMediaType() === 'image' ? 'URL da imagem (jpg, png, gif, webp)' : 'URL do vídeo do YouTube')"
+                  [placeholder]="newMediaType() === 'image' ? 'URL da imagem (jpg, png, gif, webp)' : 'URL do vídeo do YouTube'"
                   class="media-url-input"
                 />
                 @if (newMediaUrl) {
@@ -84,12 +84,17 @@ import { ToastService } from '../../shared/services/toast.service';
                     @if (newMediaType() === 'youtube') {
                       <iframe [src]="getYouTubeEmbedUrl(newMediaUrl)" frameborder="0" allowfullscreen class="media-preview-video" loading="lazy"></iframe>
                     }
-                    <button class="remove-media" (click)="removeNewMedia()">Remover mídia</button>
                   </div>
                 }
-                @if (!newMediaUrl) {
-                  <button class="remove-media" (click)="removeNewMedia()">Cancelar</button>
-                }
+              }
+              @if (newLinkUrl() !== null) {
+                <input 
+                  type="text" 
+                  [ngModel]="newLinkUrl()"
+                  (ngModelChange)="newLinkUrl.set($event)"
+                  placeholder="URL do link"
+                  class="media-url-input"
+                />
               }
             </div>
           } @else {
@@ -1869,7 +1874,8 @@ export class HomeComponent implements OnInit {
   feedType = signal<'all' | 'following'>('all');
   newPostContent = '';
   newMediaUrl = '';
-  newMediaType = signal<'image' | 'youtube' | 'link' | null>(null);
+  newMediaType = signal<'image' | 'youtube' | null>(null);
+  newLinkUrl = signal<string | null>(null);
   showMediaInput = signal(false);
   
   linkDetected = signal<string | null>(null);
@@ -2012,11 +2018,13 @@ createPost() {
   let mediaType: string | null = null;
   let linkUrl: string | null = null;
   
-  if (this.newMediaType() === 'link') {
-    linkUrl = this.normalizeUrl(this.newMediaUrl) || null;
-  } else if (this.newMediaType()) {
+  if (this.newMediaType()) {
     mediaUrl = this.newMediaUrl || null;
     mediaType = this.newMediaType();
+  }
+  
+  if (this.newLinkUrl()) {
+    linkUrl = this.normalizeUrl(this.newLinkUrl() || '');
   }
   
   this.postsService.createPost(this.newPostContent, mediaUrl, mediaType, linkUrl).subscribe({
@@ -2025,6 +2033,7 @@ createPost() {
       this.newPostContent = '';
       this.newMediaUrl = '';
       this.newMediaType.set(null);
+      this.newLinkUrl.set(null);
       this.showMediaInput.set(false);
       this.isSubmitting.set(false);
       this.submitSuccess.set(true);
@@ -2406,11 +2415,18 @@ isValidImageUrl(url: string): boolean {
     return url;
   }
 
-  setNewMediaType(type: 'image' | 'youtube' | 'link' | null) {
-  this.newMediaType.set(type);
-  if (type === null) {
+  setNewMediaType(type: 'image' | 'youtube') {
+  if (this.newMediaType() === type) {
+    this.newMediaType.set(null);
+    this.newMediaUrl = '';
+  } else {
+    this.newMediaType.set(type);
     this.newMediaUrl = '';
   }
+}
+
+clearNewLink() {
+  this.newLinkUrl.set(null);
 }
 
 onContentChange() {
