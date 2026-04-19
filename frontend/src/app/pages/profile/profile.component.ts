@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from "@angular/core";
+import { Component, OnInit, signal, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, RouterLink } from "@angular/router";
@@ -7,8 +7,10 @@ import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 import { AuthService } from "../../services/auth.service";
 import { UsersService, User } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
+import { PostEditService } from "../../services/post-edit.service";
 import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
 import { ToastService } from "../../shared/services/toast.service";
+import { getAvatarUrl } from "../../shared/utils/avatar.utils";
 
 interface UserProfile {
   id: string;
@@ -2337,38 +2339,40 @@ color: white;
 export class ProfileComponent implements OnInit {
   profile = signal<UserProfile | null>(null);
   posts = signal<Post[]>([]);
-  postLikes = signal<Record<string, boolean>>({});
-  postLikingId = signal<string | null>(null);
-  viewingRepliesPost = signal<string | null>(null);
-  postReplies = signal<any[]>([]);
+  private postEdit = inject(PostEditService);
   loadingReplies = signal(false);
-  editingReply = signal<string | null>(null);
-  editReplyContent = "";
-  // Nested reply editing
-  editingNestedReply = signal<string | null>(null);
-  editNestedReplyContent = "";
-  savingNestedReply = signal(false);
   savingReply = signal(false);
-  showDeleteReplyModal = signal(false);
-  deletingReplyId = signal<string | null>(null);
-  deletingReplyPostId = signal<string | null>(null);
-  replyingToPost = signal<string | null>(null);
-  replyContent = "";
-  isSubmittingReply = signal(false);
+  savingNestedReply = signal(false);
+  postReplies = signal<any[]>([]);
 
-  // Nested reply (replying to a comment)
-  replyingToComment = signal<string | null>(null);
-  replyingToCommentContent = "";
-
-  editingPost = signal<string | null>(null);
-  editPostContent = '';
-  editMediaUrl = '';
-  editMediaType = signal<'image' | 'youtube' | null>(null);
-  
-  editLinkUrl = signal<string | null>(null);
-
-  showDeletePostModal = signal(false);
-  deletingPostId = signal<string | null>(null);
+  get editingPost() { return this.postEdit.editingPost; }
+  get editPostContent() { return this.postEdit.editPostContent; }
+  set editPostContent(value: string) { this.postEdit.editPostContent = value; }
+  get editMediaUrl() { return this.postEdit.editMediaUrl; }
+  set editMediaUrl(value: string) { this.postEdit.editMediaUrl = value; }
+  get editMediaType() { return this.postEdit.editMediaType; }
+  get editLinkUrl() { return this.postEdit.editLinkUrl; }
+  get postLikingId() { return this.postEdit.postLikingId; }
+  get postLikes() { return this.postEdit.postLikes; }
+  get replyingToPost() { return this.postEdit.replyingToPost; }
+  get replyContent() { return this.postEdit.replyContent; }
+  set replyContent(value: string) { this.postEdit.replyContent = value; }
+  get isSubmittingReply() { return this.postEdit.isSubmittingReply; }
+  get replyingToComment() { return this.postEdit.replyingToComment; }
+  get replyingToCommentContent() { return this.postEdit.replyingToCommentContent; }
+  set replyingToCommentContent(value: string) { this.postEdit.replyingToCommentContent = value; }
+  get editingReply() { return this.postEdit.editingReply; }
+  get editReplyContent() { return this.postEdit.editReplyContent; }
+  set editReplyContent(value: string) { this.postEdit.editReplyContent = value; }
+  get showDeleteReplyModal() { return this.postEdit.showDeleteReplyModal; }
+  get showDeletePostModal() { return this.postEdit.showDeletePostModal; }
+  get deletingPostId() { return this.postEdit.deletingPostId; }
+  get deletingReplyId() { return this.postEdit.deletingReplyId; }
+  get deletingReplyPostId() { return this.postEdit.deletingReplyPostId; }
+  get editingNestedReply() { return this.postEdit.editingNestedReply; }
+  get editNestedReplyContent() { return this.postEdit.editNestedReplyContent; }
+  set editNestedReplyContent(value: string) { this.postEdit.editNestedReplyContent = value; }
+  readonly viewingRepliesPost = this.postEdit.replyingToPost;
 
   loading = signal(true);
   postsLoading = signal(true);
@@ -2463,19 +2467,7 @@ export class ProfileComponent implements OnInit {
   }
 
   toggleLike(post: Post) {
-    this.postLikingId.set(post.id);
-    const isLiked = this.postLikes()[post.id];
-
-    this.postsService.likePost(post.id).subscribe({
-      next: () => {
-        this.postLikes.update((likes) => ({ ...likes, [post.id]: !isLiked }));
-        post._count.likes += isLiked ? -1 : 1;
-        this.postLikingId.set(null);
-      },
-      error: () => {
-        this.postLikingId.set(null);
-      },
-    });
+    this.postEdit.toggleLike(post);
   }
 
   toggleRepliesView(post: Post) {
@@ -2496,286 +2488,95 @@ export class ProfileComponent implements OnInit {
   }
 
   startEditReply(reply: any) {
-    this.editingReply.set(reply.id);
-    this.editReplyContent = reply.content;
+    this.postEdit.startEditReply(reply);
   }
 
   cancelEditReply() {
-    this.editingReply.set(null);
-    this.editReplyContent = "";
+    this.postEdit.cancelEditReply();
   }
 
   saveEditReply(replyId: string, postId: string) {
-    if (!this.editReplyContent.trim()) return;
-
-    this.savingReply.set(true);
-    this.postsService
-      .updateReply(postId, replyId, this.editReplyContent)
-      .subscribe({
-        next: (updated) => {
-          this.postReplies.update((replies) =>
-            replies.map((r) =>
-              r.id === replyId ? { ...updated, children: r.children } : r,
-            ),
-          );
-          this.cancelEditReply();
-          this.savingReply.set(false);
-        },
-        error: (err) => {
-          console.error("Error editing reply:", err);
-          this.savingReply.set(false);
-        },
-      });
+    this.postEdit.saveEditReply(replyId, postId, this.postReplies);
   }
 
   deleteReply(replyId: string, postId: string) {
-    this.showDeleteReplyModal.set(true);
-    this.deletingReplyId.set(replyId);
-    this.deletingReplyPostId.set(postId);
+    this.postEdit.deleteReply(replyId, postId);
   }
 
   confirmDeleteReply() {
-    const replyId = this.deletingReplyId();
-    const postId = this.deletingReplyPostId();
-
-    if (!replyId || !postId) return;
-
-    this.postsService.deleteReply(postId, replyId).subscribe({
-      next: () => {
-        this.postReplies.update((replies) =>
-          replies.filter((r) => r.id !== replyId),
-        );
-        this.closeDeleteReplyModal();
-      },
-      error: (err) => {
-        console.error("Error deleting reply:", err);
-        this.closeDeleteReplyModal();
-      },
-    });
+    this.postEdit.confirmDeleteReply(this.postReplies, this.posts);
   }
 
   closeDeleteReplyModal() {
-    this.showDeleteReplyModal.set(false);
-    this.deletingReplyId.set(null);
-    this.deletingReplyPostId.set(null);
+    this.postEdit.closeDeleteReplyModal();
   }
 
   deletePost(postId: string) {
-    this.deletingPostId.set(postId);
-    this.showDeletePostModal.set(true);
+    this.postEdit.deletePost(postId);
   }
 
   closeDeletePostModal() {
-    this.showDeletePostModal.set(false);
-    this.deletingPostId.set(null);
+    this.postEdit.closeDeletePostModal();
   }
 
   confirmDeletePost() {
-    const postId = this.deletingPostId();
-    if (!postId) return;
-
-    this.postsService.deletePost(postId).subscribe({
-      next: () => {
-        this.posts.update((posts) => posts.filter((p) => p.id !== postId));
-        this.closeDeletePostModal();
-      },
-      error: (err) => {
-        console.error('Error deleting post:', err);
-        this.closeDeletePostModal();
-      },
-    });
+    this.postEdit.confirmDeletePost(this.posts);
   }
 
-startEditPost(post: any) {
-  this.editingPost.set(post.id);
-  this.editPostContent = post.content;
-  this.editMediaUrl = post.mediaUrl || '';
-  this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
-  
-  this.editLinkUrl.set(post.linkUrl ? post.linkUrl : null);
-}
-
-cancelEditPost() {
-  this.editingPost.set(null);
-  this.editPostContent = '';
-  this.editMediaUrl = '';
-  this.editMediaType.set(null);
-  this.clearEditLinkPreview();
-}
-
-saveEditPost(postId: string) {
-  if (!this.editPostContent.trim()) return;
-
-  let mediaUrl: string | null;
-  let mediaType: string | null;
-
-  if (this.editMediaType() && this.editMediaUrl) {
-    mediaUrl = this.editMediaUrl;
-    mediaType = this.editMediaType()!;
-  } else {
-    mediaUrl = null;
-    mediaType = null;
+  startEditPost(post: any) {
+    this.postEdit.startEditPost(post);
   }
 
-  let linkUrl: string | null = this.normalizeUrl(this.editLinkUrl() || '');
+  cancelEditPost() {
+    this.postEdit.cancelEditPost();
+  }
 
-  this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType, linkUrl).subscribe({
-    next: (updated) => {
-      this.posts.update((posts) =>
-        posts.map((p) => (p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p))
-      );
-      this.cancelEditPost();
-    },
-    error: (err) => {
-      console.error('Error editing post:', err);
-      this.cancelEditPost();
-    },
-  });
-}
+  saveEditPost(postId: string) {
+    this.postEdit.saveEditPost(postId, this.posts);
+  }
 
-  // Nested reply editing methods
   startEditNestedReply(reply: any) {
-    this.editingNestedReply.set(reply.id);
-    this.editNestedReplyContent = reply.content;
+    this.postEdit.startEditNestedReply(reply);
   }
 
   cancelEditNestedReply() {
-    this.editingNestedReply.set(null);
-    this.editNestedReplyContent = "";
+    this.postEdit.cancelEditNestedReply();
   }
 
   saveEditNestedReply(replyId: string, postId: string) {
-    if (!this.editNestedReplyContent.trim()) return;
-
-    this.savingNestedReply.set(true);
-    this.postsService
-      .updateReply(postId, replyId, this.editNestedReplyContent)
-      .subscribe({
-        next: (updated) => {
-          this.postReplies.update((replies) =>
-            replies.map((r) => ({
-              ...r,
-              children: r.children?.map((c: any) =>
-                c.id === replyId ? { ...updated, author: c.author } : c,
-              ),
-            })),
-          );
-          this.cancelEditNestedReply();
-          this.savingNestedReply.set(false);
-        },
-        error: (err) => {
-          console.error("Error editing nested reply:", err);
-          this.savingNestedReply.set(false);
-        },
-      });
+    this.postEdit.saveEditNestedReply(replyId, postId, '', this.postReplies);
   }
 
   deleteNestedReply(replyId: string, postId: string) {
-    this.showDeleteReplyModal.set(true);
-    this.deletingReplyId.set(replyId);
-    this.deletingReplyPostId.set(postId);
+    this.postEdit.deleteNestedReply(replyId, postId, '');
   }
 
   toggleReply(postId: string) {
-    // Toggle: se já está visualizando, fecha; senão, abre a lista
-    if (this.viewingRepliesPost() === postId) {
-      this.viewingRepliesPost.set(null);
-      this.postReplies.set([]);
-      this.cancelReply(); // Fecha o formulário se estiver aberto
-    } else {
-      this.loadingReplies.set(true);
-      this.viewingRepliesPost.set(postId);
-      this.cancelReply(); // Garante que o formulário está fechado
-      this.postsService.getReplies(postId).subscribe({
-        next: (data) => {
-          this.postReplies.set(data.replies || []);
-          this.loadingReplies.set(false);
-        },
-        error: () => this.loadingReplies.set(false),
-      });
-    }
+    this.postEdit.toggleReply(postId);
   }
 
   openReplyForm(postId: string) {
-    // Abre o formulário de comentário
-    this.viewingRepliesPost.set(postId);
-    this.replyingToPost.set(postId);
-    this.replyContent = "";
+    this.postEdit.openReplyForm(postId);
   }
 
   cancelReply() {
-    this.replyingToPost.set(null);
-    this.replyContent = "";
+    this.postEdit.cancelReply();
   }
 
   submitReply(postId: string) {
-    if (!this.replyContent.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, this.replyContent).subscribe({
-      next: () => {
-        // Recarregar replies
-        this.postsService.getReplies(postId).subscribe({
-          next: (data) => {
-            this.postReplies.set(data.replies || []);
-          },
-        });
-        this.cancelReply();
-        this.isSubmittingReply.set(false);
-      },
-      error: (err) => {
-        console.error("Error creating reply:", err);
-        this.isSubmittingReply.set(false);
-        if (err.status === 429) {
-          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
-        } else {
-          this.toast.error('Erro ao publicar comentário. Tente novamente.');
-        }
-      },
-    });
+    this.postEdit.submitReply(postId, this.posts, this.postReplies);
   }
 
   toggleReplyToComment(reply: any) {
-    if (this.replyingToComment() === reply.id) {
-      this.cancelReplyToComment();
-    } else {
-      this.replyingToComment.set(reply.id);
-      this.replyingToCommentContent = "";
-    }
+    this.postEdit.toggleReplyToComment(reply.id);
   }
 
   cancelReplyToComment() {
-    this.replyingToComment.set(null);
-    this.replyingToCommentContent = "";
+    this.postEdit.cancelReplyToComment();
   }
 
   submitReplyToComment(replyId: string, postId: string) {
-    if (!this.replyingToCommentContent.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService
-      .createReply(postId, this.replyingToCommentContent, replyId)
-      .subscribe({
-        next: () => {
-          // Recarregar replies
-          this.postsService.getReplies(postId).subscribe({
-            next: (data) => {
-              this.postReplies.set(data.replies || []);
-            },
-          });
-          this.cancelReplyToComment();
-          this.isSubmittingReply.set(false);
-        },
-        error: (err) => {
-          console.error("Error creating nested reply:", err);
-          this.isSubmittingReply.set(false);
-          if (err.status === 429) {
-            this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
-          } else {
-            this.toast.error('Erro ao responder comentário. Tente novamente.');
-          }
-        },
-      });
+    this.postEdit.submitReplyToComment(replyId, postId, this.postReplies);
   }
 
   openFollowers() {
@@ -2945,15 +2746,19 @@ saveEditPost(postId: string) {
     );
   }
 
-  getAvatarUrl(avatar: string | null | undefined): string {
-    if (!avatar) return '';
-    if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:3000' + avatar;
-  }
-
   openAvatarModal() {
     this.showAvatarModal.set(true);
     this.avatarUrlInput = '';
+  }
+
+  getAvatarUrl = getAvatarUrl;
+
+  getYouTubeEmbedUrl(url: string): SafeResourceUrl | null {
+    if (!url) return null;
+    const match = url.match(/(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    if (!match) return null;
+    const embedUrl = `https://www.youtube.com/embed/${match[2]}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
   }
 
   closeAvatarModal() {
@@ -3116,65 +2921,38 @@ error: (err) => {
         const msg = err.error?.message || 'Erro ao excluir conta. Tente novamente.';
         this.deleteError.set(msg);
       }
-    });
+});
   }
 
-  getYouTubeEmbedUrl(url: string): SafeResourceUrl | null {
-    if (!url) return null;
-    const match = url.match(/(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
-    if (!match) return null;
-    const embedUrl = `https://www.youtube.com/embed/${match[2]}`;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
-  }
-
-isValidImageUrl(url: string): boolean {
-    if (!url) return false;
-    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  isValidImageUrl(url: string): boolean {
+    return this.postEdit.isValidImageUrl(url);
   }
 
   normalizeUrl(url: string): string | null {
-    if (!url) return null;
-    url = url.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return 'https://' + url;
-    }
-    return url;
+    return this.postEdit.normalizeUrl(url);
   }
 
-setEditMediaType(type: 'image' | 'youtube') {
-  if (this.editMediaType() === type) {
-    this.editMediaType.set(null);
-    this.editMediaUrl = '';
-  } else {
-    this.editMediaType.set(type);
-    this.editMediaUrl = '';
+  setEditMediaType(type: 'image' | 'youtube') {
+    this.postEdit.setEditMediaType(type);
   }
-}
 
-removeEditMedia() {
-  this.editMediaUrl = '';
-}
-
-clearEditMediaType() {
-  this.editMediaType.set(null);
-  this.editMediaUrl = '';
-}
-
-detectUrlInContent(content: string): string | null {
-  const match = content.match(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/);
-  return match ? match[1] : null;
-}
-
-getDomain(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname.replace(/^www\./, '');
-  } catch {
-    return url;
+  removeEditMedia() {
+    this.postEdit.removeEditMedia();
   }
-}
 
-clearEditLinkPreview() {
-  this.editLinkUrl.set(null);
-}
+  clearEditMediaType() {
+    this.postEdit.clearEditMediaType();
+  }
+
+  detectUrlInContent(content: string): string | null {
+    return this.postEdit.detectUrlInContent(content);
+  }
+
+  getDomain(url: string): string {
+    return this.postEdit.getDomain(url);
+  }
+
+  clearEditLinkPreview() {
+    this.postEdit.clearEditLinkPreview();
+  }
 }
