@@ -248,9 +248,6 @@ import { ToastService } from '../../shared/services/toast.service';
           placeholder="URL do link"
           class="media-url-input"
         />
-        <button class="remove-media-sm" (click)="clearEditLinkPreview()">
-          <lucide-icon name="x" [size]="14"></lucide-icon>
-        </button>
       </div>
     }
     <div class="edit-post-actions">
@@ -2446,9 +2443,12 @@ removeNewMedia() {
   this.showMediaInput.set(false);
 }
 
-setEditMediaType(type: 'image' | 'youtube' | null) {
-  this.editMediaType.set(type);
-  if (type === null) {
+setEditMediaType(type: 'image' | 'youtube') {
+  if (this.editMediaType() === type) {
+    this.editMediaType.set(null);
+    this.editMediaUrl = '';
+  } else {
+    this.editMediaType.set(type);
     this.editMediaUrl = '';
   }
 }

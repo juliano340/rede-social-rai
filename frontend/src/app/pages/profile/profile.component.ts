@@ -237,27 +237,28 @@ interface Post {
     }
   </div>
   @if (editMediaType()) {
-    <input
-      type="text"
-      [(ngModel)]="editMediaUrl"
-      [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
-      class="media-url-input"
-    />
-    <button class="remove-media-sm" (click)="clearEditMediaType()">
-      <lucide-icon name="x" [size]="14"></lucide-icon> Remover
-    </button>
+    <div class="media-edit-row">
+      <input
+        type="text"
+        [(ngModel)]="editMediaUrl"
+        [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
+        class="media-url-input"
+      />
+      <button class="remove-media-sm" (click)="clearEditMediaType()">
+        <lucide-icon name="x" [size]="14"></lucide-icon> Remover
+      </button>
+    </div>
   }
   @if (editLinkUrl() !== null) {
-    <input
-      type="text"
-      [ngModel]="editLinkUrl()!"
-      (ngModelChange)="editLinkUrl.set($event)"
-      placeholder="URL do link"
-      class="media-url-input"
-    />
-    <button class="remove-media-sm" (click)="clearEditLinkPreview()">
-      <lucide-icon name="x" [size]="14"></lucide-icon> Remover
-    </button>
+    <div class="media-edit-row">
+      <input
+        type="text"
+        [ngModel]="editLinkUrl()!"
+        (ngModelChange)="editLinkUrl.set($event)"
+        placeholder="URL do link"
+        class="media-url-input"
+      />
+    </div>
   }
   <div class="edit-post-actions">
     <span class="char-count">{{ editPostContent.length }}/280</span>
@@ -3148,9 +3149,12 @@ isValidImageUrl(url: string): boolean {
     return url;
   }
 
-  setEditMediaType(type: 'image' | 'youtube' | null) {
-  this.editMediaType.set(type);
-  if (type === null) {
+setEditMediaType(type: 'image' | 'youtube') {
+  if (this.editMediaType() === type) {
+    this.editMediaType.set(null);
+    this.editMediaUrl = '';
+  } else {
+    this.editMediaType.set(type);
     this.editMediaUrl = '';
   }
 }
