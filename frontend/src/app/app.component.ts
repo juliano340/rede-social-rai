@@ -340,10 +340,11 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
     }
 
     /* User menu - desktop */
+    /* User menu - desktop */
     .user-menu {
       position: fixed;
       top: 56px;
-      right: max(16px, calc((100vw - 600px) / 2 - 160px));
+      right: calc(50% - 300px + 16px);
       width: 240px;
       background: var(--background);
       border: 1px solid var(--border);
