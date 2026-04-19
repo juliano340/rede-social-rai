@@ -230,11 +230,6 @@ interface Post {
     >
       <lucide-icon name="link" [size]="14"></lucide-icon> Link
     </button>
-    @if (editMediaType()) {
-      <button class="clear-type-btn" (click)="clearEditMediaType()">
-        <lucide-icon name="x" [size]="14"></lucide-icon>
-      </button>
-    }
   </div>
   @if (editMediaType()) {
     <div class="media-edit-row">
@@ -244,9 +239,6 @@ interface Post {
         [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
         class="media-url-input"
       />
-      <button class="remove-media-sm" (click)="clearEditMediaType()">
-        <lucide-icon name="x" [size]="14"></lucide-icon> Remover
-      </button>
     </div>
   }
   @if (editLinkUrl() !== null) {

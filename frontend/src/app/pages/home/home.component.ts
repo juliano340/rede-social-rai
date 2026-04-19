@@ -220,13 +220,8 @@ import { ToastService } from '../../shared/services/toast.service';
     >
       <lucide-icon name="link" [size]="14"></lucide-icon> Link
     </button>
-    @if (editMediaType()) {
-      <button class="clear-type-btn" (click)="clearEditMediaType()">
-        <lucide-icon name="x" [size]="14"></lucide-icon>
-      </button>
-    }
   </div>
-@if (editMediaType()) {
+  @if (editMediaType()) {
       <div class="media-edit-row">
         <input
           type="text"
@@ -234,9 +229,6 @@ import { ToastService } from '../../shared/services/toast.service';
           [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
           class="media-url-input"
         />
-        <button class="remove-media-sm" (click)="clearEditMediaType()">
-          <lucide-icon name="x" [size]="14"></lucide-icon>
-        </button>
       </div>
     }
     @if (editLinkUrl() !== null) {
