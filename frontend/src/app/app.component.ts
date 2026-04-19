@@ -191,7 +191,7 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
     }
     
     .nav-icon-btn {
@@ -219,7 +219,7 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
       display: flex;
       align-items: center;
       text-decoration: none;
-      padding: 2px;
+      padding: 2px 4px 2px 2px;
       border-radius: 50%;
       transition: all 0.15s;
 
@@ -233,8 +233,7 @@ import { LucideIconsModule } from './shared/icons/lucide-icons.module';
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      padding: 4px;
       background: none;
       border: none;
       cursor: pointer;
