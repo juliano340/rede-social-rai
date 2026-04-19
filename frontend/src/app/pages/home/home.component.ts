@@ -62,12 +62,18 @@ import { ToastService } from '../../shared/services/toast.service';
                 >
                   <lucide-icon name="youtube" [size]="16"></lucide-icon> YouTube
                 </button>
+                <button 
+                  [class.active]="newMediaType() === 'link'"
+                  (click)="setNewMediaType('link')"
+                >
+                  <lucide-icon name="link" [size]="16"></lucide-icon> Link
+                </button>
               </div>
               @if (newMediaType()) {
                 <input 
                   type="text" 
                   [(ngModel)]="newMediaUrl" 
-                  [placeholder]="newMediaType() === 'image' ? 'URL da imagem (jpg, png, gif, webp)' : 'URL do vídeo do YouTube'"
+                  [placeholder]="newMediaType() === 'link' ? 'URL do site externo' : (newMediaType() === 'image' ? 'URL da imagem (jpg, png, gif, webp)' : 'URL do vídeo do YouTube')"
                   class="media-url-input"
                 />
                 @if (newMediaUrl) {
@@ -182,53 +188,84 @@ import { ToastService } from '../../shared/services/toast.service';
                   @if (post.mediaUrl && post.mediaType === 'youtube') {
                     <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video" loading="lazy"></iframe>
                   }
-                  @if (editingPost() === post.id) {
-                    <div class="edit-post-form">
-                      <textarea
-                        [(ngModel)]="editPostContent"
-                        maxlength="280"
-                        class="edit-post-textarea"
-                      ></textarea>
-                      <div class="media-type-selector">
-                        <button 
-                          [class.active]="editMediaType() === 'image'"
-                          (click)="setEditMediaType('image')"
-                        >
-                          <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
-                        </button>
-                        <button 
-                          [class.active]="editMediaType() === 'youtube'"
-                          (click)="setEditMediaType('youtube')"
-                        >
-                          <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
-                        </button>
-                      </div>
-                      @if (editMediaType()) {
-                        <input 
-                          type="text" 
-                          [(ngModel)]="editMediaUrl" 
-                          [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
-                          class="media-url-input"
-                        />
-                      }
-                      @if (editMediaUrl || post.mediaUrl) {
-                        <button class="remove-media-sm" (click)="removeEditMedia()">
-                          <lucide-icon name="x" [size]="14"></lucide-icon> Remover mídia
-                        </button>
-                      }
-                      <div class="edit-post-actions">
-                        <span class="char-count">{{ editPostContent.length }}/280</span>
-                        <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
-                        <button
-                          class="save-btn"
-                          (click)="saveEditPost(post.id)"
-                          [disabled]="!editPostContent.trim() || editPostContent.length > 280"
-                        >
-                          Salvar
-                        </button>
-                      </div>
-                    </div>
+                  @if (post.linkUrl) {
+                    <a [href]="post.linkUrl" target="_blank" rel="noopener noreferrer" class="external-link-btn">
+                      <lucide-icon name="external-link" [size]="14"></lucide-icon>
+                      Abrir link
+                    </a>
                   }
+@if (editingPost() === post.id) {
+<div class="edit-post-form">
+  <textarea
+    [(ngModel)]="editPostContent"
+    maxlength="280"
+    class="edit-post-textarea"
+  ></textarea>
+  <div class="media-type-selector">
+    <button
+      [class.active]="editMediaType() === 'image'"
+      (click)="setEditMediaType('image')"
+    >
+      <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
+    </button>
+    <button
+      [class.active]="editMediaType() === 'youtube'"
+      (click)="setEditMediaType('youtube')"
+    >
+      <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
+    </button>
+    <button
+      [class.active]="editLinkUrl() !== null"
+      (click)="editLinkUrl() !== null ? clearEditLinkPreview() : editLinkUrl.set('')"
+    >
+      <lucide-icon name="link" [size]="14"></lucide-icon> Link
+    </button>
+    @if (editMediaType()) {
+      <button class="clear-type-btn" (click)="clearEditMediaType()">
+        <lucide-icon name="x" [size]="14"></lucide-icon>
+      </button>
+    }
+  </div>
+@if (editMediaType()) {
+      <div class="media-edit-row">
+        <input
+          type="text"
+          [(ngModel)]="editMediaUrl"
+          [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
+          class="media-url-input"
+        />
+        <button class="remove-media-sm" (click)="clearEditMediaType()">
+          <lucide-icon name="x" [size]="14"></lucide-icon>
+        </button>
+      </div>
+    }
+    @if (editLinkUrl() !== null) {
+      <div class="media-edit-row">
+        <input
+          type="text"
+          [ngModel]="editLinkUrl()"
+          (ngModelChange)="editLinkUrl.set($event)"
+          placeholder="URL do link"
+          class="media-url-input"
+        />
+        <button class="remove-media-sm" (click)="clearEditLinkPreview()">
+          <lucide-icon name="x" [size]="14"></lucide-icon>
+        </button>
+      </div>
+    }
+    <div class="edit-post-actions">
+    <span class="char-count">{{ editPostContent.length }}/280</span>
+    <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
+    <button
+      class="save-btn"
+      (click)="saveEditPost(post.id)"
+      [disabled]="!editPostContent.trim() || editPostContent.length > 280"
+    >
+      Salvar
+    </button>
+  </div>
+</div>
+}
                   <div class="post-actions">
                     <button 
                       class="action-btn like" 
@@ -531,21 +568,188 @@ import { ToastService } from '../../shared/services/toast.service';
       }
     }
      
-    .media-input {
+.media-input {
       margin-top: 12px;
       padding: 12px;
       background: var(--background-tertiary);
       border-radius: 8px;
     }
      
-    .media-type-selector {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-      
-      button {
-        display: flex;
-        align-items: center;
+     .link-detected-banner {
+       display: flex;
+       align-items: center;
+       gap: 8px;
+       padding: 10px 12px;
+       background: var(--primary-light);
+       border: 1px solid var(--primary);
+       border-radius: 8px;
+       margin-top: 12px;
+       font-size: 14px;
+       
+       .link-icon {
+         font-size: 16px;
+       }
+       
+       .link-url {
+         color: var(--text-primary);
+         font-weight: 500;
+         flex: 1;
+       }
+       
+       .btn-add-preview {
+         padding: 6px 12px;
+         background: var(--primary);
+         color: white;
+         border: none;
+         border-radius: 6px;
+         font-size: 13px;
+         cursor: pointer;
+         
+         &:hover {
+           background: var(--primary-hover);
+         }
+       }
+       
+       .btn-ignore-link {
+         padding: 6px 12px;
+         background: none;
+         color: var(--text-secondary);
+         border: 1px solid var(--border);
+         border-radius: 6px;
+         font-size: 13px;
+         cursor: pointer;
+         
+         &:hover {
+           background: var(--background-secondary);
+         }
+       }
+     }
+     
+     .link-preview-form {
+       margin-top: 12px;
+       padding: 12px;
+       background: var(--background-tertiary);
+       border-radius: 8px;
+       
+       .link-preview-header {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin-bottom: 12px;
+         font-weight: 600;
+         font-size: 14px;
+         color: var(--text-primary);
+         
+         .link-preview-close {
+           background: none;
+           border: none;
+           color: var(--text-secondary);
+           cursor: pointer;
+           padding: 4px;
+           
+           &:hover {
+             color: var(--error);
+           }
+         }
+       }
+       
+       .link-field {
+         margin-bottom: 8px;
+         
+         .link-input {
+           width: 100%;
+           padding: 8px 12px;
+           border: 1px solid var(--border);
+           border-radius: 6px;
+           font-size: 14px;
+           color: var(--text-primary);
+           background: var(--background);
+           
+           &:focus {
+             outline: none;
+             border-color: var(--primary);
+           }
+         }
+         
+         .link-textarea {
+           width: 100%;
+           padding: 8px 12px;
+           border: 1px solid var(--border);
+           border-radius: 6px;
+           font-size: 14px;
+           color: var(--text-primary);
+           background: var(--background);
+           resize: none;
+           min-height: 60px;
+           
+           &:focus {
+             outline: none;
+             border-color: var(--primary);
+           }
+         }
+       }
+       
+       .link-preview-card {
+         display: flex;
+         flex-direction: column;
+         border: 1px solid var(--border);
+         border-radius: 12px;
+         overflow: hidden;
+         margin-top: 12px;
+         
+         .preview-image {
+           width: 100%;
+           height: 120px;
+           object-fit: cover;
+           background: var(--background-tertiary);
+         }
+         
+         .preview-placeholder {
+           width: 100%;
+           height: 120px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           background: var(--background-tertiary);
+           color: var(--text-tertiary);
+         }
+         
+         .preview-content {
+           padding: 10px 12px;
+           
+           .preview-title {
+             font-weight: 600;
+             font-size: 14px;
+             color: var(--text-primary);
+             margin-bottom: 4px;
+           }
+           
+           .preview-desc {
+             font-size: 13px;
+             color: var(--text-secondary);
+             line-height: 1.4;
+             margin-bottom: 6px;
+           }
+           
+           .preview-domain {
+             display: flex;
+             align-items: center;
+             gap: 4px;
+             font-size: 12px;
+             color: var(--text-tertiary);
+           }
+         }
+       }
+     }
+     
+     .media-type-selector {
+       display: flex;
+       gap: 8px;
+       margin-bottom: 8px;
+       
+       button {
+         display: flex;
+         align-items: center;
         gap: 4px;
         padding: 6px 12px;
         border: 1px solid var(--border);
@@ -555,30 +759,72 @@ import { ToastService } from '../../shared/services/toast.service';
         font-size: 13px;
         cursor: pointer;
         
-        &.active {
-          background: var(--primary);
-          color: white;
-          border-color: var(--primary);
-        }
-        
-        &:hover:not(.active) {
-          background: var(--background-secondary);
-        }
-      }
-    }
+&.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+&:hover:not(.active) {
+  background: var(--background-secondary);
+}
+
+.clear-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--error);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--error);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--error);
+    color: white;
+  }
+}
+}
+}
      
-    .media-url-input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      color: var(--text-primary);
-      background: var(--background);
-      
-      &:focus {
-        outline: none;
-        border-color: var(--primary);
+     .media-edit-row {
+       display: flex;
+       gap: 8px;
+       align-items: center;
+       
+       .media-url-input {
+         flex: 1;
+       }
+       
+       .remove-media-sm {
+         flex-shrink: 0;
+         padding: 8px;
+         background: var(--background-secondary);
+         border: 1px solid var(--border);
+         border-radius: 8px;
+         color: var(--text-secondary);
+         cursor: pointer;
+         
+         &:hover {
+           background: var(--border);
+           color: var(--error);
+         }
+       }
+     }
+     
+     .media-url-input {
+       width: 100%;
+       padding: 8px 12px;
+       border: 1px solid var(--border);
+       border-radius: 8px;
+       font-size: 14px;
+       color: var(--text-primary);
+       background: var(--background);
+       
+       &:focus {
+         outline: none;
+         border-color: var(--primary);
       }
     }
      
@@ -640,6 +886,27 @@ import { ToastService } from '../../shared/services/toast.service';
       border-radius: 12px;
       margin-top: 12px;
       border: none;
+    }
+    
+    .external-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--background-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-primary);
+      font-size: 14px;
+      text-decoration: none;
+      margin-top: 12px;
+      transition: all 0.2s;
+      
+      &:hover {
+        background: var(--primary-light);
+        border-color: var(--primary);
+        color: var(--primary);
+      }
     }
     
     .new-post {
@@ -1613,8 +1880,12 @@ export class HomeComponent implements OnInit {
   feedType = signal<'all' | 'following'>('all');
   newPostContent = '';
   newMediaUrl = '';
-  newMediaType = signal<'image' | 'youtube' | null>(null);
+  newMediaType = signal<'image' | 'youtube' | 'link' | null>(null);
   showMediaInput = signal(false);
+  
+  linkDetected = signal<string | null>(null);
+  showLinkPreview = signal(false);
+  
   isSubmitting = signal(false);
   isLoading = signal(true);
   loadError = signal<string | null>(null);
@@ -1646,6 +1917,8 @@ export class HomeComponent implements OnInit {
   editPostContent = '';
   editMediaUrl = '';
   editMediaType = signal<'image' | 'youtube' | null>(null);
+  
+  editLinkUrl = signal<string | null>(null);
 
   // Nested reply editing/deletion
   editingNestedReply = signal<string | null>(null);
@@ -1739,38 +2012,46 @@ loadPosts() {
     this.loadPosts();
   }
 
-  createPost() {
-    if (!this.canSubmit()) return;
+createPost() {
+  if (!this.canSubmit()) return;
     
-    this.submitError.set(null);
-    this.submitSuccess.set(false);
-    this.isSubmitting.set(true);
-    
-    const mediaUrl = this.newMediaType() ? this.newMediaUrl : undefined;
-    const mediaType = this.newMediaType() || undefined;
-    
-    this.postsService.createPost(this.newPostContent, mediaUrl, mediaType).subscribe({
-      next: (post) => {
-        this.posts.update(posts => [post, ...posts]);
-        this.newPostContent = '';
-        this.newMediaUrl = '';
-        this.newMediaType.set(null);
-        this.showMediaInput.set(false);
-        this.isSubmitting.set(false);
-        this.submitSuccess.set(true);
-        
-        setTimeout(() => this.submitSuccess.set(false), 3000);
-      },
-      error: (err) => {
-        if (err.status === 429) {
-          this.submitError.set('Você está publicando muito rápido. Aguarde um momento.');
-        } else {
-          this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
-        }
-        this.isSubmitting.set(false);
-      }
-    });
+  this.submitError.set(null);
+  this.submitSuccess.set(false);
+  this.isSubmitting.set(true);
+  
+  let mediaUrl: string | null = null;
+  let mediaType: string | null = null;
+  let linkUrl: string | null = null;
+  
+  if (this.newMediaType() === 'link') {
+    linkUrl = this.normalizeUrl(this.newMediaUrl) || null;
+  } else if (this.newMediaType()) {
+    mediaUrl = this.newMediaUrl || null;
+    mediaType = this.newMediaType();
   }
+  
+  this.postsService.createPost(this.newPostContent, mediaUrl, mediaType, linkUrl).subscribe({
+    next: (post) => {
+      this.posts.update(posts => [post, ...posts]);
+      this.newPostContent = '';
+      this.newMediaUrl = '';
+      this.newMediaType.set(null);
+      this.showMediaInput.set(false);
+      this.isSubmitting.set(false);
+      this.submitSuccess.set(true);
+      
+      setTimeout(() => this.submitSuccess.set(false), 3000);
+    },
+    error: (err) => {
+      if (err.status === 429) {
+        this.submitError.set('Você está publicando muito rápido. Aguarde um momento.');
+      } else {
+        this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
+      }
+      this.isSubmitting.set(false);
+    }
+  });
+}
 
   deletePost(id: string) {
     this.showDeletePostModal.set(true);
@@ -1798,47 +2079,52 @@ loadPosts() {
     this.deletingPostId.set(null);
   }
 
-  startEditPost(post: Post) {
-    this.editingPost.set(post.id);
-    this.editPostContent = post.content;
-    this.editMediaUrl = post.mediaUrl || '';
-    this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
+startEditPost(post: Post) {
+  this.editingPost.set(post.id);
+  this.editPostContent = post.content;
+  this.editMediaUrl = post.mediaUrl || '';
+  this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
+  
+  this.editLinkUrl.set(post.linkUrl ? post.linkUrl : null);
+}
+
+cancelEditPost() {
+  this.editingPost.set(null);
+  this.editPostContent = '';
+  this.editMediaUrl = '';
+  this.editMediaType.set(null);
+  this.clearEditLinkPreview();
+}
+
+saveEditPost(postId: string) {
+  if (!this.editPostContent.trim()) return;
+
+  let mediaUrl: string | null;
+  let mediaType: string | null;
+
+  if (this.editMediaType() && this.editMediaUrl) {
+    mediaUrl = this.editMediaUrl;
+    mediaType = this.editMediaType()!;
+  } else {
+    mediaUrl = null;
+    mediaType = null;
   }
 
-  cancelEditPost() {
-    this.editingPost.set(null);
-    this.editPostContent = '';
-    this.editMediaUrl = '';
-    this.editMediaType.set(null);
-  }
+  let linkUrl: string | null = this.normalizeUrl(this.editLinkUrl() || '');
 
-  saveEditPost(postId: string) {
-    if (!this.editPostContent.trim()) return;
-
-    let mediaUrl: string | undefined;
-    let mediaType: string | undefined;
-    
-    if (this.editMediaType() && this.editMediaUrl) {
-      mediaUrl = this.editMediaUrl;
-      mediaType = this.editMediaType() || undefined;
-    } else if (!this.editMediaType() && !this.editMediaUrl && this.editingPost()) {
-      mediaUrl = undefined;
-      mediaType = undefined;
+  this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType, linkUrl).subscribe({
+    next: (updated) => {
+      this.posts.update(posts =>
+        posts.map(p => p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p)
+      );
+      this.cancelEditPost();
+    },
+    error: (err) => {
+      console.error('Error editing post:', err);
+      this.cancelEditPost();
     }
-
-    this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType).subscribe({
-      next: (updated) => {
-        this.posts.update(posts =>
-          posts.map(p => p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType } : p)
-        );
-        this.cancelEditPost();
-      },
-      error: (err) => {
-        console.error('Error editing post:', err);
-        this.cancelEditPost();
-      }
-    });
-  }
+  });
+}
 
   toggleLike(post: Post) {
     this.postLikingId.set(post.id);
@@ -2117,32 +2403,85 @@ closeDeleteModal() {
     return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
   }
 
-  isValidImageUrl(url: string): boolean {
+isValidImageUrl(url: string): boolean {
     if (!url) return false;
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   }
 
-  setNewMediaType(type: 'image' | 'youtube' | null) {
-    this.newMediaType.set(type);
-    if (type === null) {
-      this.newMediaUrl = '';
+  normalizeUrl(url: string): string | null {
+    if (!url) return null;
+    url = url.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url;
     }
+    return url;
   }
 
-  removeNewMedia() {
+  setNewMediaType(type: 'image' | 'youtube' | 'link' | null) {
+  this.newMediaType.set(type);
+  if (type === null) {
     this.newMediaUrl = '';
-    this.newMediaType.set(null);
-    this.showMediaInput.set(false);
   }
+}
 
-  setEditMediaType(type: 'image' | 'youtube' | null) {
-    this.editMediaType.set(type);
-    if (type === null) {
-      this.editMediaUrl = '';
-    }
+onContentChange() {
+  const url = this.detectUrlInContent(this.newPostContent);
+  if (url && url !== this.linkDetected() && !this.showLinkPreview()) {
+    this.linkDetected.set(url);
   }
+}
 
-  removeEditMedia() {
+onAddLinkPreview() {
+  this.linkDetected.set(this.detectUrlInContent(this.newPostContent));
+  this.showLinkPreview.set(true);
+}
+
+ignoreLink() {
+  this.linkDetected.set('ignored');
+}
+
+removeNewMedia() {
+  this.newMediaUrl = '';
+  this.newMediaType.set(null);
+  this.showMediaInput.set(false);
+}
+
+setEditMediaType(type: 'image' | 'youtube' | null) {
+  this.editMediaType.set(type);
+  if (type === null) {
     this.editMediaUrl = '';
   }
+}
+
+removeEditMedia() {
+  this.editMediaUrl = '';
+}
+
+clearEditMediaType() {
+  this.editMediaType.set(null);
+  this.editMediaUrl = '';
+}
+
+detectUrlInContent(content: string): string | null {
+  const match = content.match(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/);
+  return match ? match[1] : null;
+}
+
+getDomain(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+clearLinkPreview() {
+  this.linkDetected.set(null);
+  this.showLinkPreview.set(false);
+}
+
+clearEditLinkPreview() {
+  this.editLinkUrl.set(null);
+}
 }

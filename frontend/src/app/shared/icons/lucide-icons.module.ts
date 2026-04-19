@@ -27,6 +27,9 @@ import {
   ChevronRight,
   Image,
   Youtube,
+  Link,
+  Globe,
+  ExternalLink,
 } from 'lucide-angular';
 
 @NgModule({
@@ -57,6 +60,9 @@ import {
       ChevronRight,
       Image,
       Youtube,
+      Link,
+      Globe,
+      ExternalLink,
     }),
   ],
   exports: [LucideAngularModule],

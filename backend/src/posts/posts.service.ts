@@ -20,7 +20,13 @@ export class PostsService {
     return post.createdAt;
   }
 
-  async create(userId: string, content: string, mediaUrl?: string, mediaType?: string) {
+async create(
+    userId: string, 
+    content: string, 
+    mediaUrl?: string, 
+    mediaType?: string,
+    linkUrl?: string
+  ) {
     if (!content || content.trim().length === 0) {
       throw new BadRequestException('Post content cannot be empty');
     }
@@ -35,6 +41,7 @@ export class PostsService {
         authorId: userId,
         mediaUrl,
         mediaType,
+        linkUrl,
       },
       include: {
         author: {
@@ -47,13 +54,13 @@ export class PostsService {
         },
         _count: {
           select: {
-            likes: true,
-            replies: true,
-          },
+          likes: true,
+          replies: true,
         },
       },
-    });
-  }
+    },
+  });
+}
 
   async findAll(cursor?: string, limit = 20) {
     const take = limit + 1;
@@ -212,7 +219,14 @@ export class PostsService {
     return post;
   }
 
-  async update(postId: string, userId: string, content: string, mediaUrl?: string, mediaType?: string) {
+async update(
+    postId: string, 
+    userId: string, 
+    content: string, 
+    mediaUrl?: string | null, 
+    mediaType?: string | null,
+    linkUrl?: string | null
+  ) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -234,13 +248,10 @@ export class PostsService {
     }
 
     const updateData: any = { content: content.trim() };
-    
-    if (mediaUrl !== undefined) {
-      updateData.mediaUrl = mediaUrl || null;
-    }
-    if (mediaType !== undefined) {
-      updateData.mediaType = mediaType || null;
-    }
+
+    updateData.mediaUrl = mediaUrl === null ? null : mediaUrl;
+    updateData.mediaType = mediaType === null ? null : mediaType;
+    updateData.linkUrl = linkUrl === null ? null : linkUrl;
 
     const updated = await this.prisma.post.update({
       where: { id: postId },

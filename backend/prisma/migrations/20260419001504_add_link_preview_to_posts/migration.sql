@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Post" ADD COLUMN "linkDesc" TEXT;
+ALTER TABLE "Post" ADD COLUMN "linkImage" TEXT;
+ALTER TABLE "Post" ADD COLUMN "linkTitle" TEXT;
+ALTER TABLE "Post" ADD COLUMN "linkUrl" TEXT;

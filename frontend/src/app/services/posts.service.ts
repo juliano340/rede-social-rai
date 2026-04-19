@@ -7,6 +7,7 @@ export interface Post {
   content: string;
   mediaUrl?: string | null;
   mediaType?: 'image' | 'youtube' | null;
+  linkUrl?: string | null;
   createdAt: string;
   author: {
     id: string;
@@ -58,17 +59,33 @@ export class PostsService {
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params, withCredentials: true });
   }
 
-  createPost(content: string, mediaUrl?: string, mediaType?: string): Observable<Post> {
-    return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType }, { withCredentials: true });
-  }
+createPost(content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
+  return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true });
+}
 
   deletePost(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true });
   }
 
-  updatePost(id: string, content: string, mediaUrl?: string, mediaType?: string): Observable<Post> {
-    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, { content, mediaUrl, mediaType }, { withCredentials: true });
+updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
+  const body: any = { content };
+  
+  if (mediaUrl === null || mediaUrl === undefined) {
+    body.mediaUrl = null;
+    body.mediaType = null;
+  } else {
+    body.mediaUrl = mediaUrl;
+    body.mediaType = mediaType;
   }
+  
+  if (linkUrl === null || linkUrl === undefined) {
+    body.linkUrl = null;
+  } else {
+    body.linkUrl = linkUrl;
+  }
+  
+  return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, body, { withCredentials: true });
+}
 
   likePost(id: string): Observable<{ liked: boolean }> {
     return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true });

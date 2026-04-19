@@ -14,9 +14,14 @@ export class PostsController {
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   async create(
     @User() user: any,
-    @Body() body: { content: string; mediaUrl?: string; mediaType?: string }
+    @Body() body: { 
+      content: string; 
+      mediaUrl?: string; 
+      mediaType?: string;
+      linkUrl?: string;
+    }
   ) {
-    const { content, mediaUrl, mediaType } = body;
+    const { content, mediaUrl, mediaType, linkUrl } = body;
     
     if (mediaUrl && !mediaType) {
       throw new Error('Tipo de mídia é obrigatório quando URL é fornecida');
@@ -31,7 +36,7 @@ export class PostsController {
       throw new Error('URL da mídia deve ter no máximo 500 caracteres');
     }
     
-    return this.postsService.create(user.userId, content, mediaUrl, mediaType);
+    return this.postsService.create(user.userId, content, mediaUrl, mediaType, linkUrl);
   }
 
   @Get()
@@ -83,9 +88,14 @@ export class PostsController {
   async update(
     @Param('id') id: string,
     @User() user: any,
-    @Body() body: { content: string; mediaUrl?: string; mediaType?: string },
+    @Body() body: { 
+      content: string; 
+      mediaUrl?: string | null; 
+      mediaType?: string | null;
+      linkUrl?: string | null;
+    },
   ) {
-    const { content, mediaUrl, mediaType } = body;
+    const { content, mediaUrl, mediaType, linkUrl } = body;
     
     if (mediaUrl && mediaUrl.length > 500) {
       throw new Error('URL da mídia deve ter no máximo 500 caracteres');
@@ -94,7 +104,7 @@ export class PostsController {
       throw new Error('Tipo de mídia deve ser "image" ou "youtube"');
     }
     
-    return this.postsService.update(id, user.userId, content, mediaUrl, mediaType);
+    return this.postsService.update(id, user.userId, content, mediaUrl, mediaType, linkUrl);
   }
 
   @Post(':id/like')

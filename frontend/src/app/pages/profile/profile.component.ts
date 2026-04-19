@@ -31,6 +31,7 @@ interface Post {
   content: string;
   mediaUrl?: string | null;
   mediaType?: 'image' | 'youtube' | null;
+  linkUrl?: string | null;
   createdAt: string;
   author: {
     id: string;
@@ -197,53 +198,80 @@ interface Post {
                   @if (post.mediaUrl && post.mediaType === 'youtube') {
                     <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video" loading="lazy"></iframe>
                   }
-                  @if (editingPost() === post.id) {
-                    <div class="edit-post-form">
-                      <textarea
-                        [(ngModel)]="editPostContent"
-                        maxlength="280"
-                        class="edit-post-textarea"
-                      ></textarea>
-                      <div class="media-type-selector">
-                        <button 
-                          [class.active]="editMediaType() === 'image'"
-                          (click)="setEditMediaType('image')"
-                        >
-                          <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
-                        </button>
-                        <button 
-                          [class.active]="editMediaType() === 'youtube'"
-                          (click)="setEditMediaType('youtube')"
-                        >
-                          <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
-                        </button>
-                      </div>
-                      @if (editMediaType()) {
-                        <input 
-                          type="text" 
-                          [(ngModel)]="editMediaUrl" 
-                          [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
-                          class="media-url-input"
-                        />
-                      }
-                      @if (editMediaUrl || post.mediaUrl) {
-                        <button class="remove-media-sm" (click)="removeEditMedia()">
-                          <lucide-icon name="x" [size]="14"></lucide-icon> Remover mídia
-                        </button>
-                      }
-                      <div class="edit-post-actions">
-                        <span class="char-count">{{ editPostContent.length }}/280</span>
-                        <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
-                        <button
-                          class="save-btn"
-                          (click)="saveEditPost(post.id)"
-                          [disabled]="!editPostContent.trim() || editPostContent.length > 280"
-                        >
-                          Salvar
-                        </button>
-                      </div>
-                    </div>
+                  @if (post.linkUrl) {
+                    <a [href]="post.linkUrl" target="_blank" rel="noopener noreferrer" class="external-link-btn">
+                      <lucide-icon name="external-link" [size]="14"></lucide-icon>
+                      Abrir link
+                    </a>
                   }
+@if (editingPost() === post.id) {
+<div class="edit-post-form">
+  <textarea
+    [(ngModel)]="editPostContent"
+    maxlength="280"
+    class="edit-post-textarea"
+  ></textarea>
+  <div class="media-type-selector">
+    <button
+      [class.active]="editMediaType() === 'image'"
+      (click)="setEditMediaType('image')"
+    >
+      <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
+    </button>
+    <button
+      [class.active]="editMediaType() === 'youtube'"
+      (click)="setEditMediaType('youtube')"
+    >
+      <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
+    </button>
+    <button
+      [class.active]="editLinkUrl() !== null"
+      (click)="editLinkUrl() !== null ? clearEditLinkPreview() : editLinkUrl.set('')"
+    >
+      <lucide-icon name="link" [size]="14"></lucide-icon> Link
+    </button>
+    @if (editMediaType()) {
+      <button class="clear-type-btn" (click)="clearEditMediaType()">
+        <lucide-icon name="x" [size]="14"></lucide-icon>
+      </button>
+    }
+  </div>
+  @if (editMediaType()) {
+    <input
+      type="text"
+      [(ngModel)]="editMediaUrl"
+      [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
+      class="media-url-input"
+    />
+    <button class="remove-media-sm" (click)="clearEditMediaType()">
+      <lucide-icon name="x" [size]="14"></lucide-icon> Remover
+    </button>
+  }
+  @if (editLinkUrl() !== null) {
+    <input
+      type="text"
+      [ngModel]="editLinkUrl()!"
+      (ngModelChange)="editLinkUrl.set($event)"
+      placeholder="URL do link"
+      class="media-url-input"
+    />
+    <button class="remove-media-sm" (click)="clearEditLinkPreview()">
+      <lucide-icon name="x" [size]="14"></lucide-icon> Remover
+    </button>
+  }
+  <div class="edit-post-actions">
+    <span class="char-count">{{ editPostContent.length }}/280</span>
+    <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
+    <button
+      class="save-btn"
+      (click)="saveEditPost(post.id)"
+      [disabled]="!editPostContent.trim() || editPostContent.length > 280"
+    >
+      Salvar
+    </button>
+  </div>
+</div>
+}
                   <div class="post-actions">
                     <button
                       class="action-btn like"
@@ -877,25 +905,42 @@ interface Post {
         button {
           display: flex;
           align-items: center;
-          gap: 4px;
-          padding: 6px 10px;
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          background: var(--background);
-          color: var(--text-secondary);
-          font-size: 12px;
-          cursor: pointer;
-          
-          &.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-          }
-          
-          &:hover:not(.active) {
-            background: var(--background-secondary);
-          }
-        }
+gap: 4px;
+padding: 6px 10px;
+border: 1px solid var(--border);
+border-radius: 20px;
+background: var(--background);
+color: var(--text-secondary);
+font-size: 12px;
+cursor: pointer;
+
+&.active {
+background: var(--primary);
+color: white;
+border-color: var(--primary);
+}
+
+&:hover:not(.active) {
+background: var(--background-secondary);
+}
+
+.clear-type-btn {
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 6px 10px;
+border: 1px solid var(--error);
+border-radius: 20px;
+background: transparent;
+color: var(--error);
+cursor: pointer;
+
+&:hover {
+background: var(--error);
+color: white;
+}
+}
+}
       }
       
       .media-url-input {
@@ -940,6 +985,27 @@ interface Post {
         border-radius: 10px;
         margin-top: 8px;
         border: none;
+      }
+
+      .external-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: var(--background-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-primary);
+        font-size: 14px;
+        text-decoration: none;
+        margin-top: 12px;
+        transition: all 0.2s;
+
+        &:hover {
+          background: var(--primary-light);
+          border-color: var(--primary);
+          color: var(--primary);
+        }
       }
 
       .post-actions {
@@ -2305,6 +2371,8 @@ export class ProfileComponent implements OnInit {
   editPostContent = '';
   editMediaUrl = '';
   editMediaType = signal<'image' | 'youtube' | null>(null);
+  
+  editLinkUrl = signal<string>('');
 
   showDeletePostModal = signal(false);
   deletingPostId = signal<string | null>(null);
@@ -2525,39 +2593,52 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  startEditPost(post: any) {
-    this.editingPost.set(post.id);
-    this.editPostContent = post.content;
-    this.editMediaUrl = post.mediaUrl || '';
-    this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
+startEditPost(post: any) {
+  this.editingPost.set(post.id);
+  this.editPostContent = post.content;
+  this.editMediaUrl = post.mediaUrl || '';
+  this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
+  
+  this.editLinkUrl.set(post.linkUrl ? post.linkUrl : '');
+}
+
+cancelEditPost() {
+  this.editingPost.set(null);
+  this.editPostContent = '';
+  this.editMediaUrl = '';
+  this.editMediaType.set(null);
+  this.clearEditLinkPreview();
+}
+
+saveEditPost(postId: string) {
+  if (!this.editPostContent.trim()) return;
+
+  let mediaUrl: string | null;
+  let mediaType: string | null;
+
+  if (this.editMediaType() && this.editMediaUrl) {
+    mediaUrl = this.editMediaUrl;
+    mediaType = this.editMediaType()!;
+  } else {
+    mediaUrl = null;
+    mediaType = null;
   }
 
-  cancelEditPost() {
-    this.editingPost.set(null);
-    this.editPostContent = '';
-    this.editMediaUrl = '';
-    this.editMediaType.set(null);
-  }
+  let linkUrl: string | null = this.normalizeUrl(this.editLinkUrl() || '');
 
-  saveEditPost(postId: string) {
-    if (!this.editPostContent.trim()) return;
-
-    const mediaUrl = this.editMediaType() ? this.editMediaUrl : undefined;
-    const mediaType = this.editMediaType() || undefined;
-
-    this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType).subscribe({
-      next: (updated) => {
-        this.posts.update((posts) =>
-          posts.map((p) => (p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType } : p))
-        );
-        this.cancelEditPost();
-      },
-      error: (err) => {
-        console.error('Error editing post:', err);
-        this.cancelEditPost();
-      },
-    });
-  }
+  this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType, linkUrl).subscribe({
+    next: (updated) => {
+      this.posts.update((posts) =>
+        posts.map((p) => (p.id === postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p))
+      );
+      this.cancelEditPost();
+    },
+    error: (err) => {
+      console.error('Error editing post:', err);
+      this.cancelEditPost();
+    },
+  });
+}
 
   // Nested reply editing methods
   startEditNestedReply(reply: any) {
@@ -3053,20 +3134,51 @@ error: (err) => {
     return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
   }
 
-  isValidImageUrl(url: string): boolean {
+isValidImageUrl(url: string): boolean {
     if (!url) return false;
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   }
 
-  setEditMediaType(type: 'image' | 'youtube' | null) {
-    this.editMediaType.set(type);
-    if (type === null) {
-      this.editMediaUrl = '';
+  normalizeUrl(url: string): string | null {
+    if (!url) return null;
+    url = url.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url;
     }
+    return url;
   }
 
-  removeEditMedia() {
+  setEditMediaType(type: 'image' | 'youtube' | null) {
+  this.editMediaType.set(type);
+  if (type === null) {
     this.editMediaUrl = '';
-    this.editMediaType.set(null);
   }
+}
+
+removeEditMedia() {
+  this.editMediaUrl = '';
+}
+
+clearEditMediaType() {
+  this.editMediaType.set(null);
+  this.editMediaUrl = '';
+}
+
+detectUrlInContent(content: string): string | null {
+  const match = content.match(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/);
+  return match ? match[1] : null;
+}
+
+getDomain(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+clearEditLinkPreview() {
+  this.editLinkUrl.set('');
+}
 }
