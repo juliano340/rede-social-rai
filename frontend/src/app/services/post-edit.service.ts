@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, WritableSignal } from '@angular/core';
-import { PostsService, Post } from './posts.service';
+import { PostsService } from './posts.service';
+import { Post, Reply } from '../shared/models';
 import { ToastService } from '../shared/services/toast.service';
 import { AuthService } from './auth.service';
 
@@ -31,7 +32,7 @@ export class PostEditService {
   replyingToComment = signal<string | null>(null);
   replyingToCommentContent = '';
   isSubmittingReply = signal(false);
-  postReplies = signal<any[]>([]);
+  postReplies = signal<Reply[]>([]);
   loadingReplies = signal(false);
   savingReply = signal(false);
 
@@ -79,7 +80,7 @@ export class PostEditService {
     });
   }
 
-  startEditReply(reply: any): void {
+  startEditReply(reply: Reply): void {
     this.editingReply.set(reply.id);
     this.editReplyContent = reply.content;
   }
@@ -89,7 +90,7 @@ export class PostEditService {
     this.editReplyContent = '';
   }
 
-  saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<any[]>): void {
+  saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
     if (!this.editReplyContent.trim()) return;
 
     this.postsService.updateReply(postId, replyId, this.editReplyContent).subscribe({
@@ -106,7 +107,7 @@ export class PostEditService {
     this.cancelEditReply();
   }
 
-  startEditNestedReply(reply: any): void {
+  startEditNestedReply(reply: Reply): void {
     this.editingNestedReply.set(reply.id);
     this.editNestedReplyContent = reply.content;
   }
@@ -116,7 +117,7 @@ export class PostEditService {
     this.editNestedReplyContent = '';
   }
 
-  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<any[]>): void {
+  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
     if (!this.editNestedReplyContent.trim()) return;
 
     this.postsService.updateReply(postId, replyId, this.editNestedReplyContent).subscribe({
@@ -124,7 +125,7 @@ export class PostEditService {
         postRepliesSignal.update(replies =>
           replies.map(r => {
             if (r.id === parentReplyId && r.children) {
-              r.children = r.children.map((c: any) =>
+              r.children = r.children.map((c: Reply) =>
                 c.id === replyId ? { ...c, content: this.editNestedReplyContent } : c
               );
             }
@@ -173,7 +174,7 @@ export class PostEditService {
     this.deletingReplyPostId.set(postId);
   }
 
-  confirmDeleteReply(postRepliesSignal: WritableSignal<any[]>, postsSignal?: WritableSignal<Post[]>): void {
+  confirmDeleteReply(postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
     const replyId = this.deletingReplyId();
     const postId = this.deletingReplyPostId();
 
@@ -183,8 +184,8 @@ export class PostEditService {
       next: () => {
         postRepliesSignal.update(replies =>
           replies.map(r => {
-            if (r.children && r.children.some((c: any) => c.id === replyId)) {
-              r.children = r.children.filter((c: any) => c.id !== replyId);
+            if (r.children && r.children.some((c: Reply) => c.id === replyId)) {
+              r.children = r.children.filter((c: Reply) => c.id !== replyId);
             }
             return r;
           }).filter(r => r.id !== replyId)
@@ -238,7 +239,7 @@ export class PostEditService {
     this.replyContent = '';
   }
 
-  submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<any[]>): void {
+  submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<Reply[]>): void {
     if (!this.replyContent.trim()) return;
 
     this.isSubmittingReply.set(true);
@@ -285,7 +286,7 @@ export class PostEditService {
     this.replyingToCommentContent = '';
   }
 
-  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<any[]>): void {
+  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
     if (!this.replyingToCommentContent.trim()) return;
 
     this.isSubmittingReply.set(true);
