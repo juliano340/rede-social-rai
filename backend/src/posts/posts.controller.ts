@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { PostsService } from './posts.service';
+import { CreatePostDto, UpdatePostDto, CreateReplyDto, UpdateReplyDto } from './dto';
 
 @Controller('posts')
 export class PostsController {
@@ -12,31 +13,8 @@ export class PostsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 2, ttl: 60000 } })
-  async create(
-    @User() user: any,
-    @Body() body: { 
-      content: string; 
-      mediaUrl?: string; 
-      mediaType?: string;
-      linkUrl?: string;
-    }
-  ) {
-    const { content, mediaUrl, mediaType, linkUrl } = body;
-    
-    if (mediaUrl && !mediaType) {
-      throw new Error('Tipo de mídia é obrigatório quando URL é fornecida');
-    }
-    if (mediaType && !mediaUrl) {
-      throw new Error('URL da mídia é obrigatória quando tipo é fornecido');
-    }
-    if (mediaType && !['image', 'youtube'].includes(mediaType)) {
-      throw new Error('Tipo de mídia deve ser "image" ou "youtube"');
-    }
-    if (mediaUrl && mediaUrl.length > 500) {
-      throw new Error('URL da mídia deve ter no máximo 500 caracteres');
-    }
-    
-    return this.postsService.create(user.userId, content, mediaUrl, mediaType, linkUrl);
+  async create(@User() user: any, @Body() dto: CreatePostDto) {
+    return this.postsService.create(user.userId, dto.content, dto.mediaUrl, dto.mediaType, dto.linkUrl);
   }
 
   @Get()
@@ -88,23 +66,9 @@ export class PostsController {
   async update(
     @Param('id') id: string,
     @User() user: any,
-    @Body() body: { 
-      content: string; 
-      mediaUrl?: string | null; 
-      mediaType?: string | null;
-      linkUrl?: string | null;
-    },
+    @Body() dto: UpdatePostDto,
   ) {
-    const { content, mediaUrl, mediaType, linkUrl } = body;
-    
-    if (mediaUrl && mediaUrl.length > 500) {
-      throw new Error('URL da mídia deve ter no máximo 500 caracteres');
-    }
-    if (mediaType && !['image', 'youtube', null].includes(mediaType)) {
-      throw new Error('Tipo de mídia deve ser "image" ou "youtube"');
-    }
-    
-    return this.postsService.update(id, user.userId, content, mediaUrl, mediaType, linkUrl);
+    return this.postsService.update(id, user.userId, dto.content, dto.mediaUrl, dto.mediaType, dto.linkUrl);
   }
 
   @Post(':id/like')
@@ -126,9 +90,9 @@ export class PostsController {
   async createReply(
     @Param('id') postId: string,
     @User() user: any,
-    @Body() body: { content: string; parentId?: string },
+    @Body() dto: CreateReplyDto,
   ) {
-    return this.postsService.createReply(postId, user.userId, body.content, body.parentId);
+    return this.postsService.createReply(postId, user.userId, dto.content, dto.parentId);
   }
 
   @Get(':id/replies')
@@ -151,9 +115,9 @@ export class PostsController {
     @Param('id') postId: string,
     @Param('replyId') replyId: string,
     @User() user: any,
-    @Body('content') content: string,
+    @Body() dto: UpdateReplyDto,
   ) {
-    return this.postsService.updateReply(replyId, user.userId, content);
+    return this.postsService.updateReply(replyId, user.userId, dto.content);
   }
 
   @Delete(':id/reply/:replyId')

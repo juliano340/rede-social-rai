@@ -72,6 +72,20 @@ coverage/
 .nyc_output/
 
 # ===========================
+# Playwright
+# ===========================
+frontend/playwright-report/
+frontend/test-results/
+frontend/tests/*.spec.ts
+!frontend/tests/example.spec.ts
+
+# ===========================
+# Root package files (if not monorepo)
+# ===========================
+package-lock.json
+yarn.lock
+
+# ===========================
 # Logs
 # ===========================
 *.log

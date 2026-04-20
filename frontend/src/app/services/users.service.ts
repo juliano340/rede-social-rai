@@ -1,36 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { User, UsersResponse } from '../shared/models';
 
-export interface User {
-  id: string;
-  username: string;
-  name: string;
-  bio: string | null;
-  bioLink: string | null;
-  avatar: string | null;
-  createdAt: string;
-  _count?: {
-    posts: number;
-    followers: number;
-    following: number;
-  };
-  isFollowing?: boolean;
-}
-
-export interface UsersResponse {
-  users: User[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+export { User, UsersResponse };
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsersService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -53,15 +33,15 @@ export class UsersService {
   search(query: string, page = 1, limit = 20): Observable<UsersResponse> {
     return this.http.get<UsersResponse>(`${this.apiUrl}/users/search?q=${query}&page=${page}&limit=${limit}`);
   }
-  
+
   getSuggested(limit = 10): Observable<UsersResponse> {
     return this.http.get<UsersResponse>(`${this.apiUrl}/users/suggested?limit=${limit}`);
   }
-  
+
   updateProfile(data: { name?: string; bio?: string; bioLink?: string }): Observable<any> {
     return this.http.patch(`${this.apiUrl}/users/me`, data);
   }
-  
+
   uploadAvatar(file: File): Observable<{ avatar: string }> {
     const formData = new FormData();
     formData.append('file', file);

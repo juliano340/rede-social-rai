@@ -2,27 +2,14 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
-
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  name: string;
-  avatar?: string | null;
-}
-
-export interface AuthResponse {
-  id: string;
-  username: string;
-  email: string;
-  name: string;
-}
+import { environment } from '../../environments/environment';
+import { User, AuthResponse } from '../shared/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = environment.apiUrl;
   private currentUserSignal = signal<User | null>(this.getUserFromStorage());
 
   constructor(private http: HttpClient, private router: Router) {}

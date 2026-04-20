@@ -8,6 +8,9 @@ import { AuthService } from "../../services/auth.service";
 import { UsersService, User } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
 import { PostEditService } from "../../services/post-edit.service";
+import { PostCardComponent } from "../../shared/components/post-card/post-card.component";
+import { ReplySectionComponent } from "../../shared/components/reply-section/reply-section.component";
+import { DeleteConfirmModalComponent } from "../../shared/components/delete-confirm-modal/delete-confirm-modal.component";
 import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
 import { ToastService } from "../../shared/services/toast.service";
 import { getAvatarUrl } from "../../shared/utils/avatar.utils";
@@ -50,7 +53,7 @@ interface Post {
 @Component({
   selector: "app-profile",
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, LucideIconsModule],
+  imports: [CommonModule, RouterLink, FormsModule, LucideIconsModule, PostCardComponent, ReplySectionComponent, DeleteConfirmModalComponent],
   template: `
     <div class="profile-page">
       @if (loading()) {
@@ -167,21 +170,52 @@ interface Post {
               <lucide-icon name="file-text" [size]="48" class="empty-icon"></lucide-icon>
               <p>Nenhuma publicação ainda.</p>
             </div>
-          } @else {
+} @else {
             @for (post of posts(); track post.id) {
-              <article class="post">
-                <div class="post-avatar">
-                  @if (post.author.avatar) {
-                    <img
-                      [src]="getAvatarUrl(post.author.avatar)"
-                      alt="Avatar"
-                      class="avatar-image"
-                    />
-                  } @else {
-                    <div class="avatar-placeholder small">
-                      {{ ((post.author.name && post.author.name[0]) || "?").toUpperCase() }}
-                    </div>
-                  }
+              <app-post-card
+                [post]="post"
+                [isLiked]="postLikes()[post.id] === true"
+                [isLiking]="postLikingId() === post.id"
+                [isOwnPost]="authService.currentUser()?.id === post.author.id"
+                [authorLinkEnabled]="true"
+                [highlighted]="false"
+                [deleting]="deletingPostId() === post.id"
+                (likeClick)="onLikeClick($event)"
+                (replyToggle)="onReplyToggle($event)"
+                (deleteClick)="onDeleteClick($event)"
+                (editStart)="onEditStart($event)"
+                (editSave)="onEditSave($event)"
+                (editCancel)="onEditCancel()"
+              ></app-post-card>
+
+              @if (viewingRepliesPost() === post.id || replyingToPost() === post.id) {
+                <app-reply-section
+                  [replies]="postReplies()"
+                  [loading]="loadingReplies()"
+                  [showForm]="replyingToPost() !== post.id"
+                  [showReplyToReply]="true"
+                  [currentUserId]="authService.currentUser()?.id || null"
+                  [highlightReplyId]="null"
+                  [isSubmitting]="isSubmittingReply()"
+                  [savingReply]="savingReply()"
+                  (close)="onCloseReplies()"
+                  (openForm)="onOpenReplyForm(post.id)"
+                  (submitReplyEvent)="onSubmitReply(post.id, $event)"
+                  (startEdit)="onStartEditReply($event)"
+                  (cancelEdit)="onCancelEditReply()"
+                  (saveEdit)="onSaveEditReply(post.id, $event)"
+                  (deleteReplyEvent)="onDeleteReply(post.id, $event)"
+                  (toggleReplyToCommentEvent)="onToggleReplyToComment($event)"
+                  (cancelReplyToComment)="onCancelReplyToComment()"
+                  (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
+                  (startEditNested)="onStartEditNestedReply($event)"
+                  (cancelEditNested)="onCancelEditNestedReply()"
+                  (saveEditNested)="onSaveEditNestedReply(post.id, $event)"
+                  (deleteNestedReplyEvent)="onDeleteNestedReply(post.id, $event)"
+                ></app-reply-section>
+              }
+            }
+          }
                 </div>
                 <div class="post-content">
                   <div class="post-header">
@@ -715,33 +749,21 @@ interface Post {
   </div>
 }
 
-@if (showDeletePostModal()) {
-  <div class="modal-overlay" (click)="closeDeletePostModal()">
-    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-      <lucide-icon name="trash-2" [size]="48" class="modal-icon"></lucide-icon>
-      <h2>Excluir Postagem</h2>
-      <p>Tem certeza que deseja excluir esta postagem? Esta ação não pode ser desfeita.</p>
-      <div class="modal-actions">
-        <button class="modal-cancel" (click)="closeDeletePostModal()">Cancelar</button>
-        <button class="modal-confirm" (click)="confirmDeletePost()">Excluir</button>
-      </div>
-    </div>
-  </div>
-}
+<app-delete-confirm-modal
+  [show]="showDeletePostModal()"
+  title="Excluir Postagem"
+  itemType="esta postagem"
+  (close)="postEdit.closeDeletePostModal()"
+  (confirm)="postEdit.confirmDeletePost(posts)"
+></app-delete-confirm-modal>
 
-@if (showDeleteReplyModal()) {
-  <div class="modal-overlay" (click)="closeDeleteReplyModal()">
-    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-      <lucide-icon name="trash-2" [size]="48" class="modal-icon"></lucide-icon>
-      <h2>Excluir Resposta</h2>
-      <p>Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.</p>
-      <div class="modal-actions">
-        <button class="modal-cancel" (click)="closeDeleteReplyModal()">Cancelar</button>
-        <button class="modal-confirm" (click)="confirmDeleteReply()">Excluir</button>
-      </div>
-    </div>
-  </div>
-}
+<app-delete-confirm-modal
+  [show]="showDeleteReplyModal()"
+  title="Excluir Resposta"
+  itemType="esta resposta"
+  (close)="postEdit.closeDeleteReplyModal()"
+  (confirm)="postEdit.confirmDeleteReply(postReplies, posts)"
+></app-delete-confirm-modal>
 </div>
 `,
   styles: [
@@ -2954,5 +2976,97 @@ error: (err) => {
 
   clearEditLinkPreview() {
     this.postEdit.clearEditLinkPreview();
+  }
+
+  onLikeClick(post: Post) {
+    this.toggleLike(post);
+  }
+
+  onReplyToggle(postId: string) {
+    this.toggleReply(postId);
+  }
+
+  onEditStart(post: Post) {
+    this.startEditPost(post);
+  }
+
+  onDeleteClick(postId: string) {
+    this.deletePost(postId);
+  }
+
+  onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
+    this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
+      next: (updated) => {
+        this.posts.update(posts =>
+          posts.map(p => p.id === data.postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p)
+        );
+        this.postEdit.editingPost.set(null);
+      },
+      error: (err) => {
+        console.error('Error editing post:', err);
+        this.postEdit.editingPost.set(null);
+      }
+    });
+  }
+
+  onEditCancel() {
+    this.postEdit.editingPost.set(null);
+  }
+
+  onCloseReplies() {
+    this.postEdit.viewingRepliesPost.set(null);
+    this.postEdit.replyingToPost.set(null);
+  }
+
+  onOpenReplyForm(postId: string) {
+    this.openReplyForm(postId);
+  }
+
+  onSubmitReply(postId: string, content: string) {
+    this.submitReply(postId);
+  }
+
+  onStartEditReply(reply: any) {
+    this.startEditReply(reply);
+  }
+
+  onCancelEditReply() {
+    this.cancelEditReply();
+  }
+
+  onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
+    this.saveEditReply(data.replyId, postId);
+  }
+
+  onDeleteReply(postId: string, replyId: string) {
+    this.deleteReply(replyId, postId);
+  }
+
+  onToggleReplyToComment(commentId: string) {
+    this.toggleReplyToComment({ id: commentId } as any);
+  }
+
+  onCancelReplyToComment() {
+    this.cancelReplyToComment();
+  }
+
+  onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
+    this.submitReplyToComment(data.replyId, postId);
+  }
+
+  onStartEditNestedReply(reply: any) {
+    this.startEditNestedReply(reply);
+  }
+
+  onCancelEditNestedReply() {
+    this.cancelEditNestedReply();
+  }
+
+  onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
+    this.saveEditNestedReply(data.replyId, postId);
+  }
+
+  onDeleteNestedReply(postId: string, replyId: string) {
+    this.deleteNestedReply(replyId, postId);
   }
 }

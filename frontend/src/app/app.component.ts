@@ -6,6 +6,7 @@ import { ThemeService } from './services/theme.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { NotificationMenuComponent } from './shared/components/notification-menu/notification-menu.component';
 import { LucideIconsModule } from './shared/icons/lucide-icons.module';
+import { getAvatarUrl } from './shared/utils/avatar.utils';
 
 @Component({
   selector: 'app-root',
@@ -637,11 +638,7 @@ export class AppComponent {
     this.showLogoutModal.set(false);
   }
 
-  getAvatarUrl(avatar: string | null | undefined): string {
-    if (!avatar) return '';
-    if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:3000' + avatar;
-  }
+  getAvatarUrl = getAvatarUrl;
 
   logout() {
     this.showLogoutModal.set(false);

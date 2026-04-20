@@ -5,6 +5,7 @@ import { NotificationService, Notification } from '../../../services/notificatio
 import { AuthService } from '../../../services/auth.service';
 import { interval, Subscription } from 'rxjs';
 import { LucideIconsModule } from '../../icons/lucide-icons.module';
+import { getAvatarUrl } from '../../utils/avatar.utils';
 
 @Component({
   selector: 'app-notification-menu',
@@ -387,11 +388,7 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
     }
   }
 
-  getAvatarUrl(avatar: string | null): string {
-    if (!avatar) return '';
-    if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:3000' + avatar;
-  }
+  getAvatarUrl = getAvatarUrl;
 
   getNotificationText(notification: Notification): string {
     switch (notification.type) {

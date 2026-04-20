@@ -1,37 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Post, PostsResponse } from '../shared/models';
 
-export interface Post {
-  id: string;
-  content: string;
-  mediaUrl?: string | null;
-  mediaType?: 'image' | 'youtube' | null;
-  linkUrl?: string | null;
-  createdAt: string;
-  author: {
-    id: string;
-    username: string;
-    name: string;
-    avatar: string | null;
-  };
-  _count: {
-    likes: number;
-    replies: number;
-  };
-}
-
-export interface PostsResponse {
-  posts: Post[];
-  nextCursor: string | null;
-  hasMore: boolean;
-}
+export { Post, PostsResponse };
 
 @Injectable({
   providedIn: 'root'
 })
 export class PostsService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -59,33 +38,33 @@ export class PostsService {
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params, withCredentials: true });
   }
 
-createPost(content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
-  return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true });
-}
+  createPost(content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
+    return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true });
+  }
 
   deletePost(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true });
   }
 
-updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
-  const body: any = { content };
-  
-  if (mediaUrl === null || mediaUrl === undefined) {
-    body.mediaUrl = null;
-    body.mediaType = null;
-  } else {
-    body.mediaUrl = mediaUrl;
-    body.mediaType = mediaType;
+  updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
+    const body: any = { content };
+
+    if (mediaUrl === null || mediaUrl === undefined) {
+      body.mediaUrl = null;
+      body.mediaType = null;
+    } else {
+      body.mediaUrl = mediaUrl;
+      body.mediaType = mediaType;
+    }
+
+    if (linkUrl === null || linkUrl === undefined) {
+      body.linkUrl = null;
+    } else {
+      body.linkUrl = linkUrl;
+    }
+
+    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, body, { withCredentials: true });
   }
-  
-  if (linkUrl === null || linkUrl === undefined) {
-    body.linkUrl = null;
-  } else {
-    body.linkUrl = linkUrl;
-  }
-  
-  return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, body, { withCredentials: true });
-}
 
   likePost(id: string): Observable<{ liked: boolean }> {
     return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true });
@@ -107,7 +86,7 @@ updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: st
     const params = new HttpParams()
       .set('page', page.toString())
       .set('limit', limit.toString());
-    
+
     return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 

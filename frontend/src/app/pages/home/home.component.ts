@@ -535,29 +535,8 @@ import { PostEditService } from '../../services/post-edit.service';
       margin-top: 12px;
       border: none;
     }
-    
-    .external-link-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: var(--background-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      color: var(--text-primary);
-      font-size: 14px;
-      text-decoration: none;
-      margin-top: 12px;
-      transition: all 0.2s;
-      
-      &:hover {
-        background: var(--primary-light);
-        border-color: var(--primary);
-        color: var(--primary);
-      }
-    }
-    
-    .new-post {
+
+    .post-actions {
       background: var(--background-secondary);
       border: 1px solid var(--border);
       border-radius: 16px;

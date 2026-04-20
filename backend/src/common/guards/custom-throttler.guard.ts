@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpStatus, HttpException } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { ExecutionContext } from '@nestjs/common';
+import { Request } from 'express';
+import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Record<string, any>): Promise<string> {
-    const user = req.user;
-    if (user && user.userId) {
-      return `user_${user.userId}`;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    
+    if (request.method === 'OPTIONS') {
+      return true;
     }
-    return req.ip || req.connection?.remoteAddress || 'unknown';
+
+    return super.canActivate(context);
   }
 }

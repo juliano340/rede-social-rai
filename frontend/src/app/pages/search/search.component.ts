@@ -5,6 +5,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { UsersService, User } from '../../services/users.service';
 import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
+import { getAvatarUrl } from '../../shared/utils/avatar.utils';
 
 @Component({
   selector: 'app-search',
@@ -357,11 +358,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.searchSubject.complete();
   }
 
-  getAvatarUrl(avatar: string | null): string {
-    if (!avatar) return '';
-    if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:3000' + avatar;
-  }
+  getAvatarUrl = getAvatarUrl;
 
   onSearchChange(value: string) {
     this.searchQuery = value;
