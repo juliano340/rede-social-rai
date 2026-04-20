@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { NotificationsService } from './notifications.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -10,7 +11,7 @@ export class NotificationsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -23,20 +24,20 @@ export class NotificationsController {
 
   @Get('unread-count')
   @UseGuards(JwtAuthGuard)
-  async getUnreadCount(@User() user: any) {
+  async getUnreadCount(@User() user: AuthenticatedUser) {
     const count = await this.notificationsService.getUnreadCount(user.userId);
     return { count };
   }
 
   @Patch(':id/read')
   @UseGuards(JwtAuthGuard)
-  async markAsRead(@User() user: any, @Param('id') notificationId: string) {
+  async markAsRead(@User() user: AuthenticatedUser, @Param('id') notificationId: string) {
     return this.notificationsService.markAsRead(user.userId, notificationId);
   }
 
   @Patch('read-all')
   @UseGuards(JwtAuthGuard)
-  async markAllAsRead(@User() user: any) {
+  async markAllAsRead(@User() user: AuthenticatedUser) {
     return this.notificationsService.markAllAsRead(user.userId);
   }
 }

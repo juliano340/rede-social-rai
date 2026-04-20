@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Query, UseGuards, Body, Req, Headers, UseInterceptors, UploadedFile as UploadedFileDecorator, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
@@ -6,16 +6,11 @@ import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UsersService } from './users.service';
 import { JwtService } from '@nestjs/jwt';
-import { UploadsService } from '../uploads/uploads.service';
+import { UploadsService, UploadedFile } from '../uploads/uploads.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateAvatarUrlDto } from './dto/update-avatar-url.dto';
-
-interface UploadedFile {
-  buffer: Buffer;
-  mimetype: string;
-  originalname: string;
-}
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Controller('users')
 export class UsersController {
@@ -27,13 +22,13 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getMe(@User() user: any) {
+  async getMe(@User() user: AuthenticatedUser) {
     return this.usersService.findById(user.userId);
   }
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  async updateMe(@User() user: any, @Body() data: UpdateUserDto) {
+  async updateMe(@User() user: AuthenticatedUser, @Body() data: UpdateUserDto) {
     return this.usersService.update(user.userId, data);
   }
 
@@ -45,7 +40,7 @@ export class UsersController {
       fileSize: 5 * 1024 * 1024,
     },
   }))
-  async uploadAvatar(@User() user: any, @UploadedFile() file: UploadedFile) {
+  async uploadAvatar(@User() user: AuthenticatedUser, @UploadedFileDecorator() file: UploadedFile) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -64,7 +59,7 @@ export class UsersController {
 
   @Patch('me/avatar-url')
   @UseGuards(JwtAuthGuard)
-  async updateAvatarUrl(@User() user: any, @Body() dto: UpdateAvatarUrlDto) {
+  async updateAvatarUrl(@User() user: AuthenticatedUser, @Body() dto: UpdateAvatarUrlDto) {
     return this.usersService.updateAvatarUrl(user.userId, dto.url);
   }
 
@@ -121,7 +116,7 @@ export class UsersController {
   @Post(':id/follow')
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
-  async follow(@Param('id') followingId: string, @User() user: any) {
+  async follow(@Param('id') followingId: string, @User() user: AuthenticatedUser) {
     return this.usersService.follow(user.userId, followingId);
   }
 

@@ -8,6 +8,7 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { User } from './decorators/user.decorator';
+import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -49,7 +50,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 3600000 } })
   async deleteAccount(
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Body() dto: DeleteAccountDto,
     @Res({ passthrough: true }) res: Response
   ) {

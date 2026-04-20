@@ -5,6 +5,7 @@ import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto, CreateReplyDto, UpdateReplyDto } from './dto';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Controller('posts')
 export class PostsController {
@@ -13,7 +14,7 @@ export class PostsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 2, ttl: 60000 } })
-  async create(@User() user: any, @Body() dto: CreatePostDto) {
+  async create(@User() user: AuthenticatedUser, @Body() dto: CreatePostDto) {
     return this.postsService.create(user.userId, dto.content, dto.mediaUrl, dto.mediaType, dto.linkUrl);
   }
 
@@ -30,7 +31,7 @@ export class PostsController {
   @Get('following')
   @UseGuards(JwtAuthGuard)
   async findFollowing(
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
@@ -57,7 +58,7 @@ export class PostsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async delete(@Param('id') id: string, @User() user: any) {
+  async delete(@Param('id') id: string, @User() user: AuthenticatedUser) {
     return this.postsService.delete(id, user.userId);
   }
 
@@ -65,7 +66,7 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Body() dto: UpdatePostDto,
   ) {
     return this.postsService.update(id, user.userId, dto.content, dto.mediaUrl, dto.mediaType, dto.linkUrl);
@@ -74,13 +75,13 @@ export class PostsController {
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
-  async like(@Param('id') id: string, @User() user: any) {
+  async like(@Param('id') id: string, @User() user: AuthenticatedUser) {
     return this.postsService.like(id, user.userId);
   }
 
   @Get(':id/liked')
   @UseGuards(JwtAuthGuard)
-  async isLiked(@Param('id') id: string, @User() user: any) {
+  async isLiked(@Param('id') id: string, @User() user: AuthenticatedUser) {
     return this.postsService.isLiked(id, user.userId);
   }
 
@@ -89,7 +90,7 @@ export class PostsController {
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   async createReply(
     @Param('id') postId: string,
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Body() dto: CreateReplyDto,
   ) {
     return this.postsService.createReply(postId, user.userId, dto.content, dto.parentId);
@@ -114,7 +115,7 @@ export class PostsController {
   async updateReply(
     @Param('id') postId: string,
     @Param('replyId') replyId: string,
-    @User() user: any,
+    @User() user: AuthenticatedUser,
     @Body() dto: UpdateReplyDto,
   ) {
     return this.postsService.updateReply(replyId, user.userId, dto.content);
@@ -125,7 +126,7 @@ export class PostsController {
   async deleteReply(
     @Param('id') postId: string,
     @Param('replyId') replyId: string,
-    @User() user: any,
+    @User() user: AuthenticatedUser,
   ) {
     return this.postsService.deleteReply(replyId, user.userId);
   }
