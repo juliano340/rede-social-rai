@@ -2,10 +2,10 @@ import { Component, OnInit, signal, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, RouterLink } from "@angular/router";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { HttpClient } from "@angular/common/http";
 import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 import { AuthService } from "../../services/auth.service";
-import { UsersService, User } from "../../services/users.service";
+import { UsersService } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
 import { PostEditService } from "../../services/post-edit.service";
 import { PostCardComponent } from "../../shared/components/post-card/post-card.component";
@@ -14,41 +14,8 @@ import { DeleteConfirmModalComponent } from "../../shared/components/delete-conf
 import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
 import { ToastService } from "../../shared/services/toast.service";
 import { getAvatarUrl } from "../../shared/utils/avatar.utils";
-
-interface UserProfile {
-  id: string;
-  username: string;
-  name: string;
-  bio: string | null;
-  bioLink: string | null;
-  avatar: string | null;
-  createdAt: string;
-  _count: {
-    posts: number;
-    followers: number;
-    following: number;
-  };
-  isFollowing?: boolean;
-}
-
-interface Post {
-  id: string;
-  content: string;
-  mediaUrl?: string | null;
-  mediaType?: 'image' | 'youtube' | null;
-  linkUrl?: string | null;
-  createdAt: string;
-  author: {
-    id: string;
-    username: string;
-    name: string;
-    avatar: string | null;
-  };
-  _count: {
-    likes: number;
-    replies: number;
-  };
-}
+import { UserProfile, User } from "../../shared/models/user.model";
+import { Post, Reply } from "../../shared/models/post.model";
 
 @Component({
   selector: "app-profile",
@@ -174,420 +141,49 @@ interface Post {
             @for (post of posts(); track post.id) {
               <app-post-card
                 [post]="post"
-                [isLiked]="postLikes()[post.id] === true"
-                [isLiking]="postLikingId() === post.id"
+[isLiked]="postEdit.postLikes()[post.id] === true"
+[isLiking]="postEdit.postLikingId() === post.id"
                 [isOwnPost]="authService.currentUser()?.id === post.author.id"
                 [authorLinkEnabled]="true"
                 [highlighted]="false"
-                [deleting]="deletingPostId() === post.id"
-                (likeClick)="onLikeClick($event)"
-                (replyToggle)="onReplyToggle($event)"
-                (deleteClick)="onDeleteClick($event)"
-                (editStart)="onEditStart($event)"
+                [deleting]="postEdit.deletingPostId() === post.id"
+(likeClick)="postEdit.toggleLike($event)"
+(replyToggle)="postEdit.toggleReply($event)"
+(deleteClick)="postEdit.deletePost($event)"
+(editStart)="postEdit.startEditPost($event)"
                 (editSave)="onEditSave($event)"
                 (editCancel)="onEditCancel()"
               ></app-post-card>
 
-              @if (viewingRepliesPost() === post.id || replyingToPost() === post.id) {
-                <app-reply-section
-                  [replies]="postReplies()"
-                  [loading]="loadingReplies()"
-                  [showForm]="replyingToPost() !== post.id"
-                  [showReplyToReply]="true"
-                  [currentUserId]="authService.currentUser()?.id || null"
-                  [highlightReplyId]="null"
-                  [isSubmitting]="isSubmittingReply()"
-                  [savingReply]="savingReply()"
+@if (postEdit.replyingToPost() === post.id) {
+<app-reply-section
+[replies]="postReplies()"
+[loading]="postEdit.loadingReplies()"
+[showForm]="postEdit.replyingToPost() !== post.id"
+[showReplyToReply]="true"
+[currentUserId]="authService.currentUser()?.id || null"
+[highlightReplyId]="null"
+[isSubmitting]="postEdit.isSubmittingReply()"
+[savingReply]="postEdit.savingReply()"
                   (close)="onCloseReplies()"
-                  (openForm)="onOpenReplyForm(post.id)"
+                  (openForm)="postEdit.openReplyForm(post.id)"
                   (submitReplyEvent)="onSubmitReply(post.id, $event)"
-                  (startEdit)="onStartEditReply($event)"
-                  (cancelEdit)="onCancelEditReply()"
+(startEdit)="postEdit.startEditReply($event)"
+(cancelEdit)="postEdit.cancelEditReply()"
                   (saveEdit)="onSaveEditReply(post.id, $event)"
-                  (deleteReplyEvent)="onDeleteReply(post.id, $event)"
-                  (toggleReplyToCommentEvent)="onToggleReplyToComment($event)"
-                  (cancelReplyToComment)="onCancelReplyToComment()"
+(deleteReplyEvent)="postEdit.deleteReply($event, post.id)"
+(toggleReplyToCommentEvent)="postEdit.toggleReplyToComment($event)"
+(cancelReplyToComment)="postEdit.cancelReplyToComment()"
                   (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
-                  (startEditNested)="onStartEditNestedReply($event)"
-                  (cancelEditNested)="onCancelEditNestedReply()"
+(startEditNested)="postEdit.startEditNestedReply($event)"
+(cancelEditNested)="postEdit.cancelEditNestedReply()"
                   (saveEditNested)="onSaveEditNestedReply(post.id, $event)"
-                  (deleteNestedReplyEvent)="onDeleteNestedReply(post.id, $event)"
+                  (deleteNestedReplyEvent)="postEdit.deleteNestedReply($event, post.id, '')"
                 ></app-reply-section>
               }
             }
           }
                 </div>
-                <div class="post-content">
-                  <div class="post-header">
-                    <span class="author-name">{{ post.author.name }}</span>
-                    <span class="author-username"
-                      >&#64;{{ post.author.username }}</span
-                    >
-                    <span class="post-time">{{
-                      formatDate(post.createdAt)
-                    }}</span>
-                  </div>
-                  <p class="post-text">{{ post.content }}</p>
-                  @if (post.mediaUrl && post.mediaType === 'image') {
-                    <img [src]="post.mediaUrl" alt="Mídia do post" class="post-media" />
-                  }
-                  @if (post.mediaUrl && post.mediaType === 'youtube') {
-                    <iframe [src]="getYouTubeEmbedUrl(post.mediaUrl)" frameborder="0" allowfullscreen class="post-media-video" loading="lazy"></iframe>
-                  }
-                  @if (post.linkUrl) {
-                    <a [href]="post.linkUrl" target="_blank" rel="noopener noreferrer" class="external-link-btn">
-                      <lucide-icon name="external-link" [size]="14"></lucide-icon>
-                      Abrir link
-                    </a>
-                  }
-@if (editingPost() === post.id) {
-<div class="edit-post-form">
-  <textarea
-    [(ngModel)]="editPostContent"
-    maxlength="280"
-    class="edit-post-textarea"
-  ></textarea>
-  <div class="media-type-selector">
-    <button
-      [class.active]="editMediaType() === 'image'"
-      (click)="setEditMediaType('image')"
-    >
-      <lucide-icon name="image" [size]="14"></lucide-icon> Imagem
-    </button>
-    <button
-      [class.active]="editMediaType() === 'youtube'"
-      (click)="setEditMediaType('youtube')"
-    >
-      <lucide-icon name="youtube" [size]="14"></lucide-icon> YouTube
-    </button>
-    <button
-      [class.active]="editLinkUrl() !== null"
-      (click)="editLinkUrl() !== null ? clearEditLinkPreview() : editLinkUrl.set('')"
-    >
-      <lucide-icon name="link" [size]="14"></lucide-icon> Link
-    </button>
-  </div>
-  @if (editMediaType()) {
-    <div class="media-edit-row">
-      <input
-        type="text"
-        [(ngModel)]="editMediaUrl"
-        [placeholder]="editMediaType() === 'image' ? 'URL da imagem' : 'URL do YouTube'"
-        class="media-url-input"
-      />
-    </div>
-  }
-  @if (editLinkUrl() !== null) {
-    <div class="media-edit-row">
-      <input
-        type="text"
-        [ngModel]="editLinkUrl()!"
-        (ngModelChange)="editLinkUrl.set($event)"
-        placeholder="URL do link"
-        class="media-url-input"
-      />
-    </div>
-  }
-  <div class="edit-post-actions">
-    <span class="char-count">{{ editPostContent.length }}/280</span>
-    <button class="cancel-btn" (click)="cancelEditPost()">Cancelar</button>
-    <button
-      class="save-btn"
-      (click)="saveEditPost(post.id)"
-      [disabled]="!editPostContent.trim() || editPostContent.length > 280"
-    >
-      Salvar
-    </button>
-  </div>
-</div>
-}
-                  <div class="post-actions">
-                    <button
-                      class="action-btn like"
-                      [class.liked]="postLikes()[post.id]"
-                      [disabled]="postLikingId() === post.id"
-                      (click)="toggleLike(post)"
-                    >
-                      <lucide-icon name="heart" [size]="18" [class.filled]="postLikes()[post.id]"></lucide-icon>
-                      {{ post._count.likes }}
-                    </button>
-                    <button
-                      class="action-btn reply"
-                      (click)="toggleReply(post.id)"
-                      [class.active]="
-                        replyingToPost() === post.id ||
-                        viewingRepliesPost() === post.id
-                      "
-                    >
-                      <lucide-icon name="message-circle" [size]="18"></lucide-icon>
-                      {{ post._count.replies }}
-                    </button>
-                    @if (authService.currentUser()?.id === post.author.id) {
-                      <button
-                        class="action-btn edit"
-                        (click)="startEditPost(post)"
-                        [disabled]="editingPost() === post.id"
-                      >
-                        <lucide-icon name="pencil" [size]="18"></lucide-icon>
-                      </button>
-                      <button
-                        class="action-btn delete"
-                        (click)="deletePost(post.id)"
-                      >
-                        <lucide-icon name="trash-2" [size]="18"></lucide-icon>
-                      </button>
-                    }
-                  </div>
-
-                  @if (
-                    viewingRepliesPost() === post.id ||
-                    replyingToPost() === post.id
-                  ) {
-                    <div class="replies-list">
-                      <button
-                        class="close-replies"
-                        (click)="toggleReply(post.id)"
-                      >
-                        <lucide-icon name="x" [size]="18"></lucide-icon>
-                      </button>
-
-                      <!-- Show comment link -->
-                      @if (replyingToPost() !== post.id) {
-                        <button
-                          class="add-reply-link"
-                          (click)="openReplyForm(post.id)"
-                        >
-                          <lucide-icon name="message-circle" [size]="16"></lucide-icon> Comentar
-                        </button>
-                      }
-
-                      <!-- Reply form -->
-                      @if (replyingToPost() === post.id) {
-                        <div class="reply-form">
-                          <textarea
-                            [(ngModel)]="replyContent"
-                            placeholder="Escreva um comentário..."
-                            maxlength="280"
-                          ></textarea>
-                          <div class="reply-actions">
-                            <span class="char-count"
-                              >{{ replyContent.length }}/280</span
-                            >
-                            <div class="reply-buttons">
-                              <button
-                                class="cancel-btn"
-                                (click)="cancelReply()"
-                              >
-                                Cancelar
-                              </button>
-                              <button
-                                class="submit-reply-btn"
-                                (click)="submitReply(post.id)"
-                                [disabled]="
-                                  !replyContent.trim() || isSubmittingReply()
-                                "
-                              >
-                                Comentar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      }
-
-                      @if (loadingReplies()) {
-                        <div class="loading-replies">
-                          <div class="spinner-sm"></div>
-                        </div>
-                      } @else if (
-                        postReplies().length === 0 &&
-                        replyingToPost() !== post.id
-                      ) {
-                        <p class="no-replies">Nenhuma resposta ainda.</p>
-                      } @else {
-                        @for (reply of postReplies(); track reply.id) {
-                          <div class="reply-item">
-                            <div class="reply-avatar">
-                              @if (reply.author.avatar) {
-<img [src]="getAvatarUrl(reply.author.avatar)" alt="Avatar" class="avatar-image" />
-                              } @else {
-                                {{
-                                  (reply.author.name[0] || "?").toUpperCase()
-                                }}
-                              }
-                            </div>
-                            <div class="reply-content">
-                              <div class="reply-header">
-                                <span class="reply-name">{{
-                                  reply.author.name
-                                }}</span>
-                                <span class="reply-username"
-                                  >&#64;{{ reply.author.username }}</span
-                                >
-                              </div>
-                              @if (editingReply() === reply.id) {
-                                <div class="edit-reply-form">
-                                  <textarea
-                                    [(ngModel)]="editReplyContent"
-                                    maxlength="280"
-                                  ></textarea>
-                                  <div class="edit-actions">
-                                    <button
-                                      class="cancel-edit"
-                                      (click)="cancelEditReply()"
-                                    >
-                                      Cancelar
-                                    </button>
-                                    <button
-                                      class="save-edit"
-                                      (click)="saveEditReply(reply.id, post.id)"
-                                      [disabled]="
-                                        !editReplyContent.trim() ||
-                                        savingReply()
-                                      "
-                                    >
-                                      Salvar
-                                    </button>
-                                  </div>
-                                </div>
-                              } @else {
-                                <p class="reply-text">{{ reply.content }}</p>
-                              }
-                              @if (
-                                authService.currentUser()?.id ===
-                                  reply.author.id && editingReply() !== reply.id
-                              ) {
-                                <div class="reply-actions">
-                                  <button
-                                    class="reply-edit-btn"
-                                    (click)="startEditReply(reply)"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    class="reply-delete-btn"
-                                    (click)="deleteReply(reply.id, post.id)"
-                                  >
-                                    <lucide-icon name="trash-2" [size]="14"></lucide-icon>
-                                  </button>
-                                </div>
-                              }
-
-                              <!-- Nested replies (children) -->
-                              @if (
-                                reply.children && reply.children.length > 0
-                              ) {
-                                <div class="nested-replies">
-                                  @for (
-                                    child of reply.children;
-                                    track child.id
-                                  ) {
-                                    <div class="reply-item nested">
-                                      <div class="reply-avatar small">
-                                        @if (child.author.avatar) {
-<img [src]="getAvatarUrl(child.author.avatar)" alt="Avatar" class="avatar-image" />
-                                        } @else {
-                                          {{
-                                            (
-                                              child.author.name[0] || "?"
-                                            ).toUpperCase()
-                                          }}
-                                        }
-                                      </div>
-                                      <div class="reply-content">
-                                        <div class="reply-header">
-                                          <span class="reply-name">{{
-                                            child.author.name
-                                          }}</span>
-                                          <span class="reply-username"
-                                            >&#64;{{
-                                              child.author.username
-                                            }}</span
-                                          >
-                                        </div>
-                                        @if (
-                                          editingNestedReply() === child.id
-                                        ) {
-                                          <div class="edit-reply-form">
-                                            <textarea
-                                              [(ngModel)]="
-                                                editNestedReplyContent
-                                              "
-                                              maxlength="280"
-                                            ></textarea>
-                                            <div class="edit-actions">
-                                              <button
-                                                class="cancel-edit"
-                                                (click)="
-                                                  cancelEditNestedReply()
-                                                "
-                                              >
-                                                Cancelar
-                                              </button>
-                                              <button
-                                                class="save-edit"
-                                                (click)="
-                                                  saveEditNestedReply(
-                                                    child.id,
-                                                    post.id
-                                                  )
-                                                "
-                                                [disabled]="
-                                                  !editNestedReplyContent.trim() ||
-                                                  savingNestedReply()
-                                                "
-                                              >
-                                                Salvar
-                                              </button>
-                                            </div>
-                                          </div>
-                                        } @else {
-                                          <p class="reply-text">
-                                            {{ child.content }}
-                                          </p>
-                                        }
-                                        @if (
-                                          authService.currentUser()?.id ===
-                                            child.author.id &&
-                                          editingNestedReply() !== child.id
-                                        ) {
-                                          <div class="reply-actions">
-                                            <button
-                                              class="reply-edit-btn"
-                                              (click)="
-                                                startEditNestedReply(child)
-                                              "
-                                            >
-                                              Editar
-                                            </button>
-                                            <button
-                                              class="reply-delete-btn"
-                                              (click)="
-                                                deleteNestedReply(
-                                                  child.id,
-                                                  post.id
-                                                )
-                                              "
-                                            >
-                                              <lucide-icon name="trash-2" [size]="14"></lucide-icon>
-                                            </button>
-                                          </div>
-                                        }
-                                      </div>
-                                    </div>
-                                  }
-                                </div>
-                              }
-                            </div>
-                          </div>
-                        }
-                      }
-                    </div>
-                  }
-                </div>
-              </article>
-            }
-          }
-        </div>
       } @else {
         <div class="error-state">
           <div class="error-icon">😕</div>
@@ -750,7 +346,7 @@ interface Post {
 }
 
 <app-delete-confirm-modal
-  [show]="showDeletePostModal()"
+  [show]="postEdit.showDeletePostModal()"
   title="Excluir Postagem"
   itemType="esta postagem"
   (close)="postEdit.closeDeletePostModal()"
@@ -758,7 +354,7 @@ interface Post {
 ></app-delete-confirm-modal>
 
 <app-delete-confirm-modal
-  [show]="showDeleteReplyModal()"
+  [show]="postEdit.showDeleteReplyModal()"
   title="Excluir Resposta"
   itemType="esta resposta"
   (close)="postEdit.closeDeleteReplyModal()"
@@ -2361,51 +1957,17 @@ color: white;
 export class ProfileComponent implements OnInit {
   profile = signal<UserProfile | null>(null);
   posts = signal<Post[]>([]);
-  private postEdit = inject(PostEditService);
-  loadingReplies = signal(false);
-  savingReply = signal(false);
-  savingNestedReply = signal(false);
-  postReplies = signal<any[]>([]);
-
-  get editingPost() { return this.postEdit.editingPost; }
-  get editPostContent() { return this.postEdit.editPostContent; }
-  set editPostContent(value: string) { this.postEdit.editPostContent = value; }
-  get editMediaUrl() { return this.postEdit.editMediaUrl; }
-  set editMediaUrl(value: string) { this.postEdit.editMediaUrl = value; }
-  get editMediaType() { return this.postEdit.editMediaType; }
-  get editLinkUrl() { return this.postEdit.editLinkUrl; }
-  get postLikingId() { return this.postEdit.postLikingId; }
-  get postLikes() { return this.postEdit.postLikes; }
-  get replyingToPost() { return this.postEdit.replyingToPost; }
-  get replyContent() { return this.postEdit.replyContent; }
-  set replyContent(value: string) { this.postEdit.replyContent = value; }
-  get isSubmittingReply() { return this.postEdit.isSubmittingReply; }
-  get replyingToComment() { return this.postEdit.replyingToComment; }
-  get replyingToCommentContent() { return this.postEdit.replyingToCommentContent; }
-  set replyingToCommentContent(value: string) { this.postEdit.replyingToCommentContent = value; }
-  get editingReply() { return this.postEdit.editingReply; }
-  get editReplyContent() { return this.postEdit.editReplyContent; }
-  set editReplyContent(value: string) { this.postEdit.editReplyContent = value; }
-  get showDeleteReplyModal() { return this.postEdit.showDeleteReplyModal; }
-  get showDeletePostModal() { return this.postEdit.showDeletePostModal; }
-  get deletingPostId() { return this.postEdit.deletingPostId; }
-  get deletingReplyId() { return this.postEdit.deletingReplyId; }
-  get deletingReplyPostId() { return this.postEdit.deletingReplyPostId; }
-  get editingNestedReply() { return this.postEdit.editingNestedReply; }
-  get editNestedReplyContent() { return this.postEdit.editNestedReplyContent; }
-  set editNestedReplyContent(value: string) { this.postEdit.editNestedReplyContent = value; }
-  readonly viewingRepliesPost = this.postEdit.replyingToPost;
+  postEdit = inject(PostEditService);
+  postReplies = signal<Reply[]>([]);
 
   loading = signal(true);
   postsLoading = signal(true);
   isFollowingLoading = signal(false);
-  showFollowers = false;
-  showFollowing = false;
 
   // Modal signals
   showModal = signal(false);
   modalTitle = signal("");
-  modalUsers = signal<UserProfile[]>([]);
+  modalUsers = signal<User[]>([]);
   modalLoading = signal(false);
 
   // Avatar upload
@@ -2488,117 +2050,24 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  toggleLike(post: Post) {
-    this.postEdit.toggleLike(post);
-  }
-
-  toggleRepliesView(post: Post) {
-    if (this.viewingRepliesPost() === post.id) {
-      this.viewingRepliesPost.set(null);
-      this.postReplies.set([]);
-    } else {
-      this.viewingRepliesPost.set(post.id);
-      this.loadingReplies.set(true);
-      this.postsService.getReplies(post.id).subscribe({
-        next: (data) => {
-          this.postReplies.set(data.replies || []);
-          this.loadingReplies.set(false);
-        },
-        error: () => this.loadingReplies.set(false),
-      });
-    }
-  }
-
-  startEditReply(reply: any) {
-    this.postEdit.startEditReply(reply);
-  }
-
-  cancelEditReply() {
-    this.postEdit.cancelEditReply();
-  }
-
-  saveEditReply(replyId: string, postId: string) {
-    this.postEdit.saveEditReply(replyId, postId, this.postReplies);
-  }
-
-  deleteReply(replyId: string, postId: string) {
-    this.postEdit.deleteReply(replyId, postId);
-  }
-
-  confirmDeleteReply() {
-    this.postEdit.confirmDeleteReply(this.postReplies, this.posts);
-  }
-
-  closeDeleteReplyModal() {
-    this.postEdit.closeDeleteReplyModal();
-  }
-
-  deletePost(postId: string) {
-    this.postEdit.deletePost(postId);
-  }
-
-  closeDeletePostModal() {
-    this.postEdit.closeDeletePostModal();
-  }
-
-  confirmDeletePost() {
-    this.postEdit.confirmDeletePost(this.posts);
-  }
-
-  startEditPost(post: any) {
-    this.postEdit.startEditPost(post);
-  }
-
-  cancelEditPost() {
-    this.postEdit.cancelEditPost();
-  }
-
-  saveEditPost(postId: string) {
-    this.postEdit.saveEditPost(postId, this.posts);
-  }
-
-  startEditNestedReply(reply: any) {
-    this.postEdit.startEditNestedReply(reply);
-  }
-
-  cancelEditNestedReply() {
-    this.postEdit.cancelEditNestedReply();
-  }
-
-  saveEditNestedReply(replyId: string, postId: string) {
-    this.postEdit.saveEditNestedReply(replyId, postId, '', this.postReplies);
-  }
-
-  deleteNestedReply(replyId: string, postId: string) {
-    this.postEdit.deleteNestedReply(replyId, postId, '');
-  }
-
-  toggleReply(postId: string) {
-    this.postEdit.toggleReply(postId);
-  }
-
-  openReplyForm(postId: string) {
-    this.postEdit.openReplyForm(postId);
-  }
-
-  cancelReply() {
-    this.postEdit.cancelReply();
-  }
-
-  submitReply(postId: string) {
+  onSubmitReply(postId: string, _content: string) {
     this.postEdit.submitReply(postId, this.posts, this.postReplies);
   }
 
-  toggleReplyToComment(reply: any) {
-    this.postEdit.toggleReplyToComment(reply.id);
+  onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
+    this.postEdit.saveEditReply(data.replyId, postId, this.postReplies);
   }
 
-  cancelReplyToComment() {
-    this.postEdit.cancelReplyToComment();
+  onDeleteReply(postId: string, replyId: string) {
+    this.postEdit.deleteReply(replyId, postId);
   }
 
-  submitReplyToComment(replyId: string, postId: string) {
-    this.postEdit.submitReplyToComment(replyId, postId, this.postReplies);
+  onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
+    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies);
+  }
+
+  onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
+    this.postEdit.saveEditNestedReply(data.replyId, postId, '', this.postReplies);
   }
 
   openFollowers() {
@@ -2677,7 +2146,7 @@ export class ProfileComponent implements OnInit {
                       )
                       .subscribe({
                         next: (liked) => {
-                          this.postLikes.update((likes) => ({
+                          this.postEdit.postLikes.update((likes) => ({
                             ...likes,
                             [post.id]: liked,
                           }));
@@ -2946,54 +2415,6 @@ error: (err) => {
 });
   }
 
-  isValidImageUrl(url: string): boolean {
-    return this.postEdit.isValidImageUrl(url);
-  }
-
-  normalizeUrl(url: string): string | null {
-    return this.postEdit.normalizeUrl(url);
-  }
-
-  setEditMediaType(type: 'image' | 'youtube') {
-    this.postEdit.setEditMediaType(type);
-  }
-
-  removeEditMedia() {
-    this.postEdit.removeEditMedia();
-  }
-
-  clearEditMediaType() {
-    this.postEdit.clearEditMediaType();
-  }
-
-  detectUrlInContent(content: string): string | null {
-    return this.postEdit.detectUrlInContent(content);
-  }
-
-  getDomain(url: string): string {
-    return this.postEdit.getDomain(url);
-  }
-
-  clearEditLinkPreview() {
-    this.postEdit.clearEditLinkPreview();
-  }
-
-  onLikeClick(post: Post) {
-    this.toggleLike(post);
-  }
-
-  onReplyToggle(postId: string) {
-    this.toggleReply(postId);
-  }
-
-  onEditStart(post: Post) {
-    this.startEditPost(post);
-  }
-
-  onDeleteClick(postId: string) {
-    this.deletePost(postId);
-  }
-
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
     this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
       next: (updated) => {
@@ -3014,59 +2435,6 @@ error: (err) => {
   }
 
   onCloseReplies() {
-    this.postEdit.viewingRepliesPost.set(null);
     this.postEdit.replyingToPost.set(null);
-  }
-
-  onOpenReplyForm(postId: string) {
-    this.openReplyForm(postId);
-  }
-
-  onSubmitReply(postId: string, content: string) {
-    this.submitReply(postId);
-  }
-
-  onStartEditReply(reply: any) {
-    this.startEditReply(reply);
-  }
-
-  onCancelEditReply() {
-    this.cancelEditReply();
-  }
-
-  onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
-    this.saveEditReply(data.replyId, postId);
-  }
-
-  onDeleteReply(postId: string, replyId: string) {
-    this.deleteReply(replyId, postId);
-  }
-
-  onToggleReplyToComment(commentId: string) {
-    this.toggleReplyToComment({ id: commentId } as any);
-  }
-
-  onCancelReplyToComment() {
-    this.cancelReplyToComment();
-  }
-
-  onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.submitReplyToComment(data.replyId, postId);
-  }
-
-  onStartEditNestedReply(reply: any) {
-    this.startEditNestedReply(reply);
-  }
-
-  onCancelEditNestedReply() {
-    this.cancelEditNestedReply();
-  }
-
-  onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
-    this.saveEditNestedReply(data.replyId, postId);
-  }
-
-  onDeleteNestedReply(postId: string, replyId: string) {
-    this.deleteNestedReply(replyId, postId);
   }
 }
