@@ -33,32 +33,7 @@ export class AuthService {
     });
   }
 
-  async register(dto: RegisterDto, clientIp: string, res: Response) {
-    if (!dto.name || dto.name.trim().length === 0) {
-      throw new ConflictException('Nome é obrigatório');
-    }
-    if (dto.name.length > 25) {
-      throw new ConflictException('Nome deve ter no máximo 25 caracteres');
-    }
-    if (!dto.username || dto.username.trim().length === 0) {
-      throw new ConflictException('Username é obrigatório');
-    }
-    if (dto.username.length < 3 || dto.username.length > 20) {
-      throw new ConflictException('Username deve ter entre 3 e 20 caracteres');
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(dto.username)) {
-      throw new ConflictException('Username só pode ter letras, números e underscore');
-    }
-    if (!dto.email || dto.email.trim().length === 0) {
-      throw new ConflictException('Email é obrigatório');
-    }
-    if (!dto.password || dto.password.length < 6) {
-      throw new ConflictException('Senha deve ter no mínimo 6 caracteres');
-    }
-    if (dto.password.length > 50) {
-      throw new ConflictException('Senha deve ter no máximo 50 caracteres');
-    }
-
+  async register(dto: RegisterDto, res: Response) {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [{ email: dto.email }, { username: dto.username }],
@@ -93,7 +68,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto, clientIp: string, res: Response) {
+  async login(dto: LoginDto, res: Response) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });

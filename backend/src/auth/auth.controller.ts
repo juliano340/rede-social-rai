@@ -16,18 +16,16 @@ export class AuthController {
   @Post('register')
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async register(@Body() dto: RegisterDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const clientIp = req.ip || 'unknown';
-    return this.authService.register(dto, clientIp, res);
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.register(dto, res);
   }
 
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const clientIp = req.ip || 'unknown';
-    return this.authService.login(dto, clientIp, res);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.login(dto, res);
   }
 
   @Post('refresh')
