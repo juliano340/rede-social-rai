@@ -97,14 +97,11 @@ export class PostsController {
   @Public()
   async getReplies(
     @Param('id') postId: string,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.postsService.getReplies(
-      postId,
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
-    );
+    const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
+    return this.postsService.getReplies(postId, cursor, parsedLimit);
   }
 
   @Put(':id/reply/:replyId')

@@ -82,11 +82,11 @@ export class PostsService {
     return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true });
   }
 
-  getReplies(postId: string, page = 1, limit = 20): Observable<any> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
-
+  getReplies(postId: string, cursor?: string, limit = 20): Observable<any> {
+    const params = new HttpParams().set('limit', limit.toString());
+    if (cursor) {
+      params.set('cursor', cursor);
+    }
     return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 

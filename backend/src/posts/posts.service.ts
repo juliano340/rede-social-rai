@@ -102,14 +102,30 @@ export class PostsService {
         author: { select: AUTHOR_SELECT },
         _count: { select: COUNT_SELECT },
         likes: userId ? { where: { userId }, select: { id: true } } : false,
+        replies: {
+          where: { parentId: null },
+          take: 3,
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: { select: AUTHOR_SELECT },
+            children: {
+              take: 2,
+              orderBy: { createdAt: 'asc' },
+              include: { author: { select: AUTHOR_SELECT } },
+            },
+          },
+        },
       },
     });
 
     return this.buildCursorPagination(
-      posts.map(post => ({
-        ...post,
-        isLiked: userId ? post.likes.length > 0 : false,
-      })),
+      posts.map(post => {
+        const { likes, ...rest } = post;
+        return {
+          ...rest,
+          isLiked: userId ? likes.length > 0 : false,
+        };
+      }),
       limit
     );
   }
@@ -140,14 +156,30 @@ export class PostsService {
         author: { select: AUTHOR_SELECT },
         _count: { select: COUNT_SELECT },
         likes: { where: { userId }, select: { id: true } },
+        replies: {
+          where: { parentId: null },
+          take: 3,
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: { select: AUTHOR_SELECT },
+            children: {
+              take: 2,
+              orderBy: { createdAt: 'asc' },
+              include: { author: { select: AUTHOR_SELECT } },
+            },
+          },
+        },
       },
     });
 
     return this.buildCursorPagination(
-      posts.map(post => ({
-        ...post,
-        isLiked: post.likes.length > 0,
-      })),
+      posts.map(post => {
+        const { likes, ...rest } = post;
+        return {
+          ...rest,
+          isLiked: likes.length > 0,
+        };
+      }),
       limit
     );
   }
@@ -290,27 +322,37 @@ export class PostsService {
     return reply;
   }
 
-  async getReplies(postId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
+  async getReplies(postId: string, cursor?: string, limit = 20) {
+    const take = limit + 1;
+    const where: { postId: string; parentId: null; createdAt?: { lt: Date } } = {
+      postId,
+      parentId: null,
+    };
 
-    const [replies, total] = await Promise.all([
-      this.prisma.reply.findMany({
-        where: { postId, parentId: null },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'asc' },
-        include: {
-          ...REPLY_AUTHOR_INCLUDE,
-          children: {
-            include: REPLY_AUTHOR_INCLUDE,
-            orderBy: { createdAt: 'asc' },
-          },
+    if (cursor) {
+      where.createdAt = { lt: await this.getCursorDate(cursor) };
+    }
+
+    const replies = await this.prisma.reply.findMany({
+      where,
+      take,
+      orderBy: { createdAt: 'asc' },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        children: {
+          orderBy: { createdAt: 'asc' },
+          include: { author: { select: AUTHOR_SELECT } },
         },
-      }),
-      this.prisma.reply.count({ where: { postId, parentId: null } }),
-    ]);
+      },
+    });
 
-    return { replies, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const hasMore = replies.length > limit;
+    const results = hasMore ? replies.slice(0, limit) : replies;
+    const nextCursor = hasMore && results.length > 0
+      ? results[results.length - 1].createdAt.toISOString()
+      : null;
+
+    return { replies: results, nextCursor, hasMore };
   }
 
   async updateReply(replyId: string, userId: string, content: string) {
