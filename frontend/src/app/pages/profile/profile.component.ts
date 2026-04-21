@@ -2129,21 +2129,11 @@ export class ProfileComponent implements OnInit {
               next: (res) => {
                 this.posts.set(res.posts || []);
                 if (this.authService.isLoggedIn()) {
-                  res.posts?.forEach((post: Post) => {
-                    this.http
-                      .get<boolean>(
-                        `http://localhost:3000/posts/${post.id}/liked`,
-                        { withCredentials: true },
-                      )
-                      .subscribe({
-                        next: (liked) => {
-                          this.postEdit.postLikes.update((likes) => ({
-                            ...likes,
-                            [post.id]: liked,
-                          }));
-                        },
-                      });
+                  const likes: Record<string, boolean> = {};
+                  res.posts?.forEach((post: any) => {
+                    likes[post.id] = post.isLiked || false;
                   });
+                  this.postEdit.postLikes.set(likes);
                 }
               },
               error: () => {},
