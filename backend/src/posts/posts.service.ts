@@ -340,8 +340,16 @@ export class PostsService {
       include: {
         author: { select: AUTHOR_SELECT },
         children: {
+          take: 10,
           orderBy: { createdAt: 'asc' },
-          include: { author: { select: AUTHOR_SELECT } },
+          include: {
+            author: { select: AUTHOR_SELECT },
+            children: {
+              take: 5,
+              orderBy: { createdAt: 'asc' },
+              include: { author: { select: AUTHOR_SELECT } },
+            },
+          },
         },
       },
     });

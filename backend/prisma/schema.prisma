@@ -80,6 +80,7 @@ model Reply {
 
   @@index([postId])
   @@index([parentId])
+  @@index([createdAt])
 }
 
 model Follow {
