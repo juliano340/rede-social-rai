@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { User } from '../auth/decorators/user.decorator';
@@ -23,9 +24,11 @@ export class PostsController {
   async findAll(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Req() req?: Request,
   ) {
     const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
-    return this.postsService.findAll(cursor, parsedLimit);
+    const userId = (req as any)?.user?.userId;
+    return this.postsService.findAll(cursor, parsedLimit, userId);
   }
 
   @Get('following')
@@ -77,12 +80,6 @@ export class PostsController {
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async like(@Param('id') id: string, @User() user: AuthenticatedUser) {
     return this.postsService.like(id, user.userId);
-  }
-
-  @Get(':id/liked')
-  @UseGuards(JwtAuthGuard)
-  async isLiked(@Param('id') id: string, @User() user: AuthenticatedUser) {
-    return this.postsService.isLiked(id, user.userId);
   }
 
   @Post(':id/reply')

@@ -1604,26 +1604,25 @@ export class HomeComponent implements OnInit {
 loadPosts() {
     this.isLoading.set(true);
     this.loadError.set(null);
-    
-    const feed = this.feedType(); 
-    const request = feed === 'following' 
+
+    const feed = this.feedType();
+    const request = feed === 'following'
       ? this.postsService.getFollowingPosts()
       : this.postsService.getPosts();
-    
+
     request.subscribe({
       next: (response) => {
         this.posts.set(response.posts);
-        this.isLoading.set(false);
 
         if (this.authService.isLoggedIn()) {
+          const likes: Record<string, boolean> = {};
           response.posts.forEach((post: any) => {
-            this.postsService.isLiked(post.id).subscribe({
-              next: (liked: any) => {
-                this.postLikes.update(likes => ({ ...likes, [post.id]: liked }));
-              },
-            });
+            likes[post.id] = post.isLiked || false;
           });
+          this.postLikes.set(likes);
         }
+
+        this.isLoading.set(false);
       },
       error: (err) => {
         this.loadError.set('Não foi possível carregar as publicações.');
@@ -1665,7 +1664,12 @@ switchFeed(type: 'all' | 'following') {
   }
 
   onReplyToggle(postId: string) {
-    this.toggleReply(postId);
+    if (this.replyingToPost() === postId) {
+      this.postEdit.cancelReply();
+    } else {
+      this.replyingToPost.set(postId);
+      this.loadReplies(postId);
+    }
   }
 
   onEditStart(post: Post) {
@@ -1733,7 +1737,7 @@ switchFeed(type: 'all' | 'following') {
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.submitReplyToComment(data.replyId, postId);
+    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content);
   }
 
   onStartEditNestedReply(reply: any) {
@@ -1838,10 +1842,6 @@ createPost() {
 
   toggleLike(post: Post) {
     this.postEdit.toggleLike(post);
-  }
-
-  submitReplyToComment(commentId: string, postId: string) {
-    this.postEdit.submitReplyToComment(commentId, postId, this.postReplies, this.postEdit.replyingToCommentContent);
   }
 
   submitReply(postId: string, content: string) {

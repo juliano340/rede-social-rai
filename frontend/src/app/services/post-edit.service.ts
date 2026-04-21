@@ -299,7 +299,7 @@ export class PostEditService {
             postRepliesSignal.set(data.replies || []);
           }
         });
-        this.cancelReplyToComment();
+        this.replyingToCommentContent = '';
         this.isSubmittingReply.set(false);
       },
       error: (err) => {

@@ -90,7 +90,7 @@ export class PostsService {
     });
   }
 
-  async findAll(cursor?: string, limit = 20) {
+  async findAll(cursor?: string, limit = 20, userId?: string) {
     const take = limit + 1;
     const where = cursor ? { createdAt: { lt: await this.getCursorDate(cursor) } } : {};
 
@@ -98,10 +98,20 @@ export class PostsService {
       where,
       take,
       orderBy: { createdAt: 'desc' },
-      include: POST_INCLUDE,
+      include: {
+        author: { select: AUTHOR_SELECT },
+        _count: { select: COUNT_SELECT },
+        likes: userId ? { where: { userId }, select: { id: true } } : false,
+      },
     });
 
-    return this.buildCursorPagination(posts, limit);
+    return this.buildCursorPagination(
+      posts.map(post => ({
+        ...post,
+        isLiked: userId ? post.likes.length > 0 : false,
+      })),
+      limit
+    );
   }
 
   async findFollowing(userId: string, cursor?: string, limit = 20) {
@@ -126,10 +136,20 @@ export class PostsService {
       where,
       take,
       orderBy: { createdAt: 'desc' },
-      include: POST_INCLUDE,
+      include: {
+        author: { select: AUTHOR_SELECT },
+        _count: { select: COUNT_SELECT },
+        likes: { where: { userId }, select: { id: true } },
+      },
     });
 
-    return this.buildCursorPagination(posts, limit);
+    return this.buildCursorPagination(
+      posts.map(post => ({
+        ...post,
+        isLiked: post.likes.length > 0,
+      })),
+      limit
+    );
   }
 
   async findByUser(userId: string, cursor?: string, limit = 20) {

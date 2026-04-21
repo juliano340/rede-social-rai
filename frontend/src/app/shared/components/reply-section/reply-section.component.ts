@@ -98,7 +98,7 @@ import { getAvatarUrl } from '../../utils/avatar.utils';
                   }
                 </div>
               }
-              @if (replyingToCommentId === reply.id) {
+              @if (replyingToCommentId && replyingToCommentId === reply.id) {
                 <div class="reply-to-reply-form">
                   <textarea
                     [(ngModel)]="replyingToCommentContent"
