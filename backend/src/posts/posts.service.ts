@@ -91,8 +91,8 @@ export class PostsService {
     };
   }
 
-  private mapPostWithLikeStatus<T extends { likes?: { id: string }[] }>(post: T, userId?: string) {
-    const { likes, ...rest } = post as any;
+  private mapPostWithLikeStatus(post: any, userId?: string) {
+    const { likes, ...rest } = post;
     return {
       ...rest,
       isLiked: userId ? (likes?.length ?? 0) > 0 : false,
