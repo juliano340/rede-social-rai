@@ -2041,8 +2041,8 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  onSubmitReply(postId: string, _content: string) {
-    this.postEdit.submitReply(postId, this.posts, this.postReplies);
+  onSubmitReply(postId: string, content: string) {
+    this.postEdit.submitReply(postId, this.posts, this.postReplies, content);
   }
 
   onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
@@ -2054,7 +2054,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies);
+    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content);
   }
 
   onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {

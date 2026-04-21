@@ -239,11 +239,12 @@ export class PostEditService {
     this.replyContent = '';
   }
 
-  submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<Reply[]>): void {
-    if (!this.replyContent.trim()) return;
+  submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string): void {
+    const content = replyContent ?? this.replyContent;
+    if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, this.replyContent).subscribe({
+    this.postsService.createReply(postId, content).subscribe({
       next: () => {
         const post = postsSignal().find(p => p.id === postId);
         if (post) {
@@ -286,11 +287,12 @@ export class PostEditService {
     this.replyingToCommentContent = '';
   }
 
-  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
-    if (!this.replyingToCommentContent.trim()) return;
+  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string): void {
+    const content = replyContent ?? this.replyingToCommentContent;
+    if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, this.replyingToCommentContent, replyId).subscribe({
+    this.postsService.createReply(postId, content, replyId).subscribe({
       next: () => {
         this.postsService.getReplies(postId).subscribe({
           next: (data) => {

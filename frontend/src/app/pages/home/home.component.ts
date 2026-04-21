@@ -1705,7 +1705,7 @@ switchFeed(type: 'all' | 'following') {
   }
 
   onSubmitReply(postId: string, content: string) {
-    this.submitReply(postId);
+    this.submitReply(postId, content);
   }
 
   onStartEditReply(reply: any) {
@@ -1841,11 +1841,11 @@ createPost() {
   }
 
   submitReplyToComment(commentId: string, postId: string) {
-    this.postEdit.submitReplyToComment(commentId, postId, this.postReplies);
+    this.postEdit.submitReplyToComment(commentId, postId, this.postReplies, this.postEdit.replyingToCommentContent);
   }
 
-  submitReply(postId: string) {
-    this.postEdit.submitReply(postId, this.posts, this.postReplies);
+  submitReply(postId: string, content: string) {
+    this.postEdit.submitReply(postId, this.posts, this.postReplies, content);
   }
 
   startEditReply(reply: any) {
