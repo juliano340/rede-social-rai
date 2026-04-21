@@ -146,7 +146,7 @@ import { Post, Reply } from "../../shared/models/post.model";
                 [authorLinkEnabled]="true"
                 [highlighted]="false"
                 [deleting]="postEdit.deletingPostId() === post.id"
-                [replies]="postEdit.replyingToPost() === post.id ? postReplies() : []"
+                [replies]="post.replies || []"
                 [loadingReplies]="postEdit.replyingToPost() === post.id ? postEdit.loadingReplies() : false"
                 [currentUserId]="authService.currentUser()?.id || null"
                 [highlightReplyId]="null"
@@ -2046,7 +2046,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditReply(data.replyId, postId, this.postReplies);
+    this.postEdit.saveEditReply(data.replyId, postId, this.postReplies, this.posts);
   }
 
   onDeleteReply(postId: string, replyId: string) {
@@ -2054,11 +2054,11 @@ export class ProfileComponent implements OnInit {
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content);
+    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content, this.posts);
   }
 
   onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditNestedReply(data.replyId, postId, '', this.postReplies);
+    this.postEdit.saveEditNestedReply(data.replyId, postId, '', this.postReplies, this.posts);
   }
 
   openFollowers() {

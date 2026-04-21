@@ -15,6 +15,8 @@ export interface Post {
     likes: number;
     replies: number;
   };
+  isLiked?: boolean;
+  replies?: Reply[];
 }
 
 export interface PostsResponse {

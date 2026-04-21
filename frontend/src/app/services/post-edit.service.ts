@@ -90,7 +90,7 @@ export class PostEditService {
     this.editReplyContent = '';
   }
 
-  saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
+  saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
     if (!this.editReplyContent.trim()) return;
 
     this.postsService.updateReply(postId, replyId, this.editReplyContent).subscribe({
@@ -98,6 +98,18 @@ export class PostEditService {
         postRepliesSignal.update(replies =>
           replies.map(r => r.id === replyId ? { ...updated, children: r.children } : r)
         );
+
+        if (postsSignal) {
+          postsSignal.update(posts => posts.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              replies: (p.replies || []).map(r =>
+                r.id === replyId ? { ...updated, children: r.children } : r
+              ),
+            };
+          }));
+        }
       },
       error: (err) => {
         console.error('Error editing reply:', err);
@@ -117,21 +129,47 @@ export class PostEditService {
     this.editNestedReplyContent = '';
   }
 
-  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<Reply[]>): void {
+  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
     if (!this.editNestedReplyContent.trim()) return;
 
-    this.postsService.updateReply(postId, replyId, this.editNestedReplyContent).subscribe({
+    const newContent = this.editNestedReplyContent;
+
+    this.postsService.updateReply(postId, replyId, newContent).subscribe({
       next: () => {
         postRepliesSignal.update(replies =>
           replies.map(r => {
-            if (r.id === parentReplyId && r.children) {
-              r.children = r.children.map((c: Reply) =>
-                c.id === replyId ? { ...c, content: this.editNestedReplyContent } : c
-              );
+            if (r.children?.some(c => c.id === replyId)) {
+              return {
+                ...r,
+                children: r.children.map(c =>
+                  c.id === replyId ? { ...c, content: newContent } : c
+                ),
+              };
             }
             return r;
           })
         );
+
+        if (postsSignal) {
+          postsSignal.update(posts => posts.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              replies: (p.replies || []).map(r => {
+                if (r.children?.some(c => c.id === replyId)) {
+                  return {
+                    ...r,
+                    children: r.children.map(c =>
+                      c.id === replyId ? { ...c, content: newContent } : c
+                    ),
+                  };
+                }
+                return r;
+              }),
+            };
+          }));
+        }
+
         this.cancelEditNestedReply();
       },
       error: (err) => {
@@ -202,12 +240,24 @@ export class PostEditService {
           return filtered;
         });
 
-        if (postsSignal && deletedCount > 0) {
-          postsSignal.update(posts => posts.map(p =>
-            p.id === postId
-              ? { ...p, _count: { ...p._count, replies: Math.max(0, p._count.replies - deletedCount) } }
-              : p
-          ));
+        if (postsSignal) {
+          postsSignal.update(posts => posts.map(p => {
+            if (p.id !== postId) return p;
+            const updatedReplies = (p.replies || [])
+              .filter(r => r.id !== replyId)
+              .map(r => ({
+                ...r,
+                children: (r.children || []).filter(c => c.id !== replyId),
+              }));
+            return {
+              ...p,
+              replies: updatedReplies,
+              _count: {
+                ...p._count,
+                replies: Math.max(0, p._count.replies - (deletedCount || 1)),
+              },
+            };
+          }));
         }
 
         this.closeDeleteReplyModal();
@@ -215,7 +265,25 @@ export class PostEditService {
       error: (err) => {
         console.error('Error deleting reply:', err);
         this.closeDeleteReplyModal();
-        this.toast.error('Erro ao deletar comentário. Tente novamente.');
+        if (err.status === 404) {
+          this.toast.error('Comentário já foi removido. Atualizando...');
+          if (postsSignal) {
+            postsSignal.update(posts => posts.map(p => {
+              if (p.id !== postId) return p;
+              return {
+                ...p,
+                replies: (p.replies || [])
+                  .filter(r => r.id !== replyId)
+                  .map(r => ({
+                    ...r,
+                    children: (r.children || []).filter(c => c.id !== replyId),
+                  })),
+              };
+            }));
+          }
+        } else {
+          this.toast.error('Erro ao deletar comentário. Tente novamente.');
+        }
       }
     });
   }
@@ -261,7 +329,11 @@ export class PostEditService {
 
         postsSignal.update(posts =>
           posts.map(p => p.id === postId
-            ? { ...p, _count: { ...p._count, replies: p._count.replies + 1 } }
+            ? {
+                ...p,
+                replies: [...(p.replies || []), newReply],
+                _count: { ...p._count, replies: p._count.replies + 1 }
+              }
             : p
           )
         );
@@ -295,7 +367,7 @@ export class PostEditService {
     this.replyingToCommentContent = '';
   }
 
-  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string): void {
+  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string, postsSignal?: WritableSignal<Post[]>): void {
     const content = replyContent ?? this.replyingToCommentContent;
     if (!content.trim()) return;
 
@@ -310,6 +382,24 @@ export class PostEditService {
             return r;
           })
         );
+
+        if (postsSignal) {
+          postsSignal.update(posts =>
+            posts.map(p => {
+              if (p.id !== postId) return p;
+              return {
+                ...p,
+                replies: (p.replies || []).map(r =>
+                  r.id === replyId
+                    ? { ...r, children: [...(r.children || []), newChild] }
+                    : r
+                ),
+                _count: { ...p._count, replies: p._count.replies + 1 }
+              };
+            })
+          );
+        }
+
         this.replyingToCommentContent = '';
         this.replyingToComment.set(null);
         this.isSubmittingReply.set(false);

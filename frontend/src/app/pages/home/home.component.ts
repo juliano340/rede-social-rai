@@ -93,7 +93,7 @@ import { PostEditService } from '../../services/post-edit.service';
                 [authorLinkEnabled]="true"
                 [highlighted]="highlightPostId() === post.id"
                 [deleting]="deletingPostId() === post.id"
-                [replies]="replyingToPost() === post.id || viewingRepliesPost() === post.id ? postReplies() : []"
+                [replies]="post.replies || []"
                 [loadingReplies]="replyingToPost() === post.id || viewingRepliesPost() === post.id ? loadingReplies() : false"
                 [currentUserId]="authService.currentUser()?.id || null"
                 [highlightReplyId]="highlightReplyId()"
@@ -1737,7 +1737,7 @@ switchFeed(type: 'all' | 'following') {
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content);
+    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content, this.posts);
   }
 
   onStartEditNestedReply(reply: any) {
@@ -1813,7 +1813,7 @@ switchFeed(type: 'all' | 'following') {
   }
 
   saveEditReply(replyId: string, postId: string) {
-    this.postEdit.saveEditReply(replyId, postId, this.postReplies);
+    this.postEdit.saveEditReply(replyId, postId, this.postReplies, this.posts);
   }
 
   deleteReply(replyId: string, postId: string) {
@@ -1837,7 +1837,7 @@ switchFeed(type: 'all' | 'following') {
   }
   
   saveEditNestedReply(replyId: string, postId: string) {
-    this.postEdit.saveEditNestedReply(replyId, postId, '', this.postReplies);
+    this.postEdit.saveEditNestedReply(replyId, postId, '', this.postReplies, this.posts);
   }
   
   deleteNestedReply(replyId: string, postId: string) {
