@@ -9,7 +9,6 @@ import { UsersService } from "../../services/users.service";
 import { PostsService } from "../../services/posts.service";
 import { PostEditService } from "../../services/post-edit.service";
 import { PostCardComponent } from "../../shared/components/post-card/post-card.component";
-import { ReplySectionComponent } from "../../shared/components/reply-section/reply-section.component";
 import { DeleteConfirmModalComponent } from "../../shared/components/delete-confirm-modal/delete-confirm-modal.component";
 import { LucideIconsModule } from "../../shared/icons/lucide-icons.module";
 import { ToastService } from "../../shared/services/toast.service";
@@ -20,7 +19,7 @@ import { Post, Reply } from "../../shared/models/post.model";
 @Component({
   selector: "app-profile",
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, LucideIconsModule, PostCardComponent, ReplySectionComponent, DeleteConfirmModalComponent],
+  imports: [CommonModule, RouterLink, FormsModule, LucideIconsModule, PostCardComponent, DeleteConfirmModalComponent],
   template: `
     <div class="profile-page">
       @if (loading()) {
@@ -138,49 +137,41 @@ import { Post, Reply } from "../../shared/models/post.model";
               <p>Nenhuma publicação ainda.</p>
             </div>
 } @else {
-            @for (post of posts(); track post.id) {
+@for (post of posts(); track post.id) {
               <app-post-card
                 [post]="post"
-[isLiked]="postEdit.postLikes()[post.id] === true"
-[isLiking]="postEdit.postLikingId() === post.id"
+                [isLiked]="postEdit.postLikes()[post.id] === true"
+                [isLiking]="postEdit.postLikingId() === post.id"
                 [isOwnPost]="authService.currentUser()?.id === post.author.id"
                 [authorLinkEnabled]="true"
                 [highlighted]="false"
                 [deleting]="postEdit.deletingPostId() === post.id"
-(likeClick)="postEdit.toggleLike($event)"
-(replyToggle)="postEdit.toggleReply($event)"
-(deleteClick)="postEdit.deletePost($event)"
-(editStart)="postEdit.startEditPost($event)"
+                [replies]="postEdit.replyingToPost() === post.id ? postReplies() : []"
+                [loadingReplies]="postEdit.replyingToPost() === post.id ? postEdit.loadingReplies() : false"
+                [currentUserId]="authService.currentUser()?.id || null"
+                [highlightReplyId]="null"
+                [isSubmittingReply]="postEdit.isSubmittingReply()"
+                [savingReply]="postEdit.savingReply()"
+                (likeClick)="postEdit.toggleLike($event)"
+                (replyToggle)="postEdit.toggleReply($event)"
+                (deleteClick)="postEdit.deletePost($event)"
+                (editStart)="postEdit.startEditPost($event)"
                 (editSave)="onEditSave($event)"
                 (editCancel)="onEditCancel()"
+                (openReplyForm)="postEdit.openReplyForm(post.id)"
+                (submitReplyEvent)="onSubmitReply(post.id, $event)"
+                (startEditReply)="postEdit.startEditReply($event)"
+                (cancelEditReply)="postEdit.cancelEditReply()"
+                (saveEditReply)="onSaveEditReply(post.id, $event)"
+                (deleteReplyEvent)="postEdit.deleteReply($event, post.id)"
+                (toggleReplyToCommentEvent)="postEdit.toggleReplyToComment($event)"
+                (cancelReplyToCommentEvent)="postEdit.cancelReplyToComment()"
+                (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
+                (startEditNestedReply)="postEdit.startEditNestedReply($event)"
+                (cancelEditNested)="postEdit.cancelEditNestedReply()"
+                (saveEditNestedReply)="onSaveEditNestedReply(post.id, $event)"
+                (deleteNestedReplyEvent)="postEdit.deleteNestedReply($event, post.id, '')"
               ></app-post-card>
-
-@if (postEdit.replyingToPost() === post.id) {
-<app-reply-section
-[replies]="postReplies()"
-[loading]="postEdit.loadingReplies()"
-[showForm]="postEdit.replyingToPost() !== post.id"
-[showReplyToReply]="true"
-[currentUserId]="authService.currentUser()?.id || null"
-[highlightReplyId]="null"
-[isSubmitting]="postEdit.isSubmittingReply()"
-[savingReply]="postEdit.savingReply()"
-                  (close)="onCloseReplies()"
-                  (openForm)="postEdit.openReplyForm(post.id)"
-                  (submitReplyEvent)="onSubmitReply(post.id, $event)"
-(startEdit)="postEdit.startEditReply($event)"
-(cancelEdit)="postEdit.cancelEditReply()"
-                  (saveEdit)="onSaveEditReply(post.id, $event)"
-(deleteReplyEvent)="postEdit.deleteReply($event, post.id)"
-(toggleReplyToCommentEvent)="postEdit.toggleReplyToComment($event)"
-(cancelReplyToComment)="postEdit.cancelReplyToComment()"
-                  (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
-(startEditNested)="postEdit.startEditNestedReply($event)"
-(cancelEditNested)="postEdit.cancelEditNestedReply()"
-                  (saveEditNested)="onSaveEditNestedReply(post.id, $event)"
-                  (deleteNestedReplyEvent)="postEdit.deleteNestedReply($event, post.id, '')"
-                ></app-reply-section>
-              }
             }
           }
                 </div>

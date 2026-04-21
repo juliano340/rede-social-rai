@@ -15,8 +15,8 @@ import { getAvatarUrl } from '../../utils/avatar.utils';
         <lucide-icon name="x" [size]="18"></lucide-icon>
       </button>
 
-      @if (showForm) {
-        <button class="add-reply-link" (click)="openForm.emit()">
+      @if (showForm && !showReplyForm) {
+        <button class="add-reply-link" (click)="onOpenForm()">
           <lucide-icon name="message-circle" [size]="16"></lucide-icon> Comentar
         </button>
       }
@@ -702,6 +702,11 @@ export class ReplySectionComponent {
 
   onClose() {
     this.close.emit();
+  }
+
+  onOpenForm() {
+    this.showReplyForm = true;
+    this.openForm.emit();
   }
 
   cancelReply() {

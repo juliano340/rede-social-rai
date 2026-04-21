@@ -1,18 +1,19 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { LucideIconsModule } from '../../icons/lucide-icons.module';
-import { Post } from '../../models/post.model';
+import { Post, Reply } from '../../models/post.model';
 import { getAvatarUrl } from '../../utils/avatar.utils';
 import { formatDate } from '../../utils/date.utils';
 import { getYouTubeEmbedUrl, isValidImageUrl, normalizeUrl } from '../../utils/media.utils';
+import { ReplySectionComponent } from '../reply-section/reply-section.component';
 
 @Component({
   selector: 'app-post-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideIconsModule],
+  imports: [CommonModule, FormsModule, RouterLink, LucideIconsModule, ReplySectionComponent],
   template: `
     <article class="post" [class.deleting]="deleting" [class.highlight-post]="highlighted">
       <div class="post-avatar">
@@ -154,6 +155,33 @@ import { getYouTubeEmbedUrl, isValidImageUrl, normalizeUrl } from '../../utils/m
             </button>
           }
         </div>
+
+        @if (showReplies) {
+          <app-reply-section
+            [replies]="replies"
+            [loading]="loadingReplies"
+            [showForm]="true"
+            [showReplyToReply]="true"
+            [currentUserId]="currentUserId"
+            [highlightReplyId]="highlightReplyId"
+            [isSubmitting]="isSubmittingReply"
+            [savingReply]="savingReply"
+            (close)="onCloseReplies()"
+            (openForm)="onOpenReplyForm()"
+            (submitReplyEvent)="onSubmitReply($event)"
+            (startEdit)="onStartEditReply($event)"
+            (cancelEdit)="onCancelEditReply()"
+            (saveEdit)="onSaveEditReply($event)"
+            (deleteReplyEvent)="onDeleteReply($event)"
+            (toggleReplyToCommentEvent)="onToggleReplyToComment($event)"
+            (cancelReplyToCommentEvent)="onCancelReplyToComment()"
+            (submitReplyToCommentEvent)="onSubmitReplyToComment($event)"
+            (startEditNested)="onStartEditNestedReply($event)"
+            (cancelEditNested)="onCancelEditNestedReply()"
+            (saveEditNested)="onSaveEditNestedReply($event)"
+            (deleteNestedReplyEvent)="onDeleteNestedReply($event)"
+          ></app-reply-section>
+        }
       </div>
     </article>
   `,
@@ -467,6 +495,13 @@ export class PostCardComponent {
   @Input() highlighted = false;
   @Input() deleting = false;
 
+  @Input() replies: Reply[] = [];
+  @Input() loadingReplies = false;
+  @Input() currentUserId: string | null = null;
+  @Input() highlightReplyId: string | null = null;
+  @Input() isSubmittingReply = false;
+  @Input() savingReply = false;
+
   @Output() likeClick = new EventEmitter<Post>();
   @Output() replyToggle = new EventEmitter<string>();
   @Output() editStart = new EventEmitter<Post>();
@@ -479,6 +514,20 @@ export class PostCardComponent {
     linkUrl: string | null;
   }>();
   @Output() editCancel = new EventEmitter<void>();
+
+  @Output() openReplyForm = new EventEmitter<void>();
+  @Output() submitReplyEvent = new EventEmitter<string>();
+  @Output() startEditReply = new EventEmitter<Reply>();
+  @Output() cancelEditReply = new EventEmitter<void>();
+  @Output() saveEditReply = new EventEmitter<{ replyId: string; content: string }>();
+  @Output() deleteReplyEvent = new EventEmitter<string>();
+  @Output() toggleReplyToCommentEvent = new EventEmitter<string>();
+  @Output() cancelReplyToCommentEvent = new EventEmitter<void>();
+  @Output() submitReplyToCommentEvent = new EventEmitter<{ replyId: string; content: string }>();
+  @Output() startEditNestedReply = new EventEmitter<Reply>();
+  @Output() cancelEditNested = new EventEmitter<void>();
+  @Output() saveEditNestedReply = new EventEmitter<{ replyId: string; content: string }>();
+  @Output() deleteNestedReplyEvent = new EventEmitter<string>();
 
   isEditing = false;
   editContent = '';
@@ -576,5 +625,61 @@ export class PostCardComponent {
 
   onDeleteClick() {
     this.deleteClick.emit(this.post.id);
+  }
+
+  onCloseReplies() {
+    this.showReplies = false;
+  }
+
+  onOpenReplyForm() {
+    this.openReplyForm.emit();
+  }
+
+  onSubmitReply(content: string) {
+    this.submitReplyEvent.emit(content);
+  }
+
+  onStartEditReply(reply: Reply) {
+    this.startEditReply.emit(reply);
+  }
+
+  onCancelEditReply() {
+    this.cancelEditReply.emit();
+  }
+
+  onSaveEditReply(data: { replyId: string; content: string }) {
+    this.saveEditReply.emit(data);
+  }
+
+  onDeleteReply(replyId: string) {
+    this.deleteReplyEvent.emit(replyId);
+  }
+
+  onToggleReplyToComment(replyId: string) {
+    this.toggleReplyToCommentEvent.emit(replyId);
+  }
+
+  onCancelReplyToComment() {
+    this.cancelReplyToCommentEvent.emit();
+  }
+
+  onSubmitReplyToComment(data: { replyId: string; content: string }) {
+    this.submitReplyToCommentEvent.emit(data);
+  }
+
+  onStartEditNestedReply(reply: Reply) {
+    this.startEditNestedReply.emit(reply);
+  }
+
+  onCancelEditNestedReply() {
+    this.cancelEditNested.emit();
+  }
+
+  onSaveEditNestedReply(data: { replyId: string; content: string }) {
+    this.saveEditNestedReply.emit(data);
+  }
+
+  onDeleteNestedReply(replyId: string) {
+    this.deleteNestedReplyEvent.emit(replyId);
   }
 }
