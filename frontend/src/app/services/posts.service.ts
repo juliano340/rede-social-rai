@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Post, PostsResponse } from '../shared/models';
 
@@ -11,23 +12,69 @@ export { Post, PostsResponse };
 })
 export class PostsService {
   private apiUrl = environment.apiUrl;
+  private cache = new Map<string, { data: PostsResponse; timestamp: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000;
 
   constructor(private http: HttpClient) {}
 
+  private getCacheKey(cursor?: string, limit = 20, endpoint = 'posts'): string {
+    return `${endpoint}:${cursor || 'initial'}:${limit}`;
+  }
+
+  private getCached<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data as T;
+    }
+    return null;
+  }
+
+  private setCache(key: string, data: PostsResponse): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  invalidateCache(pattern?: string): void {
+    if (!pattern) {
+      this.cache.clear();
+      return;
+    }
+    Array.from(this.cache.keys())
+      .filter(key => key.includes(pattern))
+      .forEach(key => this.cache.delete(key));
+  }
+
   getPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
+    const cacheKey = this.getCacheKey(cursor, limit, 'posts');
+    const cached = this.getCached<PostsResponse>(cacheKey);
+    if (cached) {
+      return of(cached);
+    }
+
     let params = new HttpParams().set('limit', limit.toString());
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params, withCredentials: true });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params, withCredentials: true }).pipe(
+      tap(data => this.setCache(cacheKey, data)),
+      catchError(() => of({ posts: [], nextCursor: null, hasMore: false }))
+    );
   }
 
   getFollowingPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
+    const cacheKey = this.getCacheKey(cursor, limit, 'following');
+    const cached = this.getCached<PostsResponse>(cacheKey);
+    if (cached) {
+      return of(cached);
+    }
+
     let params = new HttpParams().set('limit', limit.toString());
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params, withCredentials: true });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params, withCredentials: true }).pipe(
+      tap(data => this.setCache(cacheKey, data)),
+      catchError(() => of({ posts: [], nextCursor: null, hasMore: false }))
+    );
   }
 
   getUserPosts(userId: string, cursor?: string, limit = 20): Observable<PostsResponse> {
@@ -39,11 +86,15 @@ export class PostsService {
   }
 
   createPost(content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
-    return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true });
+    return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 
   deletePost(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true });
+    return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 
   updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {

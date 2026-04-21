@@ -317,17 +317,20 @@ export class PostEditService {
   }
 
   toggleLike(post: Post): void {
+    const currentStatus = this.postLikes()[post.id];
+    const newStatus = !currentStatus;
+
+    this.postLikes.update(likes => ({ ...likes, [post.id]: newStatus }));
+    post._count.likes += currentStatus ? -1 : 1;
     this.postLikingId.set(post.id);
-    const isLiked = this.postLikes()[post.id];
 
     this.postsService.likePost(post.id).subscribe({
       next: () => {
-        this.postLikes.update(likes => ({ ...likes, [post.id]: !isLiked }));
-        post._count.likes += isLiked ? -1 : 1;
         this.postLikingId.set(null);
       },
       error: (err) => {
-        console.error('Error toggling like:', err);
+        this.postLikes.update(likes => ({ ...likes, [post.id]: currentStatus }));
+        post._count.likes += currentStatus ? 1 : -1;
         this.postLikingId.set(null);
         if (err.status === 429) {
           this.toast.error('Você está curtindo muito rápido. Aguarde um momento.');
