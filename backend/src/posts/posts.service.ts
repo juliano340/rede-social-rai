@@ -23,6 +23,27 @@ const REPLY_AUTHOR_INCLUDE = {
   author: { select: AUTHOR_SELECT },
 } as const;
 
+const FEED_TOP_REPLIES_LIMIT = 3;
+const FEED_NESTED_REPLIES_LIMIT = 2;
+const REPLIES_CHILDREN_LIMIT = 10;
+const REPLIES_GRANDCHILDREN_LIMIT = 5;
+const MAX_REPLIES_PER_DAY = 10;
+const MAX_CONTENT_LENGTH = 280;
+
+const FEED_REPLIES_INCLUDE = {
+  where: { parentId: null },
+  take: FEED_TOP_REPLIES_LIMIT,
+  orderBy: { createdAt: 'asc' as const },
+  include: {
+    author: { select: AUTHOR_SELECT },
+    children: {
+      take: FEED_NESTED_REPLIES_LIMIT,
+      orderBy: { createdAt: 'asc' as const },
+      include: { author: { select: AUTHOR_SELECT } },
+    },
+  },
+} as const;
+
 interface PostWithMeta {
   id: string;
 }
@@ -49,8 +70,8 @@ export class PostsService {
     if (!content || content.trim().length === 0) {
       throw new BadRequestException(`${label} content cannot be empty`);
     }
-    if (content.length > 280) {
-      throw new BadRequestException(`${label} content cannot exceed 280 characters`);
+    if (content.length > MAX_CONTENT_LENGTH) {
+      throw new BadRequestException(`${label} content cannot exceed ${MAX_CONTENT_LENGTH} characters`);
     }
   }
 
@@ -59,6 +80,23 @@ export class PostsService {
     const results = hasMore ? posts.slice(0, limit) : posts;
     const nextCursor = hasMore && results.length > 0 ? results[results.length - 1].id : null;
     return { posts: results, nextCursor, hasMore };
+  }
+
+  private buildFeedInclude(userId?: string) {
+    return {
+      author: { select: AUTHOR_SELECT },
+      _count: { select: COUNT_SELECT },
+      likes: userId ? { where: { userId }, select: { id: true } } : false,
+      replies: FEED_REPLIES_INCLUDE,
+    };
+  }
+
+  private mapPostWithLikeStatus<T extends { likes?: { id: string }[] }>(post: T, userId?: string) {
+    const { likes, ...rest } = post as any;
+    return {
+      ...rest,
+      isLiked: userId ? (likes?.length ?? 0) > 0 : false,
+    };
   }
 
   private async assertPostExists(postId: string) {
@@ -98,34 +136,11 @@ export class PostsService {
       where,
       take,
       orderBy: { createdAt: 'desc' },
-      include: {
-        author: { select: AUTHOR_SELECT },
-        _count: { select: COUNT_SELECT },
-        likes: userId ? { where: { userId }, select: { id: true } } : false,
-        replies: {
-          where: { parentId: null },
-          take: 3,
-          orderBy: { createdAt: 'asc' },
-          include: {
-            author: { select: AUTHOR_SELECT },
-            children: {
-              take: 2,
-              orderBy: { createdAt: 'asc' },
-              include: { author: { select: AUTHOR_SELECT } },
-            },
-          },
-        },
-      },
+      include: this.buildFeedInclude(userId) as any,
     });
 
     return this.buildCursorPagination(
-      posts.map(post => {
-        const { likes, ...rest } = post;
-        return {
-          ...rest,
-          isLiked: userId ? likes.length > 0 : false,
-        };
-      }),
+      posts.map(post => this.mapPostWithLikeStatus(post, userId)),
       limit
     );
   }
@@ -152,39 +167,16 @@ export class PostsService {
       where,
       take,
       orderBy: { createdAt: 'desc' },
-      include: {
-        author: { select: AUTHOR_SELECT },
-        _count: { select: COUNT_SELECT },
-        likes: { where: { userId }, select: { id: true } },
-        replies: {
-          where: { parentId: null },
-          take: 3,
-          orderBy: { createdAt: 'asc' },
-          include: {
-            author: { select: AUTHOR_SELECT },
-            children: {
-              take: 2,
-              orderBy: { createdAt: 'asc' },
-              include: { author: { select: AUTHOR_SELECT } },
-            },
-          },
-        },
-      },
+      include: this.buildFeedInclude(userId) as any,
     });
 
     return this.buildCursorPagination(
-      posts.map(post => {
-        const { likes, ...rest } = post;
-        return {
-          ...rest,
-          isLiked: likes.length > 0,
-        };
-      }),
+      posts.map(post => this.mapPostWithLikeStatus(post, userId)),
       limit
     );
   }
 
-  async findByUser(userId: string, cursor?: string, limit = 20) {
+  async findByUser(userId: string, cursor?: string, limit = 20, requesterId?: string) {
     const take = limit + 1;
     const where: { authorId: string; createdAt?: { lt: Date } } = { authorId: userId };
     if (cursor) {
@@ -195,23 +187,26 @@ export class PostsService {
       where,
       take,
       orderBy: { createdAt: 'desc' },
-      include: POST_INCLUDE,
+      include: this.buildFeedInclude(requesterId) as any,
     });
 
-    return this.buildCursorPagination(posts, limit);
+    return this.buildCursorPagination(
+      posts.map(post => this.mapPostWithLikeStatus(post, requesterId)),
+      limit
+    );
   }
 
-  async findById(postId: string) {
+  async findById(postId: string, requesterId?: string) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      include: POST_INCLUDE,
+      include: this.buildFeedInclude(requesterId) as any,
     });
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    return post;
+    return this.mapPostWithLikeStatus(post, requesterId);
   }
 
   async update(postId: string, userId: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null) {
@@ -301,8 +296,8 @@ export class PostsService {
       where: { authorId: userId, createdAt: { gte: today, lt: tomorrow } },
     });
 
-    if (repliesCount >= 10) {
-      throw new BadRequestException('Limite de 10 respostas por dia atingido. Tente novamente amanhã.');
+    if (repliesCount >= MAX_REPLIES_PER_DAY) {
+      throw new BadRequestException(`Limite de ${MAX_REPLIES_PER_DAY} respostas por dia atingido. Tente novamente amanhã.`);
     }
 
     const reply = await this.prisma.reply.create({
@@ -340,12 +335,12 @@ export class PostsService {
       include: {
         author: { select: AUTHOR_SELECT },
         children: {
-          take: 10,
+          take: REPLIES_CHILDREN_LIMIT,
           orderBy: { createdAt: 'asc' },
           include: {
             author: { select: AUTHOR_SELECT },
             children: {
-              take: 5,
+              take: REPLIES_GRANDCHILDREN_LIMIT,
               orderBy: { createdAt: 'asc' },
               include: { author: { select: AUTHOR_SELECT } },
             },

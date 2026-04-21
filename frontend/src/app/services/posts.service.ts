@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Post, PostsResponse } from '../shared/models';
 
@@ -13,7 +13,7 @@ export { Post, PostsResponse };
 export class PostsService {
   private apiUrl = environment.apiUrl;
   private cache = new Map<string, { data: PostsResponse; timestamp: number }>();
-  private readonly CACHE_TTL = 5 * 60 * 1000;
+  private readonly CACHE_TTL = 30 * 1000;
 
   constructor(private http: HttpClient) {}
 
@@ -55,8 +55,7 @@ export class PostsService {
       params = params.set('cursor', cursor);
     }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params, withCredentials: true }).pipe(
-      tap(data => this.setCache(cacheKey, data)),
-      catchError(() => of({ posts: [], nextCursor: null, hasMore: false }))
+      tap(data => this.setCache(cacheKey, data))
     );
   }
 
@@ -72,8 +71,7 @@ export class PostsService {
       params = params.set('cursor', cursor);
     }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params, withCredentials: true }).pipe(
-      tap(data => this.setCache(cacheKey, data)),
-      catchError(() => of({ posts: [], nextCursor: null, hasMore: false }))
+      tap(data => this.setCache(cacheKey, data))
     );
   }
 
@@ -118,11 +116,9 @@ export class PostsService {
   }
 
   likePost(id: string): Observable<{ liked: boolean }> {
-    return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true });
-  }
-
-  isLiked(id: string): Observable<boolean> {
-    return this.http.get<boolean>(`${this.apiUrl}/posts/${id}/liked`, { withCredentials: true });
+    return this.http.post<{ liked: boolean }>(`${this.apiUrl}/posts/${id}/like`, {}, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 
   createReply(postId: string, content: string, parentId?: string): Observable<any> {
@@ -130,22 +126,28 @@ export class PostsService {
     if (parentId) {
       body.parentId = parentId;
     }
-    return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true });
+    return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 
   getReplies(postId: string, cursor?: string, limit = 20): Observable<any> {
-    const params = new HttpParams().set('limit', limit.toString());
+    let params = new HttpParams().set('limit', limit.toString());
     if (cursor) {
-      params.set('cursor', cursor);
+      params = params.set('cursor', cursor);
     }
     return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 
   updateReply(postId: string, replyId: string, content: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content }, { withCredentials: true });
+    return this.http.put<any>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content }, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 
   deleteReply(postId: string, replyId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { withCredentials: true });
+    return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { withCredentials: true }).pipe(
+      tap(() => this.invalidateCache())
+    );
   }
 }

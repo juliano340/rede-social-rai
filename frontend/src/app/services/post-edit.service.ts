@@ -182,21 +182,32 @@ export class PostEditService {
 
     this.postsService.deleteReply(postId, replyId).subscribe({
       next: () => {
-        postRepliesSignal.update(replies =>
-          replies.map(r => {
-            if (r.children && r.children.some((c: Reply) => c.id === replyId)) {
-              r.children = r.children.filter((c: Reply) => c.id !== replyId);
+        let deletedCount = 0;
+
+        postRepliesSignal.update(replies => {
+          const filtered = replies.filter(r => {
+            if (r.id === replyId) {
+              deletedCount += 1 + (r.children?.length ?? 0);
+              return false;
+            }
+            return true;
+          }).map(r => {
+            if (r.children?.some(c => c.id === replyId)) {
+              const child = r.children.find(c => c.id === replyId);
+              deletedCount += 1 + (child?.children?.length ?? 0);
+              return { ...r, children: r.children.filter(c => c.id !== replyId) };
             }
             return r;
-          }).filter(r => r.id !== replyId)
-        );
+          });
+          return filtered;
+        });
 
-        if (postsSignal) {
-          const post = postsSignal().find(p => p.id === postId);
-          if (post) {
-            post._count.replies = Math.max(0, post._count.replies - 1);
-            postsSignal.update(posts => [...posts]);
-          }
+        if (postsSignal && deletedCount > 0) {
+          postsSignal.update(posts => posts.map(p =>
+            p.id === postId
+              ? { ...p, _count: { ...p._count, replies: Math.max(0, p._count.replies - deletedCount) } }
+              : p
+          ));
         }
 
         this.closeDeleteReplyModal();
@@ -245,18 +256,15 @@ export class PostEditService {
 
     this.isSubmittingReply.set(true);
     this.postsService.createReply(postId, content).subscribe({
-      next: () => {
-        const post = postsSignal().find(p => p.id === postId);
-        if (post) {
-          post._count.replies += 1;
-          postsSignal.update(posts => [...posts]);
-        }
+      next: (newReply: Reply) => {
+        postRepliesSignal.update(replies => [...replies, newReply]);
 
-        this.postsService.getReplies(postId).subscribe({
-          next: (data) => {
-            postRepliesSignal.set(data.replies || []);
-          }
-        });
+        postsSignal.update(posts =>
+          posts.map(p => p.id === postId
+            ? { ...p, _count: { ...p._count, replies: p._count.replies + 1 } }
+            : p
+          )
+        );
 
         this.replyContent = '';
         this.isSubmittingReply.set(false);
@@ -293,13 +301,17 @@ export class PostEditService {
 
     this.isSubmittingReply.set(true);
     this.postsService.createReply(postId, content, replyId).subscribe({
-      next: () => {
-        this.postsService.getReplies(postId).subscribe({
-          next: (data) => {
-            postRepliesSignal.set(data.replies || []);
-          }
-        });
+      next: (newChild: Reply) => {
+        postRepliesSignal.update(replies =>
+          replies.map(r => {
+            if (r.id === replyId) {
+              return { ...r, children: [...(r.children || []), newChild] };
+            }
+            return r;
+          })
+        );
         this.replyingToCommentContent = '';
+        this.replyingToComment.set(null);
         this.isSubmittingReply.set(false);
       },
       error: (err) => {
@@ -317,6 +329,8 @@ export class PostEditService {
   }
 
   toggleLike(post: Post): void {
+    if (this.postLikingId() === post.id) return;
+
     const currentStatus = this.postLikes()[post.id];
     const newStatus = !currentStatus;
 

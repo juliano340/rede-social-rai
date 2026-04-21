@@ -1772,50 +1772,6 @@ switchFeed(type: 'all' | 'following') {
     this.confirmDeletePost();
   }
 
-createPost() {
-    if (!this.canSubmit()) return;
-    
-  this.submitError.set(null);
-  this.submitSuccess.set(false);
-  this.isSubmitting.set(true);
-  
-  let mediaUrl: string | null = null;
-  let mediaType: string | null = null;
-  let linkUrl: string | null = null;
-  
-  if (this.newMediaType()) {
-    mediaUrl = this.newMediaUrl || null;
-    mediaType = this.newMediaType();
-  }
-  
-  if (this.newLinkUrl()) {
-    linkUrl = this.normalizeUrl(this.newLinkUrl() || '');
-  }
-  
-  this.postsService.createPost(this.newPostContent, mediaUrl, mediaType, linkUrl).subscribe({
-    next: (post) => {
-      this.posts.update(posts => [post, ...posts]);
-      this.newPostContent = '';
-      this.newMediaUrl = '';
-      this.newMediaType.set(null);
-      this.newLinkUrl.set(null);
-      this.showMediaInput.set(false);
-      this.isSubmitting.set(false);
-      this.submitSuccess.set(true);
-      
-      setTimeout(() => this.submitSuccess.set(false), 3000);
-    },
-    error: (err) => {
-      if (err.status === 429) {
-        this.submitError.set('Você está publicando muito rápido. Aguarde um momento.');
-      } else {
-        this.submitError.set(err.error?.message || 'Erro ao publicar. Tente novamente.');
-      }
-      this.isSubmitting.set(false);
-    }
-  });
-}
-
   deletePost(id: string) {
     this.postEdit.deletePost(id);
   }

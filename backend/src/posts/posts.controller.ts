@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req 
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-auth.guard';
 import { User } from '../auth/decorators/user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { PostsService } from './posts.service';
@@ -20,14 +21,14 @@ export class PostsController {
   }
 
   @Get()
-  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   async findAll(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Req() req?: Request,
   ) {
     const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
-    const userId = (req as any)?.user?.userId;
+    const userId = this.getUserIdFromRequest(req);
     return this.postsService.findAll(cursor, parsedLimit, userId);
   }
 
@@ -43,20 +44,23 @@ export class PostsController {
   }
 
   @Get('user/:userId')
-  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   async findByUser(
     @Param('userId') userId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Req() req?: Request,
   ) {
     const parsedLimit = Math.min(parseInt(limit || '20'), 50) || 20;
-    return this.postsService.findByUser(userId, cursor, parsedLimit);
+    const requesterId = this.getUserIdFromRequest(req);
+    return this.postsService.findByUser(userId, cursor, parsedLimit, requesterId);
   }
 
   @Get(':id')
-  @Public()
-  async findOne(@Param('id') id: string) {
-    return this.postsService.findById(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  async findOne(@Param('id') id: string, @Req() req?: Request) {
+    const userId = this.getUserIdFromRequest(req);
+    return this.postsService.findById(id, userId);
   }
 
   @Delete(':id')
@@ -123,5 +127,9 @@ export class PostsController {
     @User() user: AuthenticatedUser,
   ) {
     return this.postsService.deleteReply(replyId, user.userId);
+  }
+
+  private getUserIdFromRequest(req?: Request): string | undefined {
+    return (req as any)?.user?.userId;
   }
 }
