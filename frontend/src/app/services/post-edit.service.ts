@@ -258,7 +258,7 @@ export class PostEditService {
           }
         });
 
-        this.cancelReply();
+        this.replyContent = '';
         this.isSubmittingReply.set(false);
       },
       error: (err) => {
