@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LucideIconsModule } from '../../icons/lucide-icons.module';
 import { Post, Reply } from '../../models/post.model';
+import { getAvatarUrl } from '../../utils/avatar.utils';
 import { ReplySectionComponent } from '../reply-section/reply-section.component';
 import {
   PostCardHeaderComponent,
@@ -22,12 +23,22 @@ import {
   ],
   template: `
     <article class="post" [class.deleting]="deleting" [class.highlight-post]="highlighted">
-      <app-post-card-header
-        [post]="post"
-        [authorLinkEnabled]="authorLinkEnabled"
-      />
+      <div class="post-avatar">
+        @if (post.author.avatar) {
+          <img [src]="getAvatarUrl(post.author.avatar)" alt="Avatar" class="avatar-image">
+        } @else {
+          <div class="avatar-placeholder" aria-hidden="true">
+            {{ getAvatarInitial(post.author.name) }}
+          </div>
+        }
+      </div>
 
-      <div class="post-body">
+      <div class="post-content">
+        <app-post-card-header
+          [post]="post"
+          [authorLinkEnabled]="authorLinkEnabled"
+        />
+
         <p class="post-text">{{ post.content }}</p>
 
         @if (!isEditing) {
@@ -91,7 +102,10 @@ import {
     .post.deleting { opacity: 0.5; }
     .highlight-post { animation: highlight-fade 3s ease-out; }
     @keyframes highlight-fade { 0% { background: rgba(99, 102, 241, 0.2); } 100% { background: transparent; } }
-    .post-body { flex: 1; min-width: 0; }
+    .post-avatar { flex-shrink: 0; }
+    .avatar-image { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+    .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #0d8ecf); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 20px; }
+    .post-content { flex: 1; min-width: 0; }
     .post-text { margin: 8px 0; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
   `]
 })
@@ -140,6 +154,12 @@ export class PostCardComponent {
 
   isEditing = false;
   showReplies = false;
+
+  getAvatarUrl = getAvatarUrl;
+
+  getAvatarInitial(name: string): string {
+    return ((name && name[0]) || '?').toUpperCase();
+  }
 
   onLikeClick() { this.likeClick.emit(this.post); }
 
