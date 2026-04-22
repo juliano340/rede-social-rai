@@ -1,7 +1,8 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { API_URL } from '../shared/constants/api.constants';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const apiUrl = 'http://localhost:3000';
+  const apiUrl = API_URL.DEFAULT;
   
   if (req.url.startsWith(apiUrl)) {
     const cloned = req.clone({

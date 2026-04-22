@@ -1,25 +1,26 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
+import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../../shared/constants/validation.constants';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideIconsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideIconsModule],
   template: `
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-header">
-<div class="logo-mini">J</div>
-      <h1>Criar conta</h1>
-      <p>Junte-se à comunidade JVerso!</p>
+          <div class="logo-mini">J</div>
+          <h1>Criar conta</h1>
+          <p>Junte-se à comunidade JVerso!</p>
         </div>
         
-        <form (ngSubmit)="register()" class="auth-form">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form">
           <div class="form-group">
             <label for="name">Nome</label>
             <div class="input-wrapper">
@@ -27,17 +28,13 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
               <input 
                 type="text" 
                 id="name" 
-                [(ngModel)]="name" 
-                name="name"
-                required
+                formControlName="name" 
                 placeholder="Seu nome completo"
                 autocomplete="name"
-                maxlength="25"
-                (ngModelChange)="onNameChange($event)"
               >
             </div>
-            @if (nameError) {
-              <span class="field-error">{{ nameError }}</span>
+            @if (form.get('name')?.invalid && form.get('name')?.touched) {
+              <span class="field-error">{{ getNameError() }}</span>
             }
           </div>
           
@@ -48,17 +45,13 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
               <input 
                 type="text" 
                 id="username" 
-                [(ngModel)]="username" 
-                name="username"
-                required
+                formControlName="username" 
                 placeholder="seudousername"
                 autocomplete="username"
-                maxlength="20"
-                (ngModelChange)="onUsernameChange($event)"
               >
             </div>
-            @if (usernameError) {
-              <span class="field-error">{{ usernameError }}</span>
+            @if (form.get('username')?.invalid && form.get('username')?.touched) {
+              <span class="field-error">{{ getUsernameError() }}</span>
             }
           </div>
           
@@ -69,16 +62,13 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
               <input 
                 type="email" 
                 id="email" 
-                [(ngModel)]="email" 
-                name="email"
-                required
+                formControlName="email" 
                 placeholder="seu@email.com"
                 autocomplete="email"
-                maxlength="100"
               >
             </div>
-            @if (emailError) {
-              <span class="field-error">{{ emailError }}</span>
+            @if (form.get('email')?.invalid && form.get('email')?.touched) {
+              <span class="field-error">{{ getEmailError() }}</span>
             }
           </div>
           
@@ -89,16 +79,14 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
               <input 
                 type="password" 
                 id="password" 
-                [(ngModel)]="password" 
-                name="password"
-                required
-                minlength="6"
-                maxlength="50"
+                formControlName="password" 
                 placeholder="••••••••"
                 autocomplete="new-password"
               >
             </div>
-            <small class="hint">Mínimo 6 caracteres</small>
+            @if (form.get('password')?.invalid && form.get('password')?.touched) {
+              <span class="field-error">{{ getPasswordError() }}</span>
+            }
           </div>
           
           @if (error()) {
@@ -110,7 +98,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           
           <button 
             type="submit" 
-            [disabled]="isLoading() || !isFormValid()"
+            [disabled]="form.invalid || isLoading()"
             [class.loading]="isLoading()"
           >
             @if (isLoading()) {
@@ -196,7 +184,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         font-size: var(--font-size-sm);
       }
       
-        .input-wrapper {
+      .input-wrapper {
         position: relative;
         display: flex;
         align-items: center;
@@ -228,13 +216,17 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
             border-color: var(--primary);
             box-shadow: 0 0 0 3px var(--primary-light);
           }
+          
+          &.ng-invalid.ng-touched {
+            border-color: var(--error);
+          }
         }
       }
-      
-      .hint {
-        font-size: var(--font-size-xs);
-        color: var(--text-tertiary);
-      }
+    }
+    
+    .field-error {
+      font-size: var(--font-size-xs);
+      color: var(--error);
     }
     
     .alert {
@@ -319,73 +311,69 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
   `]
 })
 export class RegisterComponent {
-  name = '';
-  username = '';
-  email = '';
-  password = '';
+  form: FormGroup;
   isLoading = signal(false);
   error = signal('');
-  
-  // Validation errors
-  nameError = '';
-  usernameError = '';
-  emailError = '';
-  passwordError = '';
 
   constructor(
+    private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private toast: ToastService
-  ) {}
-
-  onNameChange(value: string) {
-    if (!value.trim()) {
-      this.nameError = 'Nome é obrigatório';
-    } else if (value.length > 25) {
-      this.nameError = 'Máximo 25 caracteres';
-      this.name = value.substring(0, 25);
-    } else {
-      this.nameError = '';
-    }
+  ) {
+    this.form = this.fb.group({
+      name: ['', [Validators.required, Validators.maxLength(VALIDATION_LIMITS.NAME.MAX)]],
+      username: ['', [Validators.required, Validators.minLength(VALIDATION_LIMITS.USERNAME.MIN), Validators.maxLength(VALIDATION_LIMITS.USERNAME.MAX), Validators.pattern(VALIDATION_PATTERNS.USERNAME)]],
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(VALIDATION_LIMITS.EMAIL.MAX)]],
+      password: ['', [Validators.required, Validators.minLength(VALIDATION_LIMITS.PASSWORD.MIN), Validators.maxLength(VALIDATION_LIMITS.PASSWORD.MAX)]]
+    });
   }
 
-  onUsernameChange(value: string) {
-    if (!value.trim()) {
-      this.usernameError = 'Username é obrigatório';
-    } else if (value.length < 3) {
-      this.usernameError = 'Mínimo 3 caracteres';
-    } else if (value.length > 20) {
-      this.usernameError = 'Máximo 20 caracteres';
-      this.username = value.substring(0, 20);
-    } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      this.usernameError = 'Apenas letras, números e underscore';
-      this.username = value.replace(/[^a-zA-Z0-9_]/g, '');
-    } else {
-      this.usernameError = '';
-    }
+  getNameError(): string {
+    const name = this.form.get('name');
+    if (name?.hasError('required')) return VALIDATION_MESSAGES.REQUIRED('Nome');
+    if (name?.hasError('maxlength')) return VALIDATION_LIMITS.NAME.MAX_MESSAGE;
+    return '';
   }
 
-  isFormValid(): boolean {
-    return this.name.trim().length > 0 &&
-           this.name.length <= 25 &&
-           this.username.trim().length >= 3 &&
-           this.username.trim().length <= 20 &&
-           /^[a-zA-Z0-9_]+$/.test(this.username) &&
-           this.email.trim().length > 0 &&
-           this.email.includes('@') &&
-           this.password.length >= 6;
+  getUsernameError(): string {
+    const username = this.form.get('username');
+    if (username?.hasError('required')) return VALIDATION_MESSAGES.REQUIRED('Username');
+    if (username?.hasError('minlength')) return VALIDATION_LIMITS.USERNAME.MIN_MESSAGE;
+    if (username?.hasError('maxlength')) return VALIDATION_LIMITS.USERNAME.MAX_MESSAGE;
+    if (username?.hasError('pattern')) return VALIDATION_MESSAGES.USERNAME_CHARS;
+    return '';
   }
 
-  register() {
-    if (!this.isFormValid()) {
+  getEmailError(): string {
+    const email = this.form.get('email');
+    if (email?.hasError('required')) return VALIDATION_MESSAGES.REQUIRED('Email');
+    if (email?.hasError('email')) return VALIDATION_MESSAGES.INVALID_FORMAT('Email');
+    if (email?.hasError('maxlength')) return VALIDATION_LIMITS.EMAIL.MAX_MESSAGE;
+    return '';
+  }
+
+  getPasswordError(): string {
+    const password = this.form.get('password');
+    if (password?.hasError('required')) return VALIDATION_MESSAGES.REQUIRED('Senha');
+    if (password?.hasError('minlength')) return VALIDATION_LIMITS.PASSWORD.MIN_MESSAGE;
+    if (password?.hasError('maxlength')) return VALIDATION_LIMITS.PASSWORD.MAX_MESSAGE;
+    return '';
+  }
+
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.error.set('Preencha todos os campos corretamente');
       return;
     }
-    
+
     this.isLoading.set(true);
     this.error.set('');
 
-    this.authService.register(this.username, this.email, this.password, this.name).subscribe({
+    const { name, username, email, password } = this.form.value;
+
+    this.authService.register(username, email, password, name).subscribe({
       next: () => {
         this.toast.success('Conta criada com sucesso!');
         this.router.navigate(['/home']);

@@ -1,21 +1,26 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { User, AuthResponse } from '../shared/models';
+import { API_ENDPOINTS, ROUTES } from '../shared/constants/api.constants';
+import { AuthStateService } from '../shared/services/state/auth-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private apiUrl = environment.apiUrl;
-  private currentUserSignal = signal<User | null>(this.getUserFromStorage());
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private authState: AuthStateService
+  ) {}
 
   register(username: string, email: string, password: string, name: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, {
+    return this.http.post<AuthResponse>(`${this.apiUrl}${API_ENDPOINTS.AUTH.REGISTER}`, {
       username,
       email,
       password,
@@ -24,21 +29,20 @@ export class AuthService {
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, {
+    return this.http.post<AuthResponse>(`${this.apiUrl}${API_ENDPOINTS.AUTH.LOGIN}`, {
       email,
       password
     }, { withCredentials: true }).pipe(tap(response => this.handleAuth(response)));
   }
 
   logout(): void {
-    this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe();
-    localStorage.removeItem('user');
-    this.currentUserSignal.set(null);
-    this.router.navigate(['/login']);
+    this.http.post(`${this.apiUrl}${API_ENDPOINTS.AUTH.LOGOUT}`, {}, { withCredentials: true }).subscribe();
+    this.authState.clear();
+    this.router.navigate([ROUTES.LOGIN]);
   }
 
-  refresh(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }).pipe(
+  refresh(): Observable<unknown> {
+    return this.http.post(`${this.apiUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {}, { withCredentials: true }).pipe(
       tap(() => {
         this.refreshCurrentUser();
       }),
@@ -50,31 +54,29 @@ export class AuthService {
   }
 
   forceLogout(): void {
-    localStorage.removeItem('user');
-    this.currentUserSignal.set(null);
-    this.router.navigate(['/login']);
+    this.authState.clear();
+    this.router.navigate([ROUTES.LOGIN]);
   }
 
-  deleteAccount(password: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/auth/account`, {
+  deleteAccount(password: string): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}${API_ENDPOINTS.AUTH.DELETE_ACCOUNT}`, {
       body: { password },
       withCredentials: true
     });
   }
 
   isLoggedIn(): boolean {
-    return !!this.currentUserSignal();
+    return this.authState.isAuthenticated();
   }
 
-  currentUser() {
-    return this.currentUserSignal();
+  currentUser(): User | null {
+    return this.authState.currentUser();
   }
 
   refreshCurrentUser(): void {
-    this.http.get<User>(`${this.apiUrl}/users/me`, { withCredentials: true }).subscribe({
+    this.http.get<User>(`${this.apiUrl}${API_ENDPOINTS.USERS.ME}`, { withCredentials: true }).subscribe({
       next: (user) => {
-        localStorage.setItem('user', JSON.stringify(user));
-        this.currentUserSignal.set(user);
+        this.authState.setUser(user);
       },
       error: () => {
         this.forceLogout();
@@ -83,13 +85,7 @@ export class AuthService {
   }
 
   private handleAuth(response: AuthResponse): void {
-    localStorage.setItem('user', JSON.stringify(response));
-    this.currentUserSignal.set(response);
+    this.authState.setUser(response);
     this.refreshCurrentUser();
-  }
-
-  private getUserFromStorage(): User | null {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
   }
 }
