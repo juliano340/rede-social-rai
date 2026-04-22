@@ -110,3 +110,16 @@ temp/
 *.tsbuildinfo
 cache/
 .parcel-cache/
+
+# ===========================
+# Development & Planning (Local Only)
+# ===========================
+.development/
+_DEVELOPMENT/
+.plan/
+.plans/
+
+# ===========================
+# Agent Conversation Logs
+# ===========================
+docs/conversation/
