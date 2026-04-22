@@ -326,8 +326,8 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.unreadCount.set(response.count);
       },
-      error: (err) => {
-        console.error('Error loading unread count:', err);
+      error: () => {
+        // Handled by global interceptor
       }
     });
   }
@@ -339,8 +339,7 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
         this.notifications.set(response.notifications);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Error loading notifications:', err);
+      error: () => {
         this.loading.set(false);
       }
     });
@@ -354,8 +353,8 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
           notifications.map(n => ({ ...n, read: true }))
         );
       },
-      error: (err) => {
-        console.error('Error marking all as read:', err);
+      error: () => {
+        // Handled by global interceptor
       }
     });
   }

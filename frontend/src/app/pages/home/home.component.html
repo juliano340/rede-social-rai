@@ -1,0 +1,84 @@
+<div class="home-page">
+  <h1>Feed</h1>
+
+  @if (authService.isLoggedIn()) {
+    <app-feed-tabs
+      [activeTab]="feedType()"
+      (tabChange)="switchFeed($event)"
+    ></app-feed-tabs>
+  }
+
+  @if (authService.isLoggedIn()) {
+    <app-post-create-form
+      [isSubmitting]="isSubmitting()"
+      [error]="submitError()"
+      [success]="submitSuccess()"
+      (submit)="onCreatePost($event)"
+    ></app-post-create-form>
+  }
+
+  <div class="posts-container">
+    @if (isLoading()) {
+      <app-feed-skeleton></app-feed-skeleton>
+    } @else if (loadError()) {
+      <app-feed-error (retry)="loadPosts()"></app-feed-error>
+    } @else if (posts().length === 0) {
+      <app-feed-empty></app-feed-empty>
+    } @else {
+      <div class="posts">
+        @for (post of posts(); track post.id) {
+          <app-post-card
+            [post]="post"
+            [isLiked]="postLikes()[post.id] === true"
+            [isLiking]="postLikingId() === post.id"
+            [isOwnPost]="authService.currentUser()?.id === post.author.id"
+            [authorLinkEnabled]="true"
+            [highlighted]="highlightPostId() === post.id"
+            [deleting]="deletingPostId() === post.id"
+            [replies]="post.replies || []"
+            [loadingReplies]="replyingToPost() === post.id || viewingRepliesPost() === post.id ? loadingReplies() : false"
+            [currentUserId]="authService.currentUser()?.id || null"
+            [highlightReplyId]="highlightReplyId()"
+            [isSubmittingReply]="isSubmittingReply()"
+            [savingReply]="savingReply()"
+            (likeClick)="onLikeClick($event)"
+            (replyToggle)="onReplyToggle($event)"
+            (deleteClick)="onDeleteClick($event)"
+            (editStart)="postEdit.editingPost.set($event.id)"
+            (editSave)="onEditSave($event)"
+            (editCancel)="onEditCancel()"
+            (openReplyForm)="onOpenReplyForm(post.id)"
+            (submitReplyEvent)="onSubmitReply(post.id, $event)"
+            (startEditReply)="startEditReply($event)"
+            (cancelEditReply)="cancelEditReply()"
+            (saveEditReply)="onSaveEditReply(post.id, $event)"
+            (deleteReplyEvent)="onDeleteReply(post.id, $event)"
+            (toggleReplyToCommentEvent)="onToggleReplyToComment($event)"
+            (cancelReplyToCommentEvent)="onCancelReplyToComment()"
+            (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
+            (startEditNestedReply)="startEditNestedReply($event)"
+            (cancelEditNested)="cancelEditNestedReply()"
+            (saveEditNestedReply)="onSaveEditNestedReply(post.id, $event)"
+            (deleteNestedReplyEvent)="onDeleteNestedReply(post.id, $event)"
+          ></app-post-card>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<app-delete-confirm-modal
+  [show]="showDeleteModal()"
+  title="Excluir Resposta"
+  itemType="esta resposta"
+  (close)="onCloseDeleteReplyModal()"
+  (confirm)="onConfirmDeleteReply()"
+></app-delete-confirm-modal>
+
+<app-delete-confirm-modal
+  [show]="showDeletePostModal()"
+  title="Excluir Postagem"
+  itemType="esta postagem"
+  (close)="onCloseDeletePostModal()"
+  (confirm)="onConfirmDeletePost()"
+></app-delete-confirm-modal>

@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -53,6 +55,7 @@ export class PostsService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   private async getCursorDate(cursor: string): Promise<Date> {
@@ -129,6 +132,10 @@ export class PostsService {
   }
 
   async findAll(cursor?: string, limit = 20, userId?: string) {
+    const cacheKey = `posts:all:${cursor || 'initial'}:${limit}:${userId || 'anon'}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) return cached;
+
     const take = limit + 1;
     const where = cursor ? { createdAt: { lt: await this.getCursorDate(cursor) } } : {};
 
@@ -139,13 +146,20 @@ export class PostsService {
       include: this.buildFeedInclude(userId) as any,
     });
 
-    return this.buildCursorPagination(
+    const result = this.buildCursorPagination(
       posts.map(post => this.mapPostWithLikeStatus(post, userId)),
       limit
     );
+
+    await this.cacheManager.set(cacheKey, result, 30000);
+    return result;
   }
 
   async findFollowing(userId: string, cursor?: string, limit = 20) {
+    const cacheKey = `posts:following:${userId}:${cursor || 'initial'}:${limit}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) return cached;
+
     const following = await this.prisma.follow.findMany({
       where: { followerId: userId },
       select: { followingId: true },
@@ -170,13 +184,20 @@ export class PostsService {
       include: this.buildFeedInclude(userId) as any,
     });
 
-    return this.buildCursorPagination(
+    const result = this.buildCursorPagination(
       posts.map(post => this.mapPostWithLikeStatus(post, userId)),
       limit
     );
+
+    await this.cacheManager.set(cacheKey, result, 30000);
+    return result;
   }
 
   async findByUser(userId: string, cursor?: string, limit = 20, requesterId?: string) {
+    const cacheKey = `posts:user:${userId}:${cursor || 'initial'}:${limit}:${requesterId || 'anon'}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) return cached;
+
     const take = limit + 1;
     const where: { authorId: string; createdAt?: { lt: Date } } = { authorId: userId };
     if (cursor) {
@@ -190,10 +211,13 @@ export class PostsService {
       include: this.buildFeedInclude(requesterId) as any,
     });
 
-    return this.buildCursorPagination(
+    const result = this.buildCursorPagination(
       posts.map(post => this.mapPostWithLikeStatus(post, requesterId)),
       limit
     );
+
+    await this.cacheManager.set(cacheKey, result, 30000);
+    return result;
   }
 
   async findById(postId: string, requesterId?: string) {

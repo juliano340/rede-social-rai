@@ -2187,10 +2187,8 @@ export class ProfileComponent implements OnInit {
         this.isUploadingAvatar.set(false);
         this.closeAvatarModal();
       },
-      error: (err) => {
-        console.error("Error uploading avatar:", err);
+      error: () => {
         this.isUploadingAvatar.set(false);
-        alert("Erro ao fazer upload da imagem. Tente novamente.");
       },
     });
   }
@@ -2249,11 +2247,8 @@ export class ProfileComponent implements OnInit {
         this.isUploadingAvatar.set(false);
         this.closeAvatarModal();
       },
-      error: (err) => {
-        console.error("Error updating avatar:", err);
+      error: () => {
         this.isUploadingAvatar.set(false);
-        const message = err.error?.message || 'Erro ao salvar URL da imagem. Verifique se é uma URL válida de imagem.';
-        alert(message);
       },
     });
   }
@@ -2358,10 +2353,8 @@ export class ProfileComponent implements OnInit {
           this.closeEditModal();
           this.savingProfile.set(false);
         },
-error: (err) => {
-          console.error("Error updating profile:", err);
+error: () => {
           this.savingProfile.set(false);
-          alert("Erro ao salvar perfil. Tente novamente.");
         },
       });
   }
@@ -2404,8 +2397,7 @@ error: (err) => {
         );
         this.postEdit.editingPost.set(null);
       },
-      error: (err) => {
-        console.error('Error editing post:', err);
+      error: () => {
         this.postEdit.editingPost.set(null);
       }
     });

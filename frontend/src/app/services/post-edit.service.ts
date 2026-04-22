@@ -1,68 +1,77 @@
 import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import { PostsService } from './posts.service';
-import { Post, Reply } from '../shared/models';
-import { ToastService } from '../shared/services/toast.service';
+import { Post, Reply } from '../shared/models/post.model';
 import { AuthService } from './auth.service';
+import { UrlUtilsService } from '../shared/services/url-utils.service';
+import { HTTP_STATUS } from '../shared/constants/app.constants';
 
 @Injectable({ providedIn: 'root' })
 export class PostEditService {
   private postsService = inject(PostsService);
-  private toast = inject(ToastService);
   private authService = inject(AuthService);
+  private urlUtils = inject(UrlUtilsService);
 
+  // Post Edit State
   editingPost = signal<string | null>(null);
-  editPostContent = '';
-  editMediaUrl = '';
+  editPostContent = signal('');
+  editMediaUrl = signal('');
   editMediaType = signal<'image' | 'youtube' | null>(null);
   editLinkUrl = signal<string | null>(null);
 
+  // Reply Edit State
   editingReply = signal<string | null>(null);
-  editReplyContent = '';
-  editingNestedReply = signal<string | null>(null);
-  editNestedReplyContent = '';
+  editReplyContent = signal('');
 
+  // Nested Reply Edit State
+  editingNestedReply = signal<string | null>(null);
+  editNestedReplyContent = signal('');
+
+  // Delete State
   showDeletePostModal = signal(false);
   deletingPostId = signal<string | null>(null);
   showDeleteReplyModal = signal(false);
   deletingReplyId = signal<string | null>(null);
   deletingReplyPostId = signal<string | null>(null);
 
+  // Reply Form State
   replyingToPost = signal<string | null>(null);
-  replyContent = '';
+  replyContent = signal('');
   replyingToComment = signal<string | null>(null);
-  replyingToCommentContent = '';
+  replyingToCommentContent = signal('');
   isSubmittingReply = signal(false);
   postReplies = signal<Reply[]>([]);
   loadingReplies = signal(false);
   savingReply = signal(false);
 
+  // Like State
   postLikingId = signal<string | null>(null);
   postLikes = signal<Record<string, boolean>>({});
 
   startEditPost(post: Post): void {
     this.editingPost.set(post.id);
-    this.editPostContent = post.content;
-    this.editMediaUrl = post.mediaUrl || '';
+    this.editPostContent.set(post.content);
+    this.editMediaUrl.set(post.mediaUrl || '');
     this.editMediaType.set(post.mediaType as 'image' | 'youtube' | null);
     this.editLinkUrl.set(post.linkUrl ?? null);
   }
 
   cancelEditPost(): void {
     this.editingPost.set(null);
-    this.editPostContent = '';
-    this.editMediaUrl = '';
+    this.editPostContent.set('');
+    this.editMediaUrl.set('');
     this.editMediaType.set(null);
     this.editLinkUrl.set(null);
   }
 
   saveEditPost(postId: string, postsSignal: WritableSignal<Post[]>): void {
-    if (!this.editPostContent.trim()) return;
+    const content = this.editPostContent();
+    if (!content.trim()) return;
 
-    const mediaUrl = this.editMediaType() && this.editMediaUrl ? this.editMediaUrl : null;
-    const mediaType = this.editMediaType() && this.editMediaUrl ? this.editMediaType() : null;
-    const linkUrl = this.normalizeUrl(this.editLinkUrl() || '');
+    const mediaUrl = this.editMediaType() && this.editMediaUrl() ? this.editMediaUrl() : null;
+    const mediaType = this.editMediaType() && this.editMediaUrl() ? this.editMediaType() : null;
+    const linkUrl = this.urlUtils.normalizeUrl(this.editLinkUrl() || '');
 
-    this.postsService.updatePost(postId, this.editPostContent, mediaUrl, mediaType, linkUrl).subscribe({
+    this.postsService.updatePost(postId, content, mediaUrl, mediaType, linkUrl).subscribe({
       next: (updated) => {
         postsSignal.update(posts =>
           posts.map(p => p.id === postId
@@ -72,28 +81,27 @@ export class PostEditService {
         );
         this.cancelEditPost();
       },
-      error: (err) => {
-        console.error('Error editing post:', err);
+      error: () => {
         this.cancelEditPost();
-        this.toast.error('Erro ao editar post. Tente novamente.');
       }
     });
   }
 
   startEditReply(reply: Reply): void {
     this.editingReply.set(reply.id);
-    this.editReplyContent = reply.content;
+    this.editReplyContent.set(reply.content);
   }
 
   cancelEditReply(): void {
     this.editingReply.set(null);
-    this.editReplyContent = '';
+    this.editReplyContent.set('');
   }
 
   saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
-    if (!this.editReplyContent.trim()) return;
+    const content = this.editReplyContent();
+    if (!content.trim()) return;
 
-    this.postsService.updateReply(postId, replyId, this.editReplyContent).subscribe({
+    this.postsService.updateReply(postId, replyId, content).subscribe({
       next: (updated) => {
         postRepliesSignal.update(replies =>
           replies.map(r => r.id === replyId ? { ...updated, children: r.children } : r)
@@ -111,9 +119,8 @@ export class PostEditService {
           }));
         }
       },
-      error: (err) => {
-        console.error('Error editing reply:', err);
-        this.toast.error('Erro ao editar comentário. Tente novamente.');
+      error: () => {
+        // Error handled by global interceptor
       }
     });
     this.cancelEditReply();
@@ -121,20 +128,19 @@ export class PostEditService {
 
   startEditNestedReply(reply: Reply): void {
     this.editingNestedReply.set(reply.id);
-    this.editNestedReplyContent = reply.content;
+    this.editNestedReplyContent.set(reply.content);
   }
 
   cancelEditNestedReply(): void {
     this.editingNestedReply.set(null);
-    this.editNestedReplyContent = '';
+    this.editNestedReplyContent.set('');
   }
 
   saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
-    if (!this.editNestedReplyContent.trim()) return;
+    const content = this.editNestedReplyContent();
+    if (!content.trim()) return;
 
-    const newContent = this.editNestedReplyContent;
-
-    this.postsService.updateReply(postId, replyId, newContent).subscribe({
+    this.postsService.updateReply(postId, replyId, content).subscribe({
       next: () => {
         postRepliesSignal.update(replies =>
           replies.map(r => {
@@ -142,7 +148,7 @@ export class PostEditService {
               return {
                 ...r,
                 children: r.children.map(c =>
-                  c.id === replyId ? { ...c, content: newContent } : c
+                  c.id === replyId ? { ...c, content } : c
                 ),
               };
             }
@@ -160,7 +166,7 @@ export class PostEditService {
                   return {
                     ...r,
                     children: r.children.map(c =>
-                      c.id === replyId ? { ...c, content: newContent } : c
+                      c.id === replyId ? { ...c, content } : c
                     ),
                   };
                 }
@@ -172,9 +178,8 @@ export class PostEditService {
 
         this.cancelEditNestedReply();
       },
-      error: (err) => {
-        console.error('Error editing nested reply:', err);
-        this.toast.error('Erro ao editar resposta. Tente novamente.');
+      error: () => {
+        // Error handled by global interceptor
       }
     });
   }
@@ -193,10 +198,8 @@ export class PostEditService {
         postsSignal.update(posts => posts.filter(p => p.id !== id));
         this.closeDeletePostModal();
       },
-      error: (err) => {
-        console.error('Error deleting post:', err);
+      error: () => {
         this.closeDeletePostModal();
-        this.toast.error('Erro ao deletar post. Tente novamente.');
       }
     });
   }
@@ -263,26 +266,20 @@ export class PostEditService {
         this.closeDeleteReplyModal();
       },
       error: (err) => {
-        console.error('Error deleting reply:', err);
         this.closeDeleteReplyModal();
-        if (err.status === 404) {
-          this.toast.error('Comentário já foi removido. Atualizando...');
-          if (postsSignal) {
-            postsSignal.update(posts => posts.map(p => {
-              if (p.id !== postId) return p;
-              return {
-                ...p,
-                replies: (p.replies || [])
-                  .filter(r => r.id !== replyId)
-                  .map(r => ({
-                    ...r,
-                    children: (r.children || []).filter(c => c.id !== replyId),
-                  })),
-              };
-            }));
-          }
-        } else {
-          this.toast.error('Erro ao deletar comentário. Tente novamente.');
+        if (err.status === HTTP_STATUS.NOT_FOUND && postsSignal) {
+          postsSignal.update(posts => posts.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              replies: (p.replies || [])
+                .filter(r => r.id !== replyId)
+                .map(r => ({
+                  ...r,
+                  children: (r.children || []).filter(c => c.id !== replyId),
+                })),
+            };
+          }));
         }
       }
     });
@@ -310,16 +307,16 @@ export class PostEditService {
 
   openReplyForm(postId: string): void {
     this.replyingToPost.set(postId);
-    this.replyContent = '';
+    this.replyContent.set('');
   }
 
   cancelReply(): void {
     this.replyingToPost.set(null);
-    this.replyContent = '';
+    this.replyContent.set('');
   }
 
   submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string): void {
-    const content = replyContent ?? this.replyContent;
+    const content = replyContent ?? this.replyContent();
     if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
@@ -338,17 +335,11 @@ export class PostEditService {
           )
         );
 
-        this.replyContent = '';
+        this.replyContent.set('');
         this.isSubmittingReply.set(false);
       },
-      error: (err) => {
-        console.error('Error creating reply:', err);
+      error: () => {
         this.isSubmittingReply.set(false);
-        if (err.status === 429) {
-          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
-        } else {
-          this.toast.error('Erro ao publicar comentário. Tente novamente.');
-        }
       }
     });
   }
@@ -358,17 +349,17 @@ export class PostEditService {
       this.cancelReplyToComment();
     } else {
       this.replyingToComment.set(replyId);
-      this.replyingToCommentContent = '';
+      this.replyingToCommentContent.set('');
     }
   }
 
   cancelReplyToComment(): void {
     this.replyingToComment.set(null);
-    this.replyingToCommentContent = '';
+    this.replyingToCommentContent.set('');
   }
 
   submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string, postsSignal?: WritableSignal<Post[]>): void {
-    const content = replyContent ?? this.replyingToCommentContent;
+    const content = replyContent ?? this.replyingToCommentContent();
     if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
@@ -400,19 +391,14 @@ export class PostEditService {
           );
         }
 
-        this.replyingToCommentContent = '';
+        this.replyingToCommentContent.set('');
         this.replyingToComment.set(null);
         this.isSubmittingReply.set(false);
       },
       error: (err) => {
-        console.error('Error creating nested reply:', err);
         this.isSubmittingReply.set(false);
-        if (err.status === 401) {
+        if (err.status === HTTP_STATUS.UNAUTHORIZED) {
           this.authService.logout();
-        } else if (err.status === 429) {
-          this.toast.error('Você está comentando muito rápido. Aguarde um momento.');
-        } else {
-          this.toast.error('Erro ao responder comentário. Tente novamente.');
         }
       }
     });
@@ -432,15 +418,10 @@ export class PostEditService {
       next: () => {
         this.postLikingId.set(null);
       },
-      error: (err) => {
+      error: () => {
         this.postLikes.update(likes => ({ ...likes, [post.id]: currentStatus }));
         post._count.likes += currentStatus ? 1 : -1;
         this.postLikingId.set(null);
-        if (err.status === 429) {
-          this.toast.error('Você está curtindo muito rápido. Aguarde um momento.');
-        } else {
-          this.toast.error('Erro ao curtir. Tente novamente.');
-        }
       }
     });
   }
@@ -448,20 +429,20 @@ export class PostEditService {
   setEditMediaType(type: 'image' | 'youtube'): void {
     if (this.editMediaType() === type) {
       this.editMediaType.set(null);
-      this.editMediaUrl = '';
+      this.editMediaUrl.set('');
     } else {
       this.editMediaType.set(type);
-      this.editMediaUrl = '';
+      this.editMediaUrl.set('');
     }
   }
 
   removeEditMedia(): void {
-    this.editMediaUrl = '';
+    this.editMediaUrl.set('');
   }
 
   clearEditMediaType(): void {
     this.editMediaType.set(null);
-    this.editMediaUrl = '';
+    this.editMediaUrl.set('');
   }
 
   clearEditLinkPreview(): void {
@@ -469,30 +450,18 @@ export class PostEditService {
   }
 
   normalizeUrl(url: string): string | null {
-    if (!url) return null;
-    url = url.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return 'https://' + url;
-    }
-    return url;
+    return this.urlUtils.normalizeUrl(url);
   }
 
   isValidImageUrl(url: string): boolean {
-    if (!url) return false;
-    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+    return this.urlUtils.isValidImageUrl(url);
   }
 
   detectUrlInContent(content: string): string | null {
-    const match = content.match(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/);
-    return match ? match[1] : null;
+    return this.urlUtils.detectUrlInContent(content);
   }
 
   getDomain(url: string): string {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
+    return this.urlUtils.getDomain(url);
   }
 }

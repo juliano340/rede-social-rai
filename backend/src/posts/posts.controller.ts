@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-auth.guard';
 import { User } from '../auth/decorators/user.decorator';
@@ -9,11 +10,17 @@ import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto, CreateReplyDto, UpdateReplyDto } from './dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
+@ApiTags('Posts')
+@ApiBearerAuth()
 @Controller('posts')
 export class PostsController {
   constructor(private postsService: PostsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Criar um novo post' })
+  @ApiResponse({ status: 201, description: 'Post criado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   async create(@User() user: AuthenticatedUser, @Body() dto: CreatePostDto) {
@@ -21,6 +28,10 @@ export class PostsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Listar todos os posts' })
+  @ApiQuery({ name: 'cursor', required: false, description: 'Cursor para paginação' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Limite de posts (max 50)' })
+  @ApiResponse({ status: 200, description: 'Lista de posts' })
   @UseGuards(OptionalJwtAuthGuard)
   async findAll(
     @Query('cursor') cursor?: string,
@@ -33,6 +44,10 @@ export class PostsController {
   }
 
   @Get('following')
+  @ApiOperation({ summary: 'Listar posts dos usuários seguidos' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Lista de posts' })
   @UseGuards(JwtAuthGuard)
   async findFollowing(
     @User() user: AuthenticatedUser,
@@ -44,6 +59,11 @@ export class PostsController {
   }
 
   @Get('user/:userId')
+  @ApiOperation({ summary: 'Listar posts de um usuário específico' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Lista de posts' })
   @UseGuards(OptionalJwtAuthGuard)
   async findByUser(
     @Param('userId') userId: string,
@@ -57,6 +77,10 @@ export class PostsController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Buscar um post por ID' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiResponse({ status: 200, description: 'Post encontrado' })
+  @ApiResponse({ status: 404, description: 'Post não encontrado' })
   @UseGuards(OptionalJwtAuthGuard)
   async findOne(@Param('id') id: string, @Req() req?: Request) {
     const userId = this.getUserIdFromRequest(req);
@@ -64,12 +88,22 @@ export class PostsController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Deletar um post' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiResponse({ status: 200, description: 'Post deletado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  @ApiResponse({ status: 404, description: 'Post não encontrado' })
   @UseGuards(JwtAuthGuard)
   async delete(@Param('id') id: string, @User() user: AuthenticatedUser) {
     return this.postsService.delete(id, user.userId);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Atualizar um post' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiResponse({ status: 200, description: 'Post atualizado' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
@@ -80,6 +114,10 @@ export class PostsController {
   }
 
   @Post(':id/like')
+  @ApiOperation({ summary: 'Curtir/descurtir um post' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiResponse({ status: 200, description: 'Like toggled' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async like(@Param('id') id: string, @User() user: AuthenticatedUser) {
@@ -87,6 +125,10 @@ export class PostsController {
   }
 
   @Post(':id/reply')
+  @ApiOperation({ summary: 'Criar uma resposta em um post' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiResponse({ status: 201, description: 'Resposta criada' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   async createReply(
@@ -98,6 +140,11 @@ export class PostsController {
   }
 
   @Get(':id/replies')
+  @ApiOperation({ summary: 'Listar respostas de um post' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Lista de respostas' })
   @Public()
   async getReplies(
     @Param('id') postId: string,
@@ -109,6 +156,11 @@ export class PostsController {
   }
 
   @Put(':id/reply/:replyId')
+  @ApiOperation({ summary: 'Atualizar uma resposta' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiParam({ name: 'replyId', description: 'ID da resposta' })
+  @ApiResponse({ status: 200, description: 'Resposta atualizada' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
   @UseGuards(JwtAuthGuard)
   async updateReply(
     @Param('id') postId: string,
@@ -120,6 +172,11 @@ export class PostsController {
   }
 
   @Delete(':id/reply/:replyId')
+  @ApiOperation({ summary: 'Deletar uma resposta' })
+  @ApiParam({ name: 'id', description: 'ID do post' })
+  @ApiParam({ name: 'replyId', description: 'ID da resposta' })
+  @ApiResponse({ status: 200, description: 'Resposta deletada' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
   @UseGuards(JwtAuthGuard)
   async deleteReply(
     @Param('id') postId: string,

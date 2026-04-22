@@ -1,0 +1,65 @@
+.home-page h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.highlight-post {
+  animation: highlight-fade 3s ease-out;
+}
+
+.highlight-reply {
+  animation: highlight-fade 3s ease-out;
+  border-radius: 8px;
+}
+
+@keyframes highlight-fade {
+  0% { background: rgba(99, 102, 241, 0.2); }
+  100% { background: transparent; }
+}
+
+.posts-container {
+  .skeleton-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 0;
+  }
+
+  .error-state, .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+
+    p {
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+
+    button {
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-weight: 600;
+
+      &:hover {
+        background: var(--primary-hover);
+      }
+    }
+  }
+
+  .posts {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
