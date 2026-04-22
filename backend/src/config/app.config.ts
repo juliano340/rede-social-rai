@@ -6,7 +6,7 @@ export const appConfigValidationSchema = Joi.object({
   PORT: Joi.number().default(3000),
   DATABASE_URL: Joi.string().required(),
   JWT_SECRET: Joi.string().required().min(10),
-  JWT_REFRESH_SECRET: Joi.string().required().min(10),
+  // JWT_REFRESH_SECRET: Joi.string().optional(),
   CORS_ORIGIN: Joi.string().default('http://localhost:4200'),
   REDIS_URL: Joi.string().optional(),
 });
