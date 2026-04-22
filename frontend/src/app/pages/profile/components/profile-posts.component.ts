@@ -1,0 +1,107 @@
+import { Component, input, output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { LucideIconsModule } from '../../../shared/icons/lucide-icons.module';
+import { PostCardComponent } from '../../../shared/components/post-card/post-card.component';
+import { Post } from '../../../shared/models/post.model';
+
+@Component({
+  selector: 'app-profile-posts',
+  standalone: true,
+  imports: [CommonModule, RouterLink, LucideIconsModule, PostCardComponent],
+  template: `
+    <div class="profile-posts">
+      <h2>Publicações</h2>
+      @if (loading()) {
+        <div class="loading-state small">
+          <div class="spinner"></div>
+        </div>
+      } @else if (posts().length === 0) {
+        <div class="empty-state">
+          <lucide-icon name="file-text" [size]="48" class="empty-icon"></lucide-icon>
+          <p>Nenhuma publicação ainda.</p>
+        </div>
+      } @else {
+        @for (post of posts(); track post.id) {
+          <app-post-card
+            [post]="post"
+            [isLiked]="postLikes()[post.id] === true"
+            [isLiking]="postLikingId() === post.id"
+            [isOwnPost]="currentUserId() === post.author.id"
+            [authorLinkEnabled]="true"
+            [highlighted]="false"
+            [deleting]="deletingPostId() === post.id"
+            [replies]="post.replies || []"
+            [loadingReplies]="replyingToPost() === post.id ? loadingReplies() : false"
+            [currentUserId]="currentUserId()"
+            [highlightReplyId]="null"
+            [isSubmittingReply]="isSubmittingReply()"
+            [savingReply]="savingReply()"
+            (likeClick)="likeClick.emit($event)"
+            (replyToggle)="replyToggle.emit($event)"
+            (deleteClick)="deleteClick.emit($event)"
+            (editStart)="editStart.emit($event)"
+            (editSave)="editSave.emit($event)"
+            (editCancel)="editCancel.emit()"
+            (openReplyForm)="openReplyForm.emit($event)"
+            (submitReplyEvent)="submitReply.emit($event)"
+            (startEditReply)="startEditReply.emit($event)"
+            (cancelEditReply)="cancelEditReply.emit()"
+            (saveEditReply)="saveEditReply.emit($event)"
+            (deleteReplyEvent)="deleteReply.emit($event)"
+            (toggleReplyToCommentEvent)="toggleReplyToComment.emit($event)"
+            (cancelReplyToCommentEvent)="cancelReplyToComment.emit()"
+            (submitReplyToCommentEvent)="submitReplyToComment.emit($event)"
+            (startEditNestedReply)="startEditNestedReply.emit($event)"
+            (cancelEditNested)="cancelEditNested.emit()"
+            (saveEditNestedReply)="saveEditNestedReply.emit($event)"
+            (deleteNestedReplyEvent)="deleteNestedReply.emit($event)"
+          ></app-post-card>
+        }
+      }
+    </div>
+  `,
+  styles: [`
+    .profile-posts { margin-top: 24px; }
+    h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+    .loading-state { text-align: center; padding: 40px 20px; }
+    .loading-state.small { padding: 20px; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon { width: 48px; height: 48px; margin-bottom: 16px; color: var(--text-tertiary); }
+    .empty-state p { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  `]
+})
+export class ProfilePostsComponent {
+  posts = input.required<Post[]>();
+  loading = input.required<boolean>();
+  currentUserId = input.required<string | null>();
+  postLikes = input.required<Record<string, boolean>>();
+  postLikingId = input.required<string | null>();
+  deletingPostId = input.required<string | null>();
+  replyingToPost = input.required<string | null>();
+  loadingReplies = input.required<boolean>();
+  isSubmittingReply = input.required<boolean>();
+  savingReply = input.required<boolean>();
+
+  likeClick = output<Post>();
+  replyToggle = output<string>();
+  deleteClick = output<string>();
+  editStart = output<Post>();
+  editSave = output<any>();
+  editCancel = output<void>();
+  openReplyForm = output<any>();
+  submitReply = output<any>();
+  startEditReply = output<any>();
+  cancelEditReply = output<void>();
+  saveEditReply = output<any>();
+  deleteReply = output<any>();
+  toggleReplyToComment = output<string>();
+  cancelReplyToComment = output<void>();
+  submitReplyToComment = output<any>();
+  startEditNestedReply = output<any>();
+  cancelEditNested = output<void>();
+  saveEditNestedReply = output<any>();
+  deleteNestedReply = output<any>();
+}
