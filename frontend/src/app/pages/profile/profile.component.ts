@@ -10,7 +10,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
 import { PostCardComponent } from '../../shared/components/post-card/post-card.component';
 import { DeleteConfirmModalComponent } from '../../shared/components/delete-confirm-modal/delete-confirm-modal.component';
 import { UserProfile } from '../../shared/models/user.model';
-import { Post, Reply } from '../../shared/models/post.model';
+import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } from '../../shared/models/post.model';
 import { API_ENDPOINTS } from '../../shared/constants/api.constants';
 
 import { ProfileStateService } from './services/profile-state.service';
@@ -169,7 +169,6 @@ export class ProfileComponent implements OnInit {
       if (username) {
         this.state.reset();
         this.loadProfile(username);
-        this.loadPosts(username);
       }
     });
   }
@@ -177,32 +176,24 @@ export class ProfileComponent implements OnInit {
   private loadProfile(username: string) {
     this.state.setLoading(true);
     this.usersService.getUser(username).subscribe({
-      next: (data: any) => {
-        const isOwn = this.authService.currentUser()?.id === data?.id;
+      next: (data) => {
+        const isOwn = this.authService.currentUser()?.id === data.id;
         this.state.setProfile(data, isOwn);
+        this.loadPosts(data.id);
       },
       error: () => this.state.setLoading(false),
     });
   }
 
-  private loadPosts(username: string) {
+  private loadPosts(userId: string) {
     this.state.setPostsLoading(true);
-    this.usersService.getUser(username).subscribe({
-      next: (data: any) => {
-        if (data?.id) {
-          this.postsService.getUserPosts(data.id).subscribe({
-            next: (res: any) => {
-              this.state.setPosts(res.posts || []);
-              if (this.authService.isLoggedIn()) {
-                const likes: Record<string, boolean> = {};
-                res.posts?.forEach((post: any) => { likes[post.id] = post.isLiked || false; });
-                this.postEdit.postLikes.set(likes);
-              }
-            },
-            error: () => this.state.setPostsLoading(false),
-          });
-        } else {
-          this.state.setPostsLoading(false);
+    this.postsService.getUserPosts(userId).subscribe({
+      next: (res) => {
+        this.state.setPosts(res.posts || []);
+        if (this.authService.isLoggedIn()) {
+          const likes: Record<string, boolean> = {};
+          res.posts?.forEach((post) => { likes[post.id] = post.isLiked || false; });
+          this.postEdit.postLikes.set(likes);
         }
       },
       error: () => this.state.setPostsLoading(false),
@@ -215,7 +206,7 @@ export class ProfileComponent implements OnInit {
 
     this.state.setFollowingLoading(true);
     this.usersService.follow(userId).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.state.toggleFollow(response.following);
         this.state.setFollowingLoading(false);
       },
@@ -228,7 +219,7 @@ export class ProfileComponent implements OnInit {
     if (!userId) return;
     this.state.openModal('followers', 'Seguidores');
     this.usersService.getFollowers(userId).subscribe({
-      next: (data: any) => this.state.setModalUsers(data.users || []),
+      next: (data) => this.state.setModalUsers(data.users || []),
       error: () => this.state.setModalUsers([]),
     });
   }
@@ -238,7 +229,7 @@ export class ProfileComponent implements OnInit {
     if (!userId) return;
     this.state.openModal('following', 'Seguindo');
     this.usersService.getFollowing(userId).subscribe({
-      next: (data: any) => this.state.setModalUsers(data.users || []),
+      next: (data) => this.state.setModalUsers(data.users || []),
       error: () => this.state.setModalUsers([]),
     });
   }
@@ -266,7 +257,7 @@ export class ProfileComponent implements OnInit {
   uploadAvatar(file: File) {
     this.state.setUploadingAvatar(true);
     this.usersService.uploadAvatar(file).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.state.updateAvatar(response.avatar);
         this.state.setUploadingAvatar(false);
         this.state.closeAvatarModal();
@@ -283,7 +274,7 @@ export class ProfileComponent implements OnInit {
     if (!url.trim()) return;
     this.state.setUploadingAvatar(true);
     this.usersService.updateAvatarUrl(url.trim()).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.state.updateAvatar(response.avatar);
         this.state.setUploadingAvatar(false);
         this.state.closeAvatarModal();
@@ -310,7 +301,7 @@ export class ProfileComponent implements OnInit {
       bio: data.bio,
       bioLink: data.bioLink.trim() || '',
     }).subscribe({
-      next: (updated: any) => {
+      next: (updated) => {
         this.state.updateProfile({
           name: updated.name,
           bio: updated.bio,
@@ -343,25 +334,25 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  onSubmitReply(event: any) {
+  onSubmitReply(event: SubmitReplyEvent) {
     this.postEdit.submitReply(event.postId, this.state.posts, this.state.postReplies, event.content);
   }
 
-  onSaveEditReply(event: any) {
+  onSaveEditReply(event: ReplyActionEvent) {
     this.postEdit.saveEditReply(event.replyId, event.postId, this.state.postReplies, this.state.posts);
   }
 
-  onSubmitReplyToComment(event: any) {
+  onSubmitReplyToComment(event: NestedReplyEvent) {
     this.postEdit.submitReplyToComment(event.replyId, event.postId, this.state.postReplies, event.content, this.state.posts);
   }
 
-  onSaveEditNestedReply(event: any) {
+  onSaveEditNestedReply(event: ReplyActionEvent) {
     this.postEdit.saveEditNestedReply(event.replyId, event.postId, '', this.state.postReplies, this.state.posts);
   }
 
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
     this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
-      next: (updated: any) => {
+      next: (updated) => {
         this.state.posts.update(posts => posts.map(p => p.id === data.postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p));
         this.postEdit.cancelEditPost();
       },

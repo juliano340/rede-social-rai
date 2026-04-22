@@ -43,3 +43,19 @@ export interface RepliesResponse {
   nextCursor?: string | null;
   hasMore?: boolean;
 }
+
+export interface SubmitReplyEvent {
+  postId: string;
+  content: string;
+}
+
+export interface ReplyActionEvent {
+  replyId: string;
+  postId: string;
+}
+
+export interface NestedReplyEvent {
+  replyId: string;
+  postId: string;
+  content: string;
+}

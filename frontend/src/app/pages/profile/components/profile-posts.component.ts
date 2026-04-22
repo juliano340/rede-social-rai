@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LucideIconsModule } from '../../../shared/icons/lucide-icons.module';
 import { PostCardComponent } from '../../../shared/components/post-card/post-card.component';
-import { Post } from '../../../shared/models/post.model';
+import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } from '../../../shared/models/post.model';
 
 @Component({
   selector: 'app-profile-posts',
@@ -43,19 +43,19 @@ import { Post } from '../../../shared/models/post.model';
             (editStart)="editStart.emit($event)"
             (editSave)="editSave.emit($event)"
             (editCancel)="editCancel.emit()"
-            (openReplyForm)="openReplyForm.emit($event)"
-            (submitReplyEvent)="submitReply.emit($event)"
+            (openReplyForm)="openReplyForm.emit(post.id)"
+            (submitReplyEvent)="submitReply.emit({ postId: post.id, content: $event })"
             (startEditReply)="startEditReply.emit($event)"
             (cancelEditReply)="cancelEditReply.emit()"
-            (saveEditReply)="saveEditReply.emit($event)"
-            (deleteReplyEvent)="deleteReply.emit($event)"
+            (saveEditReply)="saveEditReply.emit({ replyId: $event.replyId, postId: post.id })"
+            (deleteReplyEvent)="deleteReply.emit({ replyId: $event, postId: post.id })"
             (toggleReplyToCommentEvent)="toggleReplyToComment.emit($event)"
             (cancelReplyToCommentEvent)="cancelReplyToComment.emit()"
-            (submitReplyToCommentEvent)="submitReplyToComment.emit($event)"
+            (submitReplyToCommentEvent)="submitReplyToComment.emit({ replyId: $event.replyId, postId: post.id, content: $event.content })"
             (startEditNestedReply)="startEditNestedReply.emit($event)"
             (cancelEditNested)="cancelEditNested.emit()"
-            (saveEditNestedReply)="saveEditNestedReply.emit($event)"
-            (deleteNestedReplyEvent)="deleteNestedReply.emit($event)"
+            (saveEditNestedReply)="saveEditNestedReply.emit({ replyId: $event.replyId, postId: post.id })"
+            (deleteNestedReplyEvent)="deleteNestedReply.emit({ replyId: $event, postId: post.id })"
           ></app-post-card>
         }
       }
@@ -89,19 +89,19 @@ export class ProfilePostsComponent {
   replyToggle = output<string>();
   deleteClick = output<string>();
   editStart = output<Post>();
-  editSave = output<any>();
+  editSave = output<{ postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }>();
   editCancel = output<void>();
-  openReplyForm = output<any>();
-  submitReply = output<any>();
-  startEditReply = output<any>();
+  openReplyForm = output<string>();
+  submitReply = output<SubmitReplyEvent>();
+  startEditReply = output<Reply>();
   cancelEditReply = output<void>();
-  saveEditReply = output<any>();
-  deleteReply = output<any>();
+  saveEditReply = output<ReplyActionEvent>();
+  deleteReply = output<ReplyActionEvent>();
   toggleReplyToComment = output<string>();
   cancelReplyToComment = output<void>();
-  submitReplyToComment = output<any>();
-  startEditNestedReply = output<any>();
+  submitReplyToComment = output<NestedReplyEvent>();
+  startEditNestedReply = output<Reply>();
   cancelEditNested = output<void>();
-  saveEditNestedReply = output<any>();
-  deleteNestedReply = output<any>();
+  saveEditNestedReply = output<ReplyActionEvent>();
+  deleteNestedReply = output<ReplyActionEvent>();
 }

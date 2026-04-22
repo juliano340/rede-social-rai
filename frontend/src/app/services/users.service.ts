@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { User, UsersResponse } from '../shared/models';
+import { User, UserProfile, UsersResponse } from '../shared/models';
 
 export { User, UsersResponse };
 
@@ -14,8 +14,8 @@ export class UsersService {
 
   constructor(private http: HttpClient) {}
 
-  getUser(username: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/users/${username}`);
+  getUser(username: string): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/users/${username}`);
   }
 
   follow(userId: string): Observable<{ following: boolean; message?: string }> {
@@ -38,8 +38,8 @@ export class UsersService {
     return this.http.get<UsersResponse>(`${this.apiUrl}/users/suggested?limit=${limit}`);
   }
 
-  updateProfile(data: { name?: string; bio?: string; bioLink?: string }): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/users/me`, data);
+  updateProfile(data: { name?: string; bio?: string; bioLink?: string }): Observable<UserProfile> {
+    return this.http.patch<UserProfile>(`${this.apiUrl}/users/me`, data);
   }
 
   uploadAvatar(file: File): Observable<{ avatar: string }> {
