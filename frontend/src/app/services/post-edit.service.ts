@@ -74,4 +74,5 @@ export class PostEditService {
   submitReplyToComment(replyId: string, postId: string, postRepliesSignal: any, replyContent?: string, postsSignal?: any) { this.replyManagement.submitReplyToComment(replyId, postId, postRepliesSignal, replyContent, postsSignal); }
 
   toggleLike(post: any) { this.postInteraction.toggleLike(post); }
+  setPostLikes(posts: any[]) { this.postInteraction.setPostLikes(posts); }
 }

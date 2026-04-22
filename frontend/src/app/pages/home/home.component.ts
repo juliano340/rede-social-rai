@@ -115,11 +115,7 @@ export class HomeComponent implements OnInit {
         this.posts.set(response.posts);
 
         if (this.authService.isLoggedIn()) {
-          const likes: Record<string, boolean> = {};
-          response.posts.forEach((post: any) => {
-            likes[post.id] = post.isLiked || false;
-          });
-          this.postLikes.set(likes);
+          this.postEdit.setPostLikes(response.posts);
         }
 
         this.isLoading.set(false);

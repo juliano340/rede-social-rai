@@ -16,7 +16,7 @@ import { AuthService } from '../../../services/auth.service';
       @for (post of posts(); track post.id) {
         <app-post-card
           [post]="post"
-          [isLiked]="postEdit.postLikes()[post.id] === true"
+          [isLiked]="postEdit.postLikes()[post.id] ?? post.isLiked ?? false"
           [isLiking]="postEdit.postLikingId() === post.id"
           [isOwnPost]="authService.currentUser()?.id === post.author.id"
           [authorLinkEnabled]="true"

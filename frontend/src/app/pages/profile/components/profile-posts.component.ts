@@ -25,7 +25,7 @@ import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } fro
         @for (post of posts(); track post.id) {
           <app-post-card
             [post]="post"
-            [isLiked]="postLikes()[post.id] === true"
+            [isLiked]="postLikes()[post.id] ?? post.isLiked ?? false"
             [isLiking]="postLikingId() === post.id"
             [isOwnPost]="currentUserId() === post.author.id"
             [authorLinkEnabled]="true"

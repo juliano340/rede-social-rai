@@ -191,9 +191,7 @@ export class ProfileComponent implements OnInit {
       next: (res) => {
         this.state.setPosts(res.posts || []);
         if (this.authService.isLoggedIn()) {
-          const likes: Record<string, boolean> = {};
-          res.posts?.forEach((post) => { likes[post.id] = post.isLiked || false; });
-          this.postEdit.postLikes.set(likes);
+          this.postEdit.setPostLikes(res.posts || []);
         }
       },
       error: () => this.state.setPostsLoading(false),
