@@ -38,11 +38,10 @@ export class PostEditService {
   get isLoadingMoreReplies() { return this.replyManagement.isLoadingMoreReplies; }
 
   get postLikingId() { return this.postInteraction.postLikingId; }
-  get postLikes() { return this.postInteraction.postLikes; }
 
   startEditPost(post: any) { this.postManagement.startEditPost(post); }
   cancelEditPost() { this.postManagement.cancelEditPost(); }
-  saveEditPost(postId: string, postsSignal: any) { this.postManagement.saveEditPost(postId, postsSignal); }
+  saveEditPost(postId: string) { this.postManagement.saveEditPost(postId); }
   setEditMediaType(type: 'image' | 'youtube') { this.postManagement.setEditMediaType(type); }
   removeEditMedia() { this.postManagement.removeEditMedia(); }
   clearEditMediaType() { this.postManagement.clearEditMediaType(); }
@@ -53,28 +52,28 @@ export class PostEditService {
   getDomain(url: string) { return this.postManagement.getDomain(url); }
 
   deletePost(id: string) { this.postManagement.deletePost(id); }
-  confirmDeletePost(postsSignal: any) { this.postManagement.confirmDeletePost(postsSignal); }
+  confirmDeletePost() { this.postManagement.confirmDeletePost(); }
   closeDeletePostModal() { this.postManagement.closeDeletePostModal(); }
 
   startEditReply(reply: any) { this.replyManagement.startEditReply(reply); }
   cancelEditReply() { this.replyManagement.cancelEditReply(); }
-  saveEditReply(replyId: string, postId: string, postRepliesSignal: any, postsSignal?: any) { this.replyManagement.saveEditReply(replyId, postId, postRepliesSignal, postsSignal); }
+  saveEditReply(replyId: string, postId: string) { this.replyManagement.saveEditReply(replyId, postId); }
   startEditNestedReply(reply: any) { this.replyManagement.startEditNestedReply(reply); }
   cancelEditNestedReply() { this.replyManagement.cancelEditNestedReply(); }
-  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: any, postsSignal?: any) { this.replyManagement.saveEditNestedReply(replyId, postId, parentReplyId, postRepliesSignal, postsSignal); }
+  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string) { this.replyManagement.saveEditNestedReply(replyId, postId, parentReplyId); }
 
   deleteReply(replyId: string, postId: string) { this.replyManagement.deleteReply(replyId, postId); }
-  confirmDeleteReply(postRepliesSignal: any, postsSignal?: any) { this.replyManagement.confirmDeleteReply(postRepliesSignal, postsSignal); }
+  confirmDeleteReply() { this.replyManagement.confirmDeleteReply(); }
   closeDeleteReplyModal() { this.replyManagement.closeDeleteReplyModal(); }
   deleteNestedReply(replyId: string, postId: string, parentReplyId: string) { this.replyManagement.deleteNestedReply(replyId, postId, parentReplyId); }
 
   toggleReply(postId: string) { this.replyManagement.toggleReply(postId); }
   openReplyForm(postId: string) { this.replyManagement.openReplyForm(postId); }
   cancelReply() { this.replyManagement.cancelReply(); }
-  submitReply(postId: string, postsSignal: any, postRepliesSignal: any, replyContent?: string) { this.replyManagement.submitReply(postId, postsSignal, postRepliesSignal, replyContent); }
+  submitReply(postId: string, replyContent?: string) { this.replyManagement.submitReply(postId, replyContent); }
   toggleReplyToComment(replyId: string) { this.replyManagement.toggleReplyToComment(replyId); }
   cancelReplyToComment() { this.replyManagement.cancelReplyToComment(); }
-  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: any, replyContent?: string, postsSignal?: any) { this.replyManagement.submitReplyToComment(replyId, postId, postRepliesSignal, replyContent, postsSignal); }
+  submitReplyToComment(replyId: string, postId: string, replyContent?: string) { this.replyManagement.submitReplyToComment(replyId, postId, replyContent); }
 
   toggleLike(post: any) { this.postInteraction.toggleLike(post); }
   setPostLikes(posts: any[]) { this.postInteraction.setPostLikes(posts); }

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, WritableSignal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { PostsService } from '../../../services/posts.service';
 import { Post } from '../../models/post.model';
 import { UrlUtilsService } from '../../services/url-utils.service';
@@ -33,7 +33,7 @@ export class PostManagementService {
     this.editLinkUrl.set(null);
   }
 
-  saveEditPost(postId: string, postsSignal: WritableSignal<Post[]>): void {
+  saveEditPost(postId: string): void {
     const content = this.editPostContent();
     if (!content.trim()) return;
 
@@ -43,12 +43,12 @@ export class PostManagementService {
 
     this.postsService.updatePost(postId, content, mediaUrl, mediaType, linkUrl).subscribe({
       next: (updated) => {
-        postsSignal.update(posts =>
-          posts.map(p => p.id === postId
-            ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl }
-            : p
-          )
-        );
+        this.postsService.updatePostInSignals(postId, {
+          content: updated.content,
+          mediaUrl: updated.mediaUrl,
+          mediaType: updated.mediaType,
+          linkUrl: updated.linkUrl,
+        });
         this.cancelEditPost();
       },
       error: () => {
@@ -62,13 +62,13 @@ export class PostManagementService {
     this.deletingPostId.set(id);
   }
 
-  confirmDeletePost(postsSignal: WritableSignal<Post[]>): void {
+  confirmDeletePost(): void {
     const id = this.deletingPostId();
     if (!id) return;
 
     this.postsService.deletePost(id).subscribe({
       next: () => {
-        postsSignal.update(posts => posts.filter(p => p.id !== id));
+        this.postsService.removePostFromSignals(id);
         this.closeDeletePostModal();
       },
       error: () => {

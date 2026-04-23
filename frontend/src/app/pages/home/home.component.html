@@ -29,7 +29,7 @@
         @for (post of posts(); track post.id) {
           <app-post-card
             [post]="post"
-            [isLiked]="postLikes()[post.id] === true"
+            [isLiked]="post.isLiked ?? false"
             [isLiking]="postLikingId() === post.id"
             [isOwnPost]="authService.currentUser()?.id === post.author.id"
             [authorLinkEnabled]="true"

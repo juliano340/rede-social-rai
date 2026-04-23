@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 import { ToastService } from '../shared/services/toast.service';
 import { UrlUtilsService } from '../shared/services/url-utils.service';
 import { Post, Reply } from '../shared/models/post.model';
-import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { HTTP_STATUS } from '../shared/constants/app.constants';
 
@@ -13,7 +12,6 @@ describe('PostEditService', () => {
   let service: PostEditService;
   let postsServiceSpy: jasmine.SpyObj<PostsService>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let toastSpy: jasmine.SpyObj<ToastService>;
 
   const mockPost: Post = {
     id: 'post-1',
@@ -32,17 +30,19 @@ describe('PostEditService', () => {
   beforeEach(() => {
     postsServiceSpy = jasmine.createSpyObj('PostsService', [
       'updatePost', 'updateReply', 'deletePost', 'deleteReply',
-      'createReply', 'likePost'
-    ]);
+      'createReply', 'likePost', 'updatePostInSignals', 'removePostFromSignals',
+      'setProfilePosts'
+    ], {
+      feedPosts: { update: jasmine.createSpy('feedPosts.update') },
+      profilePosts: { update: jasmine.createSpy('profilePosts.update') }
+    });
     authServiceSpy = jasmine.createSpyObj('AuthService', ['logout']);
-    toastSpy = jasmine.createSpyObj('ToastService', ['error', 'success']);
 
     TestBed.configureTestingModule({
       providers: [
         PostEditService,
         { provide: PostsService, useValue: postsServiceSpy },
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: ToastService, useValue: toastSpy },
         UrlUtilsService,
       ]
     });
@@ -69,44 +69,45 @@ describe('PostEditService', () => {
     });
 
     it('should save edited post and update signal', () => {
-      const posts = signal<Post[]>([mockPost]);
       const updated = { ...mockPost, content: 'Updated' };
       postsServiceSpy.updatePost.and.returnValue(of(updated));
 
       service.startEditPost(mockPost);
       service.editPostContent.set('Updated');
-      service.saveEditPost(mockPost.id, posts);
+      service.saveEditPost(mockPost.id);
 
       expect(postsServiceSpy.updatePost).toHaveBeenCalled();
-      expect(posts()[0].content).toBe('Updated');
+      expect(postsServiceSpy.updatePostInSignals).toHaveBeenCalledWith(mockPost.id, {
+        content: updated.content,
+        mediaUrl: updated.mediaUrl,
+        mediaType: updated.mediaType,
+        linkUrl: updated.linkUrl,
+      });
       expect(service.editingPost()).toBeNull();
     });
   });
 
   describe('Like State', () => {
     it('should toggle like optimistically', () => {
-      const post = { ...mockPost, _count: { ...mockPost._count } };
-      service.postLikes.set({ [post.id]: false });
+      const post = { ...mockPost, isLiked: false, _count: { ...mockPost._count } };
 
       postsServiceSpy.likePost.and.returnValue(of({ liked: true }));
 
       service.toggleLike(post);
 
-      expect(service.postLikes()[post.id]).toBeTrue();
-      expect(post._count.likes).toBe(6);
+      expect(postsServiceSpy.updatePostInSignals).toHaveBeenCalled();
+      expect(postsServiceSpy.likePost).toHaveBeenCalledWith(post.id);
     });
 
     it('should rollback like on error', () => {
-      const post = { ...mockPost, _count: { ...mockPost._count } };
-      service.postLikes.set({ [post.id]: false });
+      const post = { ...mockPost, isLiked: false, _count: { ...mockPost._count } };
       service.postLikingId.set(null);
 
       postsServiceSpy.likePost.and.returnValue(throwError(() => ({ status: HTTP_STATUS.INTERNAL_SERVER_ERROR })));
 
       service.toggleLike(post);
 
-      expect(service.postLikes()[post.id]).toBeFalse();
-      expect(post._count.likes).toBe(5);
+      expect(postsServiceSpy.updatePostInSignals).toHaveBeenCalled();
       expect(service.postLikingId()).toBeNull();
     });
 
@@ -122,23 +123,17 @@ describe('PostEditService', () => {
 
   describe('Reply State', () => {
     it('should create reply and update signals', () => {
-      const posts = signal<Post[]>([mockPost]);
-      const replies = signal<Reply[]>([]);
       const newReply: Reply = { id: 'new-reply', content: 'New', author: mockPost.author };
       postsServiceSpy.createReply.and.returnValue(of(newReply));
 
-      service.submitReply(mockPost.id, posts, replies, 'New');
+      service.submitReply(mockPost.id, 'New');
 
-      expect(replies()).toContain(newReply);
-      expect(posts()[0]._count.replies).toBe(3);
+      expect(postsServiceSpy.createReply).toHaveBeenCalled();
       expect(service.replyContent()).toBe('');
     });
 
     it('should not create empty reply', () => {
-      const posts = signal<Post[]>([mockPost]);
-      const replies = signal<Reply[]>([]);
-
-      service.submitReply(mockPost.id, posts, replies, '   ');
+      service.submitReply(mockPost.id, '   ');
 
       expect(postsServiceSpy.createReply).not.toHaveBeenCalled();
     });
@@ -146,25 +141,22 @@ describe('PostEditService', () => {
 
   describe('Delete State', () => {
     it('should delete post and update signal', () => {
-      const posts = signal<Post[]>([mockPost]);
       postsServiceSpy.deletePost.and.returnValue(of({}));
 
       service.deletePost(mockPost.id);
-      service.confirmDeletePost(posts);
+      service.confirmDeletePost();
 
-      expect(posts()).toEqual([]);
+      expect(postsServiceSpy.removePostFromSignals).toHaveBeenCalledWith(mockPost.id);
       expect(service.showDeletePostModal()).toBeFalse();
     });
 
     it('should delete reply and update signals', () => {
-      const posts = signal<Post[]>([mockPost]);
-      const replies = signal<Reply[]>([mockReply]);
       postsServiceSpy.deleteReply.and.returnValue(of({}));
 
       service.deleteReply(mockReply.id, mockPost.id);
-      service.confirmDeleteReply(replies, posts);
+      service.confirmDeleteReply();
 
-      expect(replies()).toEqual([]);
+      expect(postsServiceSpy.deleteReply).toHaveBeenCalledWith(mockPost.id, mockReply.id);
       expect(service.showDeleteReplyModal()).toBeFalse();
     });
   });

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, WritableSignal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { PostsService } from '../../../services/posts.service';
 import { AuthService } from '../../../services/auth.service';
 import { Post, Reply } from '../../models/post.model';
@@ -42,26 +42,24 @@ export class ReplyManagementService {
     this.editReplyContent.set('');
   }
 
-  saveEditReply(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
+  saveEditReply(replyId: string, postId: string): void {
     const content = this.editReplyContent();
     if (!content.trim()) return;
 
     this.postsService.updateReply(postId, replyId, content).subscribe({
       next: (updated) => {
-        postRepliesSignal.update(replies =>
+        this.postReplies.update(replies =>
           replies.map(r => r.id === replyId ? { ...updated, children: r.children } : r)
         );
 
-        if (postsSignal) {
-          postsSignal.update(posts => posts.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              replies: (p.replies || []).map(r =>
-                r.id === replyId ? { ...updated, children: r.children } : r
-              ),
-            };
-          }));
+        const post = this.postsService.feedPosts().find(p => p.id === postId)
+          || this.postsService.profilePosts().find(p => p.id === postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: (post.replies || []).map(r =>
+              r.id === replyId ? { ...updated, children: r.children } : r
+            ),
+          });
         }
       },
       error: () => {}
@@ -79,13 +77,13 @@ export class ReplyManagementService {
     this.editNestedReplyContent.set('');
   }
 
-  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string, postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
+  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string): void {
     const content = this.editNestedReplyContent();
     if (!content.trim()) return;
 
     this.postsService.updateReply(postId, replyId, content).subscribe({
       next: () => {
-        postRepliesSignal.update(replies =>
+        this.postReplies.update(replies =>
           replies.map(r => {
             if (r.children?.some(c => c.id === replyId)) {
               return {
@@ -99,24 +97,22 @@ export class ReplyManagementService {
           })
         );
 
-        if (postsSignal) {
-          postsSignal.update(posts => posts.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              replies: (p.replies || []).map(r => {
-                if (r.children?.some(c => c.id === replyId)) {
-                  return {
-                    ...r,
-                    children: r.children.map(c =>
-                      c.id === replyId ? { ...c, content } : c
-                    ),
-                  };
-                }
-                return r;
-              }),
-            };
-          }));
+        const post = this.postsService.feedPosts().find(p => p.id === postId)
+          || this.postsService.profilePosts().find(p => p.id === postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: (post.replies || []).map(r => {
+              if (r.children?.some(c => c.id === replyId)) {
+                return {
+                  ...r,
+                  children: r.children.map(c =>
+                    c.id === replyId ? { ...c, content } : c
+                  ),
+                };
+              }
+              return r;
+            }),
+          });
         }
 
         this.cancelEditNestedReply();
@@ -131,7 +127,7 @@ export class ReplyManagementService {
     this.deletingReplyPostId.set(postId);
   }
 
-  confirmDeleteReply(postRepliesSignal: WritableSignal<Reply[]>, postsSignal?: WritableSignal<Post[]>): void {
+  confirmDeleteReply(): void {
     const replyId = this.deletingReplyId();
     const postId = this.deletingReplyPostId();
 
@@ -141,7 +137,7 @@ export class ReplyManagementService {
       next: () => {
         let deletedCount = 0;
 
-        postRepliesSignal.update(replies => {
+        this.postReplies.update(replies => {
           const filtered = replies.filter(r => {
             if (r.id === replyId) {
               deletedCount += 1 + (r.children?.length ?? 0);
@@ -159,43 +155,40 @@ export class ReplyManagementService {
           return filtered;
         });
 
-        if (postsSignal) {
-          postsSignal.update(posts => posts.map(p => {
-            if (p.id !== postId) return p;
-            const updatedReplies = (p.replies || [])
-              .filter(r => r.id !== replyId)
-              .map(r => ({
-                ...r,
-                children: (r.children || []).filter(c => c.id !== replyId),
-              }));
-            return {
-              ...p,
-              replies: updatedReplies,
-              _count: {
-                ...p._count,
-                replies: Math.max(0, p._count.replies - (deletedCount || 1)),
-              },
-            };
-          }));
+        const post = this.postsService.feedPosts().find(p => p.id === postId)
+          || this.postsService.profilePosts().find(p => p.id === postId);
+        if (post) {
+          const updatedReplies = (post.replies || [])
+            .filter(r => r.id !== replyId)
+            .map(r => ({
+              ...r,
+              children: (r.children || []).filter(c => c.id !== replyId),
+            }));
+          this.postsService.updatePostInSignals(postId, {
+            replies: updatedReplies,
+            _count: {
+              ...post._count,
+              replies: Math.max(0, post._count.replies - (deletedCount || 1)),
+            },
+          });
         }
 
         this.closeDeleteReplyModal();
       },
       error: (err) => {
         this.closeDeleteReplyModal();
-        if (err.status === HTTP_STATUS.NOT_FOUND && postsSignal) {
-          postsSignal.update(posts => posts.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              replies: (p.replies || [])
-                .filter(r => r.id !== replyId)
-                .map(r => ({
-                  ...r,
-                  children: (r.children || []).filter(c => c.id !== replyId),
-                })),
-            };
-          }));
+        if (err.status === HTTP_STATUS.NOT_FOUND) {
+          const post = this.postsService.feedPosts().find(p => p.id === postId)
+            || this.postsService.profilePosts().find(p => p.id === postId);
+          if (post) {
+            const updatedReplies = (post.replies || [])
+              .filter(r => r.id !== replyId)
+              .map(r => ({
+                ...r,
+                children: (r.children || []).filter(c => c.id !== replyId),
+              }));
+            this.postsService.updatePostInSignals(postId, { replies: updatedReplies });
+          }
         }
       }
     });
@@ -231,25 +224,23 @@ export class ReplyManagementService {
     this.replyContent.set('');
   }
 
-  submitReply(postId: string, postsSignal: WritableSignal<Post[]>, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string): void {
+  submitReply(postId: string, replyContent?: string): void {
     const content = replyContent ?? this.replyContent();
     if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
     this.postsService.createReply(postId, content).subscribe({
       next: (newReply: Reply) => {
-        postRepliesSignal.update(replies => [...replies, newReply]);
+        this.postReplies.update(replies => [...replies, newReply]);
 
-        postsSignal.update(posts =>
-          posts.map(p => p.id === postId
-            ? {
-                ...p,
-                replies: [...(p.replies || []), newReply],
-                _count: { ...p._count, replies: p._count.replies + 1 }
-              }
-            : p
-          )
-        );
+        const post = this.postsService.feedPosts().find(p => p.id === postId)
+          || this.postsService.profilePosts().find(p => p.id === postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: [...(post.replies || []), newReply],
+            _count: { ...post._count, replies: post._count.replies + 1 }
+          });
+        }
 
         this.replyContent.set('');
         this.isSubmittingReply.set(false);
@@ -274,14 +265,14 @@ export class ReplyManagementService {
     this.replyingToCommentContent.set('');
   }
 
-  submitReplyToComment(replyId: string, postId: string, postRepliesSignal: WritableSignal<Reply[]>, replyContent?: string, postsSignal?: WritableSignal<Post[]>): void {
+  submitReplyToComment(replyId: string, postId: string, replyContent?: string): void {
     const content = replyContent ?? this.replyingToCommentContent();
     if (!content.trim()) return;
 
     this.isSubmittingReply.set(true);
     this.postsService.createReply(postId, content, replyId).subscribe({
       next: (newChild: Reply) => {
-        postRepliesSignal.update(replies =>
+        this.postReplies.update(replies =>
           replies.map(r => {
             if (r.id === replyId) {
               return { ...r, children: [...(r.children || []), newChild] };
@@ -290,21 +281,17 @@ export class ReplyManagementService {
           })
         );
 
-        if (postsSignal) {
-          postsSignal.update(posts =>
-            posts.map(p => {
-              if (p.id !== postId) return p;
-              return {
-                ...p,
-                replies: (p.replies || []).map(r =>
-                  r.id === replyId
-                    ? { ...r, children: [...(r.children || []), newChild] }
-                    : r
-                ),
-                _count: { ...p._count, replies: p._count.replies + 1 }
-              };
-            })
-          );
+        const post = this.postsService.feedPosts().find(p => p.id === postId)
+          || this.postsService.profilePosts().find(p => p.id === postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: (post.replies || []).map(r =>
+              r.id === replyId
+                ? { ...r, children: [...(r.children || []), newChild] }
+                : r
+            ),
+            _count: { ...post._count, replies: post._count.replies + 1 }
+          });
         }
 
         this.replyingToCommentContent.set('');

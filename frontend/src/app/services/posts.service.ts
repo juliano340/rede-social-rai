@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -13,7 +13,10 @@ export { Post, PostsResponse };
 export class PostsService {
   private apiUrl = environment.apiUrl;
   private cache = new Map<string, { data: PostsResponse; timestamp: number }>();
-  private readonly CACHE_TTL = 30 * 1000;
+  private readonly CACHE_TTL = 5 * 60 * 1000;
+
+  feedPosts = signal<Post[]>([]);
+  profilePosts = signal<Post[]>([]);
 
   constructor(private http: HttpClient) {}
 
@@ -43,6 +46,41 @@ export class PostsService {
       .forEach(key => this.cache.delete(key));
   }
 
+  setFeedPosts(posts: Post[]): void {
+    this.feedPosts.set(posts);
+  }
+
+  appendFeedPosts(posts: Post[]): void {
+    this.feedPosts.update(current => [...current, ...posts]);
+  }
+
+  setProfilePosts(posts: Post[]): void {
+    this.profilePosts.set(posts);
+  }
+
+  appendProfilePosts(posts: Post[]): void {
+    this.profilePosts.update(current => [...current, ...posts]);
+  }
+
+  updatePostInSignals(id: string, updates: Partial<Post>): void {
+    this.feedPosts.update(posts =>
+      posts.map(p => p.id === id ? { ...p, ...updates } : p)
+    );
+    this.profilePosts.update(posts =>
+      posts.map(p => p.id === id ? { ...p, ...updates } : p)
+    );
+  }
+
+  removePostFromSignals(id: string): void {
+    this.feedPosts.update(posts => posts.filter(p => p.id !== id));
+    this.profilePosts.update(posts => posts.filter(p => p.id !== id));
+  }
+
+  addPostToSignals(post: Post): void {
+    this.feedPosts.update(posts => [post, ...posts]);
+    this.profilePosts.update(posts => [post, ...posts]);
+  }
+
   getPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
     const cacheKey = this.getCacheKey(cursor, limit, 'posts');
     const cached = this.getCached<PostsResponse>(cacheKey);
@@ -55,7 +93,14 @@ export class PostsService {
       params = params.set('cursor', cursor);
     }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts`, { params, withCredentials: true }).pipe(
-      tap(data => this.setCache(cacheKey, data))
+      tap(data => {
+        this.setCache(cacheKey, data);
+        if (cursor) {
+          this.appendFeedPosts(data.posts);
+        } else {
+          this.setFeedPosts(data.posts);
+        }
+      })
     );
   }
 
@@ -71,7 +116,14 @@ export class PostsService {
       params = params.set('cursor', cursor);
     }
     return this.http.get<PostsResponse>(`${this.apiUrl}/posts/following`, { params, withCredentials: true }).pipe(
-      tap(data => this.setCache(cacheKey, data))
+      tap(data => {
+        this.setCache(cacheKey, data);
+        if (cursor) {
+          this.appendFeedPosts(data.posts);
+        } else {
+          this.setFeedPosts(data.posts);
+        }
+      })
     );
   }
 
@@ -80,18 +132,32 @@ export class PostsService {
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params, withCredentials: true });
+    return this.http.get<PostsResponse>(`${this.apiUrl}/posts/user/${userId}`, { params, withCredentials: true }).pipe(
+      tap(data => {
+        if (cursor) {
+          this.appendProfilePosts(data.posts);
+        } else {
+          this.setProfilePosts(data.posts);
+        }
+      })
+    );
   }
 
   createPost(content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
     return this.http.post<Post>(`${this.apiUrl}/posts`, { content, mediaUrl, mediaType, linkUrl }, { withCredentials: true }).pipe(
-      tap(() => this.invalidateCache())
+      tap(post => {
+        this.invalidateCache();
+        this.addPostToSignals(post);
+      })
     );
   }
 
   deletePost(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true }).pipe(
-      tap(() => this.invalidateCache())
+      tap(() => {
+        this.invalidateCache();
+        this.removePostFromSignals(id);
+      })
     );
   }
 

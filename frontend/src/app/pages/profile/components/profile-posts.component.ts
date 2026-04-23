@@ -25,7 +25,7 @@ import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } fro
         @for (post of posts(); track post.id) {
           <app-post-card
             [post]="post"
-            [isLiked]="postLikes()[post.id] ?? post.isLiked ?? false"
+            [isLiked]="post.isLiked ?? false"
             [isLiking]="postLikingId() === post.id"
             [isOwnPost]="currentUserId() === post.author.id"
             [authorLinkEnabled]="true"
@@ -77,7 +77,6 @@ export class ProfilePostsComponent {
   posts = input.required<Post[]>();
   loading = input.required<boolean>();
   currentUserId = input.required<string | null>();
-  postLikes = input.required<Record<string, boolean>>();
   postLikingId = input.required<string | null>();
   deletingPostId = input.required<string | null>();
   replyingToPost = input.required<string | null>();

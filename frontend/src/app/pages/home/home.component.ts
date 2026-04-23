@@ -37,7 +37,6 @@ import { PostEditService } from '../../services/post-edit.service';
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  posts = signal<Post[]>([]);
   feedType = signal<'all' | 'following'>('all');
   isSubmitting = signal(false);
   isLoading = signal(true);
@@ -48,10 +47,12 @@ export class HomeComponent implements OnInit {
   highlightPostId = signal<string | null>(null);
   highlightReplyId = signal<string | null>(null);
 
+  postsService = inject(PostsService);
   postEdit = inject(PostEditService);
 
+  get posts() { return this.postsService.feedPosts; }
+
   get postLikingId() { return this.postEdit.postLikingId; }
-  get postLikes() { return this.postEdit.postLikes; }
   get replyingToPost() { return this.postEdit.replyingToPost; }
   readonly viewingRepliesPost = this.postEdit.replyingToPost;
   get postReplies() { return this.postEdit.postReplies; }
@@ -66,7 +67,6 @@ export class HomeComponent implements OnInit {
 
   constructor(
     public authService: AuthService,
-    private postsService: PostsService,
     private route: ActivatedRoute,
     private toast: ToastService,
   ) {}
@@ -115,12 +115,9 @@ export class HomeComponent implements OnInit {
 
     request.subscribe({
       next: (response) => {
-        this.posts.set(response.posts);
-
         if (this.authService.isLoggedIn()) {
           this.postEdit.setPostLikes(response.posts);
         }
-
         this.isLoading.set(false);
       },
       error: () => {
@@ -141,8 +138,7 @@ export class HomeComponent implements OnInit {
     this.isSubmitting.set(true);
 
     this.postsService.createPost(data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
-      next: (post) => {
-        this.posts.update(posts => [post, ...posts]);
+      next: () => {
         this.isSubmitting.set(false);
         this.submitSuccess.set(true);
         setTimeout(() => this.submitSuccess.set(false), 3000);
@@ -178,12 +174,12 @@ export class HomeComponent implements OnInit {
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
     this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
       next: (updated) => {
-        this.posts.update(posts =>
-          posts.map(p => p.id === data.postId
-            ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl }
-            : p
-          )
-        );
+        this.postsService.updatePostInSignals(data.postId, {
+          content: updated.content,
+          mediaUrl: updated.mediaUrl,
+          mediaType: updated.mediaType,
+          linkUrl: updated.linkUrl,
+        });
         this.postEdit.editingPost.set(null);
       },
       error: () => {
@@ -201,11 +197,11 @@ export class HomeComponent implements OnInit {
   }
 
   onSubmitReply(postId: string, content: string) {
-    this.postEdit.submitReply(postId, this.posts, this.postReplies, content);
+    this.postEdit.submitReply(postId, content);
   }
 
   onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditReply(data.replyId, postId, this.postReplies, this.posts);
+    this.postEdit.saveEditReply(data.replyId, postId);
   }
 
   onDeleteReply(postId: string, replyId: string) {
@@ -221,11 +217,11 @@ export class HomeComponent implements OnInit {
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content, this.posts);
+    this.postEdit.submitReplyToComment(data.replyId, postId, data.content);
   }
 
   onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditNestedReply(data.replyId, postId, '', this.postReplies, this.posts);
+    this.postEdit.saveEditNestedReply(data.replyId, postId, '');
   }
 
   onDeleteNestedReply(postId: string, replyId: string) {
@@ -237,7 +233,7 @@ export class HomeComponent implements OnInit {
   }
 
   onConfirmDeleteReply() {
-    this.postEdit.confirmDeleteReply(this.postReplies, this.posts);
+    this.postEdit.confirmDeleteReply();
   }
 
   onCloseDeletePostModal() {
@@ -245,7 +241,7 @@ export class HomeComponent implements OnInit {
   }
 
   onConfirmDeletePost() {
-    this.postEdit.confirmDeletePost(this.posts);
+    this.postEdit.confirmDeletePost();
   }
 
   loadReplies(postId: string, callback?: () => void) {

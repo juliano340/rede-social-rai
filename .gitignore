@@ -120,6 +120,53 @@ _DEVELOPMENT/
 .plans/
 
 # ===========================
-# Agent Conversation Logs
+# Agent Conversation Logs (Claude, OpenCode, QA)
 # ===========================
 docs/conversation/
+
+# ===========================
+# Claude-specific (local config, not project)
+# ===========================
+.claude/
+claude.md
+CLAUDE.md
+
+# ===========================
+# IDEs & Editor Settings
+# ===========================
+.vscode/settings.json
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# ===========================
+# System & Temp Files
+# ===========================
+.DS_Store
+Thumbs.db
+.Spotlight-V100/
+.Trashes/
+desktop.ini
+
+# ===========================
+# Local Testing & Artifacts
+# ===========================
+karma-output.log
+playwright-output.log
+backend-run.log
+frontend-run.log
+*.output
+test-results/
+playwright-report/
+
+# ===========================
+# Test Data & Artifacts
+# ===========================
+.playwright-mcp/
+*_test.json
+*_check.json
+replies_p*.json
+*.bak
+validation-*.png
+posts_anon.json
+*posts_anon*

@@ -60,7 +60,6 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
           [posts]="state.posts()"
           [loading]="state.postsLoading()"
           [currentUserId]="authService.currentUser()?.id || null"
-          [postLikes]="postEdit.postLikes()"
           [postLikingId]="postEdit.postLikingId()"
           [deletingPostId]="postEdit.deletingPostId()"
           [replyingToPost]="postEdit.replyingToPost()"
@@ -127,7 +126,7 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
         title="Excluir Postagem"
         itemType="esta postagem"
         (close)="postEdit.closeDeletePostModal()"
-        (confirm)="postEdit.confirmDeletePost(state.posts)"
+        (confirm)="postEdit.confirmDeletePost()"
       />
 
       <app-delete-confirm-modal
@@ -135,7 +134,7 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
         title="Excluir Resposta"
         itemType="esta resposta"
         (close)="postEdit.closeDeleteReplyModal()"
-        (confirm)="postEdit.confirmDeleteReply(state.postReplies, state.posts)"
+        (confirm)="postEdit.confirmDeleteReply()"
       />
     </div>
   `,
@@ -333,25 +332,30 @@ export class ProfileComponent implements OnInit {
   }
 
   onSubmitReply(event: SubmitReplyEvent) {
-    this.postEdit.submitReply(event.postId, this.state.posts, this.state.postReplies, event.content);
+    this.postEdit.submitReply(event.postId, event.content);
   }
 
   onSaveEditReply(event: ReplyActionEvent) {
-    this.postEdit.saveEditReply(event.replyId, event.postId, this.state.postReplies, this.state.posts);
+    this.postEdit.saveEditReply(event.replyId, event.postId);
   }
 
   onSubmitReplyToComment(event: NestedReplyEvent) {
-    this.postEdit.submitReplyToComment(event.replyId, event.postId, this.state.postReplies, event.content, this.state.posts);
+    this.postEdit.submitReplyToComment(event.replyId, event.postId, event.content);
   }
 
   onSaveEditNestedReply(event: ReplyActionEvent) {
-    this.postEdit.saveEditNestedReply(event.replyId, event.postId, '', this.state.postReplies, this.state.posts);
+    this.postEdit.saveEditNestedReply(event.replyId, event.postId, '');
   }
 
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
     this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
       next: (updated) => {
-        this.state.posts.update(posts => posts.map(p => p.id === data.postId ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl } : p));
+        this.postsService.updatePostInSignals(data.postId, {
+          content: updated.content,
+          mediaUrl: updated.mediaUrl,
+          mediaType: updated.mediaType,
+          linkUrl: updated.linkUrl,
+        });
         this.postEdit.cancelEditPost();
       },
       error: () => this.postEdit.cancelEditPost(),

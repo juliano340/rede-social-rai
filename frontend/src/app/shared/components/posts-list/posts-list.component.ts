@@ -16,7 +16,7 @@ import { AuthService } from '../../../services/auth.service';
       @for (post of posts(); track post.id) {
         <app-post-card
           [post]="post"
-          [isLiked]="postEdit.postLikes()[post.id] ?? post.isLiked ?? false"
+          [isLiked]="post.isLiked ?? false"
           [isLiking]="postEdit.postLikingId() === post.id"
           [isOwnPost]="authService.currentUser()?.id === post.author.id"
           [authorLinkEnabled]="true"
@@ -35,17 +35,17 @@ import { AuthService } from '../../../services/auth.service';
           (editSave)="onEditSave($event)"
           (editCancel)="postEdit.cancelEditPost()"
           (openReplyForm)="postEdit.openReplyForm(post.id)"
-          (submitReplyEvent)="onSubmitReply(post.id, $event)"
+          (submitReplyEvent)="postEdit.submitReply(post.id, $event)"
           (startEditReply)="postEdit.startEditReply($event)"
           (cancelEditReply)="postEdit.cancelEditReply()"
-          (saveEditReply)="onSaveEditReply(post.id, $event)"
+          (saveEditReply)="postEdit.saveEditReply($event.replyId, post.id)"
           (deleteReplyEvent)="postEdit.deleteReply($event, post.id)"
           (toggleReplyToCommentEvent)="postEdit.toggleReplyToComment($event)"
           (cancelReplyToCommentEvent)="postEdit.cancelReplyToComment()"
-          (submitReplyToCommentEvent)="onSubmitReplyToComment(post.id, $event)"
+          (submitReplyToCommentEvent)="postEdit.submitReplyToComment($event.replyId, post.id, $event.content)"
           (startEditNestedReply)="postEdit.startEditNestedReply($event)"
           (cancelEditNested)="postEdit.cancelEditNestedReply()"
-          (saveEditNestedReply)="onSaveEditNestedReply(post.id, $event)"
+          (saveEditNestedReply)="postEdit.saveEditNestedReply($event.replyId, post.id, '')"
           (deleteNestedReplyEvent)="postEdit.deleteNestedReply($event, post.id, '')"
         ></app-post-card>
       }
@@ -56,7 +56,7 @@ import { AuthService } from '../../../services/auth.service';
       title="Excluir Postagem"
       itemType="esta postagem"
       (close)="postEdit.closeDeletePostModal()"
-      (confirm)="postEdit.confirmDeletePost(posts)"
+      (confirm)="postEdit.confirmDeletePost()"
     ></app-delete-confirm-modal>
 
     <app-delete-confirm-modal
@@ -64,7 +64,7 @@ import { AuthService } from '../../../services/auth.service';
       title="Excluir Resposta"
       itemType="esta resposta"
       (close)="postEdit.closeDeleteReplyModal()"
-      (confirm)="postEdit.confirmDeleteReply(postReplies, posts)"
+      (confirm)="postEdit.confirmDeleteReply()"
     ></app-delete-confirm-modal>
   `,
   styles: [`
@@ -83,38 +83,20 @@ export class PostsListComponent {
   authService = inject(AuthService);
   private postsService = inject(PostsService);
 
-  postReplies = signal<Reply[]>([]);
-
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
     this.postsService.updatePost(data.postId, data.content, data.mediaUrl, data.mediaType, data.linkUrl).subscribe({
       next: (updated) => {
-        this.posts.update(posts =>
-          posts.map(p => p.id === data.postId
-            ? { ...p, content: updated.content, mediaUrl: updated.mediaUrl, mediaType: updated.mediaType, linkUrl: updated.linkUrl }
-            : p
-          )
-        );
+        this.postsService.updatePostInSignals(data.postId, {
+          content: updated.content,
+          mediaUrl: updated.mediaUrl,
+          mediaType: updated.mediaType,
+          linkUrl: updated.linkUrl,
+        });
         this.postEdit.editingPost.set(null);
       },
       error: () => {
         this.postEdit.editingPost.set(null);
       }
     });
-  }
-
-  onSubmitReply(postId: string, content: string) {
-    this.postEdit.submitReply(postId, this.posts, this.postReplies, content);
-  }
-
-  onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditReply(data.replyId, postId, this.postReplies, this.posts);
-  }
-
-  onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.submitReplyToComment(data.replyId, postId, this.postReplies, data.content, this.posts);
-  }
-
-  onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditNestedReply(data.replyId, postId, '', this.postReplies, this.posts);
   }
 }

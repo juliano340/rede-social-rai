@@ -1,13 +1,16 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { UserProfile, User } from '../../../shared/models/user.model';
 import { Post, Reply } from '../../../shared/models/post.model';
+import { PostsService } from '../../../services/posts.service';
 
 export type ModalType = 'followers' | 'following' | null;
 
 @Injectable()
 export class ProfileStateService {
+  private postsService = inject(PostsService);
+
   readonly profile = signal<UserProfile | null>(null);
-  readonly posts = signal<Post[]>([]);
+  get posts() { return this.postsService.profilePosts; }
   readonly postReplies = signal<Reply[]>([]);
 
   readonly loading = signal(true);
@@ -38,7 +41,7 @@ export class ProfileStateService {
   }
 
   setPosts(posts: Post[]): void {
-    this.posts.set(posts);
+    this.postsService.setProfilePosts(posts);
     this.postsLoading.set(false);
   }
 
@@ -63,7 +66,7 @@ export class ProfileStateService {
     const username = this.profile()?.username;
     if (!username) return;
 
-    this.posts.update(posts =>
+    this.postsService.profilePosts.update(posts =>
       posts.map(post =>
         post.author.username === username
           ? { ...post, author: { ...post.author, avatar } }
@@ -137,7 +140,7 @@ export class ProfileStateService {
 
   reset(): void {
     this.profile.set(null);
-    this.posts.set([]);
+    this.postsService.setProfilePosts([]);
     this.postReplies.set([]);
     this.loading.set(true);
     this.postsLoading.set(true);
