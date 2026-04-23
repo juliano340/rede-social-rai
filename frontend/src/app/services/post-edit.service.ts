@@ -33,6 +33,9 @@ export class PostEditService {
   get postReplies() { return this.replyManagement.postReplies; }
   get savingReply() { return this.replyManagement.savingReply; }
   get loadingReplies() { return this.replyManagement.loadingReplies; }
+  get replyCursor() { return this.replyManagement.replyCursor; }
+  get replyHasMore() { return this.replyManagement.replyHasMore; }
+  get isLoadingMoreReplies() { return this.replyManagement.isLoadingMoreReplies; }
 
   get postLikingId() { return this.postInteraction.postLikingId; }
   get postLikes() { return this.postInteraction.postLikes; }

@@ -28,6 +28,9 @@ export class ReplyManagementService {
   readonly postReplies = signal<Reply[]>([]);
   readonly savingReply = signal(false);
   readonly loadingReplies = signal(false);
+  readonly replyCursor = signal<string | null>(null);
+  readonly replyHasMore = signal(false);
+  readonly isLoadingMoreReplies = signal(false);
 
   startEditReply(reply: Reply): void {
     this.editingReply.set(reply.id);

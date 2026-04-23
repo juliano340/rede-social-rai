@@ -60,6 +60,9 @@ export class HomeComponent implements OnInit {
   get deletingPostId() { return this.postEdit.deletingPostId; }
   get showDeletePostModal() { return this.postEdit.showDeletePostModal; }
   get showDeleteModal() { return this.postEdit.showDeleteReplyModal; }
+  get replyCursor() { return this.postEdit.replyCursor; }
+  get replyHasMore() { return this.postEdit.replyHasMore; }
+  get isLoadingMoreReplies() { return this.postEdit.isLoadingMoreReplies; }
 
   constructor(
     public authService: AuthService,
@@ -247,14 +250,36 @@ export class HomeComponent implements OnInit {
 
   loadReplies(postId: string, callback?: () => void) {
     this.loadingReplies.set(true);
+    this.postEdit.replyCursor.set(null);
+    this.postEdit.replyHasMore.set(false);
     this.postsService.getReplies(postId).subscribe({
       next: (data) => {
         this.postReplies.set(data.replies || []);
+        this.postEdit.replyCursor.set(data.nextCursor || null);
+        this.postEdit.replyHasMore.set(!!data.nextCursor);
         this.loadingReplies.set(false);
         if (callback) callback();
       },
       error: () => {
         this.loadingReplies.set(false);
+      }
+    });
+  }
+
+  loadMoreReplies(postId: string) {
+    const cursor = this.replyCursor();
+    if (!cursor || this.isLoadingMoreReplies()) return;
+
+    this.isLoadingMoreReplies.set(true);
+    this.postsService.getReplies(postId, cursor).subscribe({
+      next: (data) => {
+        this.postReplies.update(current => [...current, ...(data.replies || [])]);
+        this.postEdit.replyCursor.set(data.nextCursor || null);
+        this.postEdit.replyHasMore.set(!!data.nextCursor);
+        this.isLoadingMoreReplies.set(false);
+      },
+      error: () => {
+        this.isLoadingMoreReplies.set(false);
       }
     });
   }

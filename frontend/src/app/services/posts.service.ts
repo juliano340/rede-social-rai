@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Post, PostsResponse } from '../shared/models';
+import { Post, PostsResponse, RepliesResponse } from '../shared/models';
 
 export { Post, PostsResponse };
 
@@ -131,12 +131,12 @@ export class PostsService {
     );
   }
 
-  getReplies(postId: string, cursor?: string, limit = 20): Observable<any> {
+  getReplies(postId: string, cursor?: string, limit = 20): Observable<RepliesResponse> {
     let params = new HttpParams().set('limit', limit.toString());
     if (cursor) {
       params = params.set('cursor', cursor);
     }
-    return this.http.get<any>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
+    return this.http.get<RepliesResponse>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 
   updateReply(postId: string, replyId: string, content: string): Observable<any> {
