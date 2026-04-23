@@ -44,6 +44,7 @@ const FEED_REPLIES_INCLUDE = {
   orderBy: { createdAt: 'asc' as const },
   include: {
     author: { select: AUTHOR_SELECT },
+    _count: { select: { children: true } },
     children: {
       take: FEED_NESTED_REPLIES_LIMIT,
       orderBy: { createdAt: 'asc' as const },
@@ -342,6 +343,7 @@ export class PostsService {
       orderBy: { createdAt: 'asc' },
       include: {
         author: { select: AUTHOR_SELECT },
+        _count: { select: { children: true } },
         children: {
           take: REPLIES_CHILDREN_LIMIT,
           orderBy: { createdAt: 'asc' },
