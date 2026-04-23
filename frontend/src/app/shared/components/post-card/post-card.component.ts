@@ -77,6 +77,8 @@ import {
             [highlightReplyId]="highlightReplyId"
             [isSubmitting]="isSubmittingReply"
             [savingReply]="savingReply"
+            [hasMore]="hasMoreReplies"
+            [isLoadingMore]="isLoadingMoreReplies"
             (close)="onCloseReplies()"
             (openForm)="onOpenReplyForm()"
             (submitReplyEvent)="onSubmitReply($event)"
@@ -91,6 +93,7 @@ import {
             (cancelEditNested)="onCancelEditNestedReply()"
             (saveEditNested)="onSaveEditNestedReply($event)"
             (deleteNestedReplyEvent)="onDeleteNestedReply($event)"
+            (loadMore)="onLoadMoreReplies()"
           ></app-reply-section>
         }
       </div>
@@ -124,9 +127,12 @@ export class PostCardComponent {
   @Input() highlightReplyId: string | null = null;
   @Input() isSubmittingReply = false;
   @Input() savingReply = false;
+  @Input() hasMoreReplies = false;
+  @Input() isLoadingMoreReplies = false;
 
   @Output() likeClick = new EventEmitter<Post>();
   @Output() replyToggle = new EventEmitter<string>();
+  @Output() loadMoreReplies = new EventEmitter<string>();
   @Output() editStart = new EventEmitter<Post>();
   @Output() deleteClick = new EventEmitter<string>();
   @Output() editSave = new EventEmitter<{
@@ -212,4 +218,6 @@ export class PostCardComponent {
   onSaveEditNestedReply(data: { replyId: string; content: string }) { this.saveEditNestedReply.emit(data); }
 
   onDeleteNestedReply(replyId: string) { this.deleteNestedReplyEvent.emit(replyId); }
+
+  onLoadMoreReplies() { this.loadMoreReplies.emit(this.post.id); }
 }

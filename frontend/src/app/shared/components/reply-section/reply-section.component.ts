@@ -168,6 +168,20 @@ import { getAvatarUrl } from '../../utils/avatar.utils';
             </div>
           </div>
         }
+
+        @if (hasMore) {
+          <button
+            class="load-more-replies"
+            (click)="loadMore.emit()"
+            [disabled]="isLoadingMore"
+          >
+            @if (isLoadingMore) {
+              <div class="spinner-sm"></div>
+            } @else {
+              Carregar mais respostas
+            }
+          </button>
+        }
       }
     </div>
   `,
@@ -645,6 +659,31 @@ import { getAvatarUrl } from '../../utils/avatar.utils';
       }
     }
 
+    .load-more-replies {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        background: var(--background-tertiary);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
     .spinner-sm {
       width: 16px;
       height: 16px;
@@ -669,8 +708,11 @@ export class ReplySectionComponent {
   @Input() highlightReplyId: string | null = null;
   @Input() isSubmitting = false;
   @Input() savingReply = false;
+  @Input() hasMore = false;
+  @Input() isLoadingMore = false;
 
   @Output() close = new EventEmitter<void>();
+  @Output() loadMore = new EventEmitter<void>();
   @Output() openForm = new EventEmitter<void>();
   @Output() submitReplyEvent = new EventEmitter<string>();
   @Output() startEdit = new EventEmitter<Reply>();

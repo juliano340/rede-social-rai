@@ -41,6 +41,8 @@
             [highlightReplyId]="highlightReplyId()"
             [isSubmittingReply]="isSubmittingReply()"
             [savingReply]="savingReply()"
+            [hasMoreReplies]="replyingToPost() === post.id || viewingRepliesPost() === post.id ? replyHasMore() : false"
+            [isLoadingMoreReplies]="replyingToPost() === post.id || viewingRepliesPost() === post.id ? isLoadingMoreReplies() : false"
             (likeClick)="onLikeClick($event)"
             (replyToggle)="onReplyToggle($event)"
             (deleteClick)="onDeleteClick($event)"
@@ -60,6 +62,7 @@
             (cancelEditNested)="cancelEditNestedReply()"
             (saveEditNestedReply)="onSaveEditNestedReply(post.id, $event)"
             (deleteNestedReplyEvent)="onDeleteNestedReply(post.id, $event)"
+            (loadMoreReplies)="loadMoreReplies($event)"
           ></app-post-card>
         }
       </div>
