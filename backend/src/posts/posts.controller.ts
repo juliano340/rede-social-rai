@@ -32,6 +32,7 @@ export class PostsController {
   @ApiQuery({ name: 'cursor', required: false, description: 'Cursor para paginação' })
   @ApiQuery({ name: 'limit', required: false, description: 'Limite de posts (max 50)' })
   @ApiResponse({ status: 200, description: 'Lista de posts' })
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   async findAll(
     @Query('cursor') cursor?: string,
@@ -64,6 +65,7 @@ export class PostsController {
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ status: 200, description: 'Lista de posts' })
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   async findByUser(
     @Param('userId') userId: string,
@@ -81,6 +83,7 @@ export class PostsController {
   @ApiParam({ name: 'id', description: 'ID do post' })
   @ApiResponse({ status: 200, description: 'Post encontrado' })
   @ApiResponse({ status: 404, description: 'Post não encontrado' })
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   async findOne(@Param('id') id: string, @Req() req?: Request) {
     const userId = this.getUserIdFromRequest(req);
