@@ -41,7 +41,7 @@ type PostWithOptionalLikes = PostWithMeta & {
 const FEED_REPLIES_INCLUDE = {
   where: { parentId: null },
   take: FEED_TOP_REPLIES_LIMIT,
-  orderBy: { createdAt: 'asc' as const },
+  orderBy: { createdAt: 'desc' as const },
   include: {
     author: { select: AUTHOR_SELECT },
     _count: { select: { children: true } },
