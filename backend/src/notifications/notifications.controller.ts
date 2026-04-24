@@ -12,12 +12,12 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard)
   async findAll(
     @User() user: AuthenticatedUser,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
     return this.notificationsService.findAll(
       user.userId,
-      page ? parseInt(page) : 1,
+      cursor,
       limit ? parseInt(limit) : 20,
     );
   }

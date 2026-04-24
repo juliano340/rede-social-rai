@@ -13,7 +13,6 @@ export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any) {
-    // Retorna o user se existir, ou null (NÃO lança erro)
     return user || null;
   }
 }

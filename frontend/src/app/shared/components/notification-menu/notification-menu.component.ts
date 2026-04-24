@@ -334,7 +334,7 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
 
   loadNotifications() {
     this.loading.set(true);
-    this.notificationService.getNotifications(1, 20).subscribe({
+    this.notificationService.getNotifications().subscribe({
       next: (response) => {
         this.notifications.set(response.notifications);
         this.loading.set(false);

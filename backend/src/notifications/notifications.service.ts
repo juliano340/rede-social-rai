@@ -51,48 +51,37 @@ export class NotificationsService {
     });
   }
 
-  async findAll(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-
-    const [notifications, total] = await Promise.all([
-      this.prisma.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        include: {
-          actor: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              avatar: true,
-            },
-          },
-          post: {
-            select: {
-              id: true,
-              content: true,
-              author: {
-                select: {
-                  id: true,
-                  username: true,
-                },
-              },
-            },
+  async findAll(userId: string, cursor?: string, limit = 20) {
+    const take = limit + 1;
+    const args: Parameters<typeof this.prisma.notification.findMany>[0] = {
+      where: { userId },
+      take,
+      orderBy: { id: 'desc' },
+      include: {
+        actor: {
+          select: { id: true, username: true, name: true, avatar: true },
+        },
+        post: {
+          select: {
+            id: true,
+            content: true,
+            author: { select: { id: true, username: true } },
           },
         },
-      }),
-      this.prisma.notification.count({ where: { userId } }),
-    ]);
-
-    return {
-      notifications,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      },
     };
+
+    if (cursor) {
+      args.cursor = { id: cursor };
+      args.skip = 1;
+    }
+
+    const notifications = await this.prisma.notification.findMany(args);
+    const hasMore = notifications.length > limit;
+    const results = hasMore ? notifications.slice(0, limit) : notifications;
+    const nextCursor = hasMore && results.length > 0 ? results[results.length - 1].id : null;
+
+    return { notifications: results, nextCursor, hasMore };
   }
 
   async getUnreadCount(userId: string): Promise<number> {

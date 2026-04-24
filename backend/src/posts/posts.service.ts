@@ -326,15 +326,23 @@ export class PostsService {
     return reply;
   }
 
+  private parseCursorDate(cursor: string): Date | null {
+    const date = new Date(cursor);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
   async getReplies(postId: string, cursor?: string, limit = 20) {
     const take = limit + 1;
-    const where: { postId: string; parentId: null; createdAt?: { lt: Date } } = {
+    const where: Prisma.ReplyWhereInput = {
       postId,
       parentId: null,
     };
 
     if (cursor) {
-      where.createdAt = { lt: await this.getCursorDate(cursor) };
+      const cursorDate = this.parseCursorDate(cursor);
+      if (cursorDate) {
+        where.createdAt = { gt: cursorDate };
+      }
     }
 
     const replies = await this.prisma.reply.findMany({

@@ -28,13 +28,16 @@ describe('PostEditService', () => {
   };
 
   beforeEach(() => {
+    const feedPostsFn = () => [] as Post[];
+    const profilePostsFn = () => [] as Post[];
+
     postsServiceSpy = jasmine.createSpyObj('PostsService', [
       'updatePost', 'updateReply', 'deletePost', 'deleteReply',
       'createReply', 'likePost', 'updatePostInSignals', 'removePostFromSignals',
       'setProfilePosts'
     ], {
-      feedPosts: { update: jasmine.createSpy('feedPosts.update') },
-      profilePosts: { update: jasmine.createSpy('profilePosts.update') }
+      feedPosts: feedPostsFn,
+      profilePosts: profilePostsFn,
     });
     authServiceSpy = jasmine.createSpyObj('AuthService', ['logout']);
 
@@ -141,7 +144,7 @@ describe('PostEditService', () => {
 
   describe('Delete State', () => {
     it('should delete post and update signal', () => {
-      postsServiceSpy.deletePost.and.returnValue(of({}));
+      postsServiceSpy.deletePost.and.returnValue(of({ message: 'ok' }));
 
       service.deletePost(mockPost.id);
       service.confirmDeletePost();
@@ -151,7 +154,7 @@ describe('PostEditService', () => {
     });
 
     it('should delete reply and update signals', () => {
-      postsServiceSpy.deleteReply.and.returnValue(of({}));
+      postsServiceSpy.deleteReply.and.returnValue(of({ success: true }));
 
       service.deleteReply(mockReply.id, mockPost.id);
       service.confirmDeleteReply();

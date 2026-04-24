@@ -190,6 +190,6 @@ export class PostsController {
   }
 
   private getUserIdFromRequest(req?: Request): string | undefined {
-    return (req as any)?.user?.userId;
+    return (req as { user?: { userId: string } } | undefined)?.user?.userId;
   }
 }

@@ -22,16 +22,22 @@ export class UsersService {
     return this.http.post<{ following: boolean; message?: string }>(`${this.apiUrl}/users/${userId}/follow`, {});
   }
 
-  getFollowers(userId: string, page = 1, limit = 20): Observable<UsersResponse> {
-    return this.http.get<UsersResponse>(`${this.apiUrl}/users/${userId}/followers?page=${page}&limit=${limit}`);
+  getFollowers(userId: string, cursor?: string, limit = 20): Observable<UsersResponse> {
+    let url = `${this.apiUrl}/users/${userId}/followers?limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return this.http.get<UsersResponse>(url);
   }
 
-  getFollowing(userId: string, page = 1, limit = 20): Observable<UsersResponse> {
-    return this.http.get<UsersResponse>(`${this.apiUrl}/users/${userId}/following?page=${page}&limit=${limit}`);
+  getFollowing(userId: string, cursor?: string, limit = 20): Observable<UsersResponse> {
+    let url = `${this.apiUrl}/users/${userId}/following?limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return this.http.get<UsersResponse>(url);
   }
 
-  search(query: string, page = 1, limit = 20): Observable<UsersResponse> {
-    return this.http.get<UsersResponse>(`${this.apiUrl}/users/search?q=${query}&page=${page}&limit=${limit}`);
+  search(query: string, cursor?: string, limit = 20): Observable<UsersResponse> {
+    let url = `${this.apiUrl}/users/search?q=${query}&limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return this.http.get<UsersResponse>(url);
   }
 
   getSuggested(limit = 10): Observable<UsersResponse> {

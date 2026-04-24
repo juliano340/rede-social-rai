@@ -40,8 +40,6 @@ export interface AuthResponse {
 
 export interface UsersResponse {
   users: User[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 }

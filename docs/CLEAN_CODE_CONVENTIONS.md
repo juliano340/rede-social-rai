@@ -35,3 +35,11 @@
 2. Execute `npm run build` no frontend e backend antes de abrir PR.
 3. Adicione testes para fluxos críticos afetados.
 4. Atualize esta documentação se introduzir novo padrão.
+
+## Decisões aplicadas (Abril 2026)
+
+1. **Paginação unificada**: Todos os endpoints usam cursor (nunca page/limit). Contrato: `{ items[], nextCursor, hasMore }`.
+2. **PostEditService como estado central**: Toda lógica de estado de post/reply/interação vive em `PostEditService`, eliminando camada de proxy.
+3. **URL validators extraídos**: Lógica de validação de URL pública em `backend/src/common/utils/url-validator.util.ts`.
+4. **Template/styles externos**: Componentes acima de 400 linhas de template+styles usam arquivos `.html` e `.scss` separados.
+5. **Tipagem estrita**: Proibido `any` em fluxos de edição/like/reply. Tipos `Post` e `Reply` obrigatórios.

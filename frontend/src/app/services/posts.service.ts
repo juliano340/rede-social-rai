@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Post, PostsResponse, RepliesResponse } from '../shared/models';
+import { Post, PostsResponse, RepliesResponse, Reply } from '../shared/models';
 
 export { Post, PostsResponse };
 
@@ -152,8 +152,8 @@ export class PostsService {
     );
   }
 
-  deletePost(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${id}`, { withCredentials: true }).pipe(
+  deletePost(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/posts/${id}`, { withCredentials: true }).pipe(
       tap(() => {
         this.invalidateCache();
         this.removePostFromSignals(id);
@@ -162,7 +162,7 @@ export class PostsService {
   }
 
   updatePost(id: string, content: string, mediaUrl?: string | null, mediaType?: string | null, linkUrl?: string | null): Observable<Post> {
-    const body: any = { content };
+    const body: { content: string; mediaUrl?: string | null; mediaType?: string | null; linkUrl?: string | null } = { content };
 
     if (mediaUrl === null || mediaUrl === undefined) {
       body.mediaUrl = null;
@@ -187,12 +187,12 @@ export class PostsService {
     );
   }
 
-  createReply(postId: string, content: string, parentId?: string): Observable<any> {
-    const body: any = { content };
+  createReply(postId: string, content: string, parentId?: string): Observable<Reply> {
+    const body: { content: string; parentId?: string } = { content };
     if (parentId) {
       body.parentId = parentId;
     }
-    return this.http.post<any>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true }).pipe(
+    return this.http.post<Reply>(`${this.apiUrl}/posts/${postId}/reply`, body, { withCredentials: true }).pipe(
       tap(() => this.invalidateCache())
     );
   }
@@ -205,14 +205,14 @@ export class PostsService {
     return this.http.get<RepliesResponse>(`${this.apiUrl}/posts/${postId}/replies`, { params, withCredentials: true });
   }
 
-  updateReply(postId: string, replyId: string, content: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content }, { withCredentials: true }).pipe(
+  updateReply(postId: string, replyId: string, content: string): Observable<Reply> {
+    return this.http.put<Reply>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { content }, { withCredentials: true }).pipe(
       tap(() => this.invalidateCache())
     );
   }
 
-  deleteReply(postId: string, replyId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { withCredentials: true }).pipe(
+  deleteReply(postId: string, replyId: string): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${this.apiUrl}/posts/${postId}/reply/${replyId}`, { withCredentials: true }).pipe(
       tap(() => this.invalidateCache())
     );
   }

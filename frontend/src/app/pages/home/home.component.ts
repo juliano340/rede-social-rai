@@ -15,6 +15,7 @@ import { FeedSkeletonComponent } from '../../shared/components/feed-skeleton/fee
 import { FeedErrorComponent } from '../../shared/components/feed-error/feed-error.component';
 import { FeedEmptyComponent } from '../../shared/components/feed-empty/feed-empty.component';
 import { PostEditService } from '../../services/post-edit.service';
+import { Reply } from '../../shared/models';
 
 @Component({
   selector: 'app-home',
@@ -280,7 +281,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  startEditReply(reply: any) {
+  startEditReply(reply: Reply) {
     this.postEdit.startEditReply(reply);
   }
 
@@ -288,7 +289,7 @@ export class HomeComponent implements OnInit {
     this.postEdit.cancelEditReply();
   }
 
-  startEditNestedReply(reply: any) {
+  startEditNestedReply(reply: Reply) {
     this.postEdit.startEditNestedReply(reply);
   }
 

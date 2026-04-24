@@ -30,10 +30,8 @@ export interface Notification {
 
 export interface NotificationsResponse {
   notifications: Notification[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 @Injectable({
@@ -44,11 +42,10 @@ export class NotificationService {
 
   constructor(private http: HttpClient) {}
 
-  getNotifications(page = 1, limit = 20): Observable<NotificationsResponse> {
-    return this.http.get<NotificationsResponse>(
-      `${this.apiUrl}/notifications?page=${page}&limit=${limit}`,
-      { withCredentials: true }
-    );
+  getNotifications(cursor?: string, limit = 20): Observable<NotificationsResponse> {
+    let url = `${this.apiUrl}/notifications?limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    return this.http.get<NotificationsResponse>(url, { withCredentials: true });
   }
 
   getUnreadCount(): Observable<{ count: number }> {

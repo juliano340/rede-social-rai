@@ -67,10 +67,10 @@ export class UsersController {
   @Public()
   async search(
     @Query('q') query: string,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string
   ) {
-    return this.usersService.search(query, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    return this.usersService.search(query, cursor, limit ? parseInt(limit) : 20);
   }
 
   @Get('suggested')
@@ -124,19 +124,19 @@ export class UsersController {
   @Public()
   async getFollowers(
     @Param('id') userId: string,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string
   ) {
-    return this.usersService.getFollowers(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    return this.usersService.getFollowers(userId, cursor, limit ? parseInt(limit) : 20);
   }
 
   @Get(':id/following')
   @Public()
   async getFollowing(
     @Param('id') userId: string,
-    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string
   ) {
-    return this.usersService.getFollowing(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    return this.usersService.getFollowing(userId, cursor, limit ? parseInt(limit) : 20);
   }
 }
