@@ -1,0 +1,47 @@
+<div class="toast-container" role="region" aria-label="Notificações">
+  @for (toast of toastService.toasts; track toast.id) {
+    <div
+      class="toast toast--{{ toast.type }}"
+      [class.toast--paused]="toastService.isPaused(toast.id)"
+      [class.toast--exiting]="toast.exiting"
+      [attr.role]="toast.type === 'error' ? 'alert' : 'status'"
+      [attr.aria-live]="toast.type === 'error' ? 'assertive' : 'polite'"
+      (mouseenter)="toastService.pause(toast.id)"
+      (mouseleave)="toastService.resume(toast.id)"
+    >
+      <span class="toast__icon" aria-hidden="true">
+        @switch (toast.type) {
+          @case ('success') { <lucide-icon name="check-circle" [size]="20"></lucide-icon> }
+          @case ('error') { <lucide-icon name="x-circle" [size]="20"></lucide-icon> }
+          @case ('warning') { <lucide-icon name="alert-triangle" [size]="20"></lucide-icon> }
+          @case ('info') { <lucide-icon name="info" [size]="20"></lucide-icon> }
+        }
+      </span>
+
+      <div class="toast__content">
+        @if (toast.title) {
+          <span class="toast__title">{{ toast.title }}</span>
+        }
+        <span class="toast__message">{{ toast.message }}</span>
+      </div>
+
+      @if (toast.dismissible !== false) {
+        <button
+          type="button"
+          class="toast__close"
+          (click)="toastService.remove(toast.id); $event.stopPropagation()"
+          [attr.aria-label]="'Fechar notificação: ' + toast.message"
+        >
+          <lucide-icon name="x" [size]="16"></lucide-icon>
+        </button>
+      }
+
+      <div class="toast__progress" aria-hidden="true">
+        <div
+          class="toast__progress-bar"
+          [style.animation-duration.ms]="toast.duration"
+        ></div>
+      </div>
+    </div>
+  }
+</div>

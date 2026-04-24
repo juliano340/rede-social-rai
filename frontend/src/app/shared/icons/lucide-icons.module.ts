@@ -30,6 +30,9 @@ import {
   Link,
   Globe,
   ExternalLink,
+  CheckCircle,
+  XCircle,
+  Info,
 } from 'lucide-angular';
 
 @NgModule({
@@ -63,6 +66,9 @@ import {
       Link,
       Globe,
       ExternalLink,
+      CheckCircle,
+      XCircle,
+      Info,
     }),
   ],
   exports: [LucideAngularModule],

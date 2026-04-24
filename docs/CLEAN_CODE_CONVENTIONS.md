@@ -43,3 +43,4 @@
 3. **URL validators extraídos**: Lógica de validação de URL pública em `backend/src/common/utils/url-validator.util.ts`.
 4. **Template/styles externos**: Componentes acima de 400 linhas de template+styles usam arquivos `.html` e `.scss` separados.
 5. **Tipagem estrita**: Proibido `any` em fluxos de edição/like/reply. Tipos `Post` e `Reply` obrigatórios.
+6. **Toast profissional**: Componente de toast usa ícones Lucide (sem emoji), barra de progresso, pause no hover, deduplicação de mensagens e animação de saída. Serviço gerencia timers por Map com pause/resume.
