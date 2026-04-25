@@ -29,31 +29,37 @@ import { CommonModule } from '@angular/common';
     .feed-tabs {
       display: flex;
       gap: 0;
-      margin-bottom: 16px;
+      margin-bottom: var(--space-4);
       border-bottom: 1px solid var(--border);
     }
     
     .feed-tab {
       flex: 1;
-      padding: 12px;
-      background: none;
+      padding: var(--space-3) var(--space-4);
+      background: transparent;
       border: none;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: var(--font-sm);
+      font-weight: var(--font-semibold);
       color: var(--text-secondary);
       cursor: pointer;
       border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    
-    .feed-tab:hover {
-      color: var(--text-primary);
-      background: var(--background-secondary);
-    }
-    
-    .feed-tab.active {
-      color: var(--text-primary);
-      border-bottom-color: var(--primary);
+      transition: color var(--duration-150) var(--ease-out),
+                  background var(--duration-150) var(--ease-out);
+      
+      &:hover {
+        color: var(--text-primary);
+        background: var(--background-hover);
+      }
+      
+      &:focus-visible {
+        outline: 2px solid var(--border-focus);
+        outline-offset: 2px;
+      }
+      
+      &.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
     }
   `]
 })

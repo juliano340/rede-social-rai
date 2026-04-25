@@ -14,27 +14,35 @@ import { CommonModule } from '@angular/common';
   styles: [`
     .error-state {
       text-align: center;
-      padding: 60px 20px;
-    }
-    
-    .error-state p {
-      color: var(--text-secondary);
-      margin-top: 12px;
-    }
-    
-    .error-state button {
-      margin-top: 16px;
-      padding: 10px 20px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    
-    .error-state button:hover {
-      background: var(--primary-hover);
+      padding: var(--space-16) var(--space-6);
+      
+      p {
+        color: var(--text-secondary);
+        margin-top: var(--space-3);
+        font-size: var(--font-sm);
+      }
+      
+      button {
+        margin-top: var(--space-4);
+        padding: var(--space-2) var(--space-5);
+        background: var(--primary);
+        color: var(--text-inverse);
+        border: none;
+        border-radius: var(--radius-full);
+        font-weight: var(--font-semibold);
+        font-size: var(--font-sm);
+        cursor: pointer;
+        transition: background var(--duration-150) var(--ease-out);
+        
+        &:hover {
+          background: var(--primary-hover);
+        }
+        
+        &:focus-visible {
+          outline: 2px solid var(--border-focus);
+          outline-offset: 2px;
+        }
+      }
     }
   `]
 })

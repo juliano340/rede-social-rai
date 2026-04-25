@@ -111,20 +111,21 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     }
     
     .search-header {
-      margin-bottom: 24px;
+      margin-bottom: var(--space-6);
       
       h1 {
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 16px;
+        font-size: var(--font-2xl);
+        font-weight: var(--font-bold);
+        margin-bottom: var(--space-4);
+        color: var(--text-primary);
       }
       
-        .search-input-wrapper {
+      .search-input-wrapper {
         position: relative;
         
         .search-icon {
           position: absolute;
-          left: 14px;
+          left: var(--space-4);
           top: 50%;
           transform: translateY(-50%);
           color: var(--text-tertiary);
@@ -133,12 +134,14 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
         
         input {
           width: 100%;
-          padding: 14px 14px 14px 42px;
-          border: 1px solid var(--border);
+          padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) * 2 + 20px);
+          border: 2px solid var(--border);
           border-radius: var(--radius-lg);
-          font-size: 16px;
+          font-size: var(--font-base);
           background: var(--background-secondary);
-          transition: all var(--transition-fast);
+          color: var(--text-primary);
+          transition: border-color var(--duration-150) var(--ease-out),
+                      box-shadow var(--duration-150) var(--ease-out);
           
           &::placeholder {
             color: var(--text-tertiary);
@@ -156,40 +159,47 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     .users-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: var(--space-2);
+      
+      h2 {
+        font-size: var(--font-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        margin-bottom: var(--space-3);
+      }
     }
     
     .user-card {
       display: flex;
-      gap: 12px;
-      padding: 16px;
+      gap: var(--space-3);
+      padding: var(--space-4);
       border-radius: var(--radius-md);
       text-decoration: none;
-      transition: background 0.15s;
+      transition: background var(--duration-150) var(--ease-out);
       
       &:hover {
-        background: var(--background-secondary);
+        background: var(--background-hover);
       }
     }
     
     .user-avatar {
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       background: linear-gradient(135deg, var(--primary), #0d8ecf);
-      color: white;
+      color: var(--text-inverse);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
-      font-size: 18px;
+      font-weight: var(--font-semibold);
+      font-size: var(--font-base);
       flex-shrink: 0;
       overflow: hidden;
       
       .avatar-image {
         width: 48px;
         height: 48px;
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         object-fit: cover;
       }
     }
@@ -200,18 +210,19 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
       min-width: 0;
       
       .user-name {
-        font-weight: 600;
+        font-weight: var(--font-semibold);
         color: var(--text-primary);
+        font-size: var(--font-base);
       }
       
       .user-username {
-        color: var(--text-secondary);
-        font-size: 14px;
+        color: var(--text-tertiary);
+        font-size: var(--font-sm);
       }
       
       .user-bio {
-        margin-top: 4px;
-        font-size: 14px;
+        margin-top: var(--space-1);
+        font-size: var(--font-sm);
         color: var(--text-secondary);
         white-space: nowrap;
         overflow: hidden;
@@ -221,11 +232,12 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     
     .loading-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: var(--space-16) var(--space-6);
       
       p {
         color: var(--text-secondary);
-        margin-top: 12px;
+        margin-top: var(--space-3);
+        font-size: var(--font-sm);
       }
       
       .spinner-lg {
@@ -233,36 +245,31 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
         height: 40px;
         border: 3px solid var(--border);
         border-top-color: var(--primary);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
-        margin: 0 auto 16px;
+        margin: 0 auto var(--space-4);
       }
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
     }
     
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: var(--space-16) var(--space-6);
       
-      .empty-icon {
-        width: 48px;
-        height: 48px;
-        margin-bottom: 16px;
+      lucide-icon {
         color: var(--text-tertiary);
+        margin-bottom: var(--space-4);
       }
       
       p {
-        font-size: 18px;
-        font-weight: 600;
+        font-size: var(--font-lg);
+        font-weight: var(--font-semibold);
         color: var(--text-primary);
-        margin-bottom: 8px;
+        margin-bottom: var(--space-2);
       }
       
       span {
         color: var(--text-secondary);
+        font-size: var(--font-sm);
       }
     }
     
@@ -271,47 +278,46 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        margin-bottom: 16px;
-        padding: 0 4px;
+        margin-bottom: var(--space-4);
+        padding: 0 var(--space-1);
         
         h2 {
-          font-size: 18px;
-          font-weight: 700;
+          font-size: var(--font-lg);
+          font-weight: var(--font-bold);
           color: var(--text-primary);
         }
         
         span {
-          font-size: 14px;
+          font-size: var(--font-sm);
           color: var(--text-secondary);
         }
       }
       
-      .loading-suggested, .empty-suggested {
+      .loading-suggested,
+      .empty-suggested {
         text-align: center;
-        padding: 40px 20px;
+        padding: var(--space-10) var(--space-6);
         
         .spinner {
           width: 24px;
           height: 24px;
           border: 2px solid var(--border);
           border-top-color: var(--primary);
-          border-radius: 50%;
+          border-radius: var(--radius-full);
           animation: spin 0.8s linear infinite;
           margin: 0 auto;
         }
         
         p {
           color: var(--text-secondary);
-          margin-top: 12px;
+          margin-top: var(--space-3);
+          font-size: var(--font-sm);
         }
       }
     }
     
-    .users-list h2 {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   `]
 })

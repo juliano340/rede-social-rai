@@ -27,29 +27,29 @@ import { SkeletonComponent } from '../skeleton/skeleton.component';
     .skeleton-feed {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      padding: 16px 0;
+      gap: var(--space-4);
+      padding: var(--space-4) 0;
     }
-
+    
     .skeleton-post {
       background: var(--background-secondary);
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: var(--space-3);
     }
-
+    
     .skeleton-post-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: var(--space-3);
     }
-
+    
     .skeleton-post-header-text {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: var(--space-2);
     }
   `]
 })

@@ -139,14 +139,76 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
     </div>
   `,
   styles: [`
-    .profile-page { padding-top: 8px; }
-    .profile-card { background: var(--background-secondary); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
-    .loading-state { text-align: center; padding: 80px 20px; }
-    .spinner-lg { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    .error-state { text-align: center; padding: 80px 20px; }
-    .error-icon { font-size: 48px; margin-bottom: 12px; }
-    .btn-secondary { display: inline-block; margin-top: 16px; padding: 10px 20px; background: var(--background-secondary); border: 1px solid var(--border); border-radius: var(--radius-full); color: var(--text-primary); text-decoration: none; font-weight: 500; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .profile-page {
+      padding-top: var(--space-2);
+    }
+    
+    .profile-card {
+      background: var(--background-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+      box-shadow: var(--shadow-xs);
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: var(--space-20) var(--space-6);
+      
+      p {
+        color: var(--text-secondary);
+        margin-top: var(--space-4);
+        font-size: var(--font-sm);
+      }
+    }
+    
+    .spinner-lg {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: var(--radius-full);
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto var(--space-4);
+    }
+    
+    .error-state {
+      text-align: center;
+      padding: var(--space-20) var(--space-6);
+      
+      .error-icon {
+        font-size: 48px;
+        margin-bottom: var(--space-3);
+      }
+      
+      p {
+        color: var(--text-secondary);
+        font-size: var(--font-sm);
+      }
+      
+      .btn-secondary {
+        display: inline-block;
+        margin-top: var(--space-4);
+        padding: var(--space-2) var(--space-5);
+        background: var(--background-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-full);
+        color: var(--text-primary);
+        text-decoration: none;
+        font-weight: var(--font-medium);
+        font-size: var(--font-sm);
+        transition: background var(--duration-150) var(--ease-out);
+        
+        &:hover {
+          background: var(--background-hover);
+        }
+      }
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   `]
 })
 export class ProfileComponent implements OnInit {

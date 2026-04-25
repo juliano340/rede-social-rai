@@ -50,17 +50,86 @@ import { Post } from '../../../models/post.model';
     </div>
   `,
   styles: [`
-    .post-actions { display: flex; gap: 16px; margin-top: 12px; }
-    .action-btn { background: none; border: none; display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 14px; padding: 6px 8px; border-radius: 20px; transition: background 0.2s, color 0.2s; cursor: pointer; }
-    .action-btn:hover { background: rgba(224, 36, 94, 0.1); color: var(--error); }
-    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .action-btn.like.liked { color: #e0245e; }
-    .action-btn.like.liked lucide-icon { fill: currentColor; }
-    .action-btn.reply:hover { background: var(--primary-light); color: var(--primary); }
-    .action-btn.edit:hover { background: var(--primary-light); color: var(--primary); }
-    .action-btn.link { text-decoration: none; }
-    .action-btn.link:hover { background: var(--primary-light); color: var(--primary); }
-    .action-btn lucide-icon { color: currentColor; }
+    .post-actions {
+      display: flex;
+      gap: var(--space-1);
+      margin-top: var(--space-3);
+      flex-wrap: wrap;
+    }
+    
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      font-size: var(--font-sm);
+      font-weight: var(--font-medium);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-full);
+      transition: background var(--duration-150) var(--ease-out),
+                  color var(--duration-150) var(--ease-out);
+      cursor: pointer;
+      white-space: nowrap;
+      
+      &:hover:not(:disabled) {
+        background: var(--background-hover);
+        color: var(--text-secondary);
+      }
+      
+      &:focus-visible {
+        outline: 2px solid var(--border-focus);
+        outline-offset: 2px;
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      &.liked {
+        color: var(--error);
+        
+        lucide-icon {
+          fill: currentColor;
+        }
+      }
+      
+      &.reply {
+        &:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+        }
+      }
+      
+      &.edit {
+        &:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+        }
+      }
+      
+      &.delete {
+        &:hover {
+          background: var(--error-light);
+          color: var(--error);
+        }
+      }
+      
+      &.link {
+        text-decoration: none;
+        
+        &:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+        }
+      }
+      
+      lucide-icon {
+        color: currentColor;
+      }
+    }
   `]
 })
 export class PostCardActionsComponent {

@@ -16,25 +16,26 @@ import { LucideIconsModule } from '../../icons/lucide-icons.module';
   styles: [`
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: var(--space-16) var(--space-6);
     }
     
     .empty-icon {
       width: 48px;
       height: 48px;
-      margin-bottom: 16px;
+      margin-bottom: var(--space-4);
       color: var(--text-tertiary);
     }
     
-    .empty-state p {
-      font-size: 18px;
-      font-weight: 600;
+    p {
+      font-size: var(--font-lg);
+      font-weight: var(--font-semibold);
       color: var(--text-primary);
-      margin-bottom: 8px;
+      margin-bottom: var(--space-2);
     }
     
-    .empty-state span {
+    span {
       color: var(--text-secondary);
+      font-size: var(--font-sm);
     }
   `]
 })

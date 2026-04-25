@@ -100,16 +100,76 @@ import {
     </article>
   `,
   styles: [`
-    .post { display: flex; gap: 12px; padding: 16px; background: var(--background-secondary); border-bottom: 1px solid var(--border); transition: background 0.15s; }
-    .post:hover { background: var(--background-tertiary); }
-    .post.deleting { opacity: 0.5; }
-    .highlight-post { animation: highlight-fade 3s ease-out; }
-    @keyframes highlight-fade { 0% { background: rgba(99, 102, 241, 0.2); } 100% { background: transparent; } }
-    .post-avatar { flex-shrink: 0; }
-    .avatar-image { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
-    .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #0d8ecf); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 20px; }
-    .post-content { flex: 1; min-width: 0; }
-    .post-text { margin: 8px 0; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+    .post {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--background-secondary);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--duration-150) var(--ease-out);
+      
+      &:hover {
+        background: var(--background-tertiary);
+      }
+      
+      &.deleting {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      
+      &.highlight-post {
+        animation: highlight-fade 3s var(--ease-out);
+      }
+    }
+    
+    @keyframes highlight-fade {
+      0% { background: var(--primary-light); }
+      100% { background: var(--background-secondary); }
+    }
+    
+    .post-avatar {
+      flex-shrink: 0;
+      
+      .avatar-image {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-full);
+        object-fit: cover;
+      }
+      
+      .avatar-placeholder {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-full);
+        background: linear-gradient(135deg, var(--primary), #0d8ecf);
+        color: var(--text-inverse);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-semibold);
+        font-size: var(--font-lg);
+      }
+    }
+    
+    .post-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .post-text {
+      margin: var(--space-2) 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: var(--leading-relaxed);
+      font-size: var(--font-base);
+      color: var(--text-primary);
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .post.highlight-post {
+        animation: none;
+      }
+    }
   `]
 })
 export class PostCardComponent {

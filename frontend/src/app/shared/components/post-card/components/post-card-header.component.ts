@@ -22,10 +22,35 @@ import { Post } from '../../../models/post.model';
     </div>
   `,
   styles: [`
-    .post-header { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
-    .author-name { font-weight: 700; color: var(--text-primary); text-decoration: none; }
-    .author-name:hover { text-decoration: underline; }
-    .author-username, .post-time { color: var(--text-secondary); font-size: 14px; }
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-1);
+    }
+    
+    .author-name {
+      font-weight: var(--font-bold);
+      color: var(--text-primary);
+      text-decoration: none;
+      font-size: var(--font-sm);
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .author-username,
+    .post-time {
+      color: var(--text-tertiary);
+      font-size: var(--font-sm);
+    }
+    
+    .post-time::before {
+      content: '·';
+      margin-right: var(--space-1);
+    }
   `]
 })
 export class PostCardHeaderComponent {
