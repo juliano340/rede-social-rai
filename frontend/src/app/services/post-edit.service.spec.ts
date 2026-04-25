@@ -132,7 +132,6 @@ describe('PostEditService', () => {
       service.submitReply(mockPost.id, 'New');
 
       expect(postsServiceSpy.createReply).toHaveBeenCalled();
-      expect(service.replyContent()).toBe('');
     });
 
     it('should not create empty reply', () => {

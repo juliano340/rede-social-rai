@@ -1,25 +1,22 @@
 <div class="replies-list">
-  <button class="close-replies" (click)="onClose()">
-    <lucide-icon name="x" [size]="18"></lucide-icon>
-  </button>
-
-  @if (showForm && !showReplyForm) {
-    <button class="add-reply-link" (click)="onOpenForm()">
-      <lucide-icon name="message-circle" [size]="16"></lucide-icon> Comentar
+  <div class="replies-header-bar">
+    <span class="replies-title">Comentários</span>
+    <button class="close-replies" (click)="onClose()" aria-label="Fechar comentários">
+      <lucide-icon name="x" [size]="18"></lucide-icon>
     </button>
-  }
+  </div>
 
-  @if (showReplyForm) {
-    <div class="reply-form">
+  @if (showForm) {
+    <div class="reply-form composer">
       <textarea
         [(ngModel)]="replyContent"
         placeholder="Escreva um comentário..."
         maxlength="280"
+        rows="2"
       ></textarea>
       <div class="reply-actions">
         <span class="char-count">{{ replyContent.length }}/280</span>
         <div class="reply-buttons">
-          <button class="cancel-btn" (click)="cancelReply()">Cancelar</button>
           <button
             class="submit-reply-btn"
             (click)="submitReply()"
@@ -36,137 +33,148 @@
     <div class="loading-replies">
       <div class="spinner-sm"></div>
     </div>
-  } @else if (replies.length === 0 && !showReplyForm) {
-    <p class="no-replies">Nenhuma resposta ainda.</p>
+  } @else if (totalCount === 0) {
+    <p class="no-replies">Nenhum comentário ainda. Seja o primeiro!</p>
   } @else {
-    @for (reply of replies; track reply.id) {
-      <div class="reply-item" [class.highlight-reply]="highlightReplyId === reply.id" [attr.id]="'reply-' + reply.id">
-        <div class="reply-avatar">
-          @if (reply.author.avatar) {
-            <img [src]="getAvatarUrl(reply.author.avatar)" alt="Avatar" class="avatar-image">
-          } @else {
-            {{ getAvatarInitial(reply.author.name) }}
-          }
-        </div>
-        <div class="reply-content">
-          <div class="reply-header">
-            <span class="reply-name">{{ reply.author.name }}</span>
-            <span class="reply-username">&#64;{{ reply.author.username }}</span>
-          </div>
-          @if (editingReplyId === reply.id) {
-            <div class="edit-reply-form">
-              <textarea
-                [(ngModel)]="editReplyContent"
-                maxlength="280"
-              ></textarea>
-              <div class="edit-actions">
-                <button class="cancel-edit" (click)="cancelEditReply()">Cancelar</button>
-                <button
-                  class="save-edit"
-                  (click)="saveEditReply(reply.id)"
-                  [disabled]="!editReplyContent.trim() || savingReply"
-                >
-                  Salvar
-                </button>
-              </div>
-            </div>
-          } @else {
-            <p class="reply-text">{{ reply.content }}</p>
-          }
-          @if (currentUserId && editingReplyId !== reply.id) {
-            <div class="reply-actions">
-              @if (currentUserId === reply.author.id) {
-                <button class="reply-edit-btn" (click)="startEditReply(reply)">Editar</button>
-                <button class="reply-delete-btn" (click)="deleteReply(reply.id)">Excluir</button>
-              }
-              @if (showReplyToReply) {
-                <button class="reply-to-reply-btn" (click)="toggleReplyToComment(reply.id)">
-                  Responder
-                </button>
+    <div class="replies-body">
+      @for (vm of viewModels; track vm.reply.id) {
+        @if (vm.reply.id && vm.reply.content !== undefined && vm.reply.content !== null) {
+          <div class="reply-item" [class.highlight-reply]="highlightReplyId === vm.reply.id" [attr.id]="'reply-' + vm.reply.id">
+            <div class="reply-avatar">
+              @if (vm.reply.author?.avatar) {
+                <img [src]="getAvatarUrl(vm.reply.author?.avatar)" alt="Avatar" class="avatar-image">
+              } @else {
+                <span class="avatar-initial">{{ getAvatarInitial(vm.reply.author?.name) }}</span>
               }
             </div>
-          }
-          @if (replyingToCommentId && replyingToCommentId === reply.id) {
-            <div class="reply-to-reply-form">
-              <textarea
-                [(ngModel)]="replyingToCommentContent"
-                placeholder="Escreva uma resposta..."
-                maxlength="280"
-              ></textarea>
-              <div class="reply-actions">
-                <button class="cancel-btn" (click)="cancelReplyToComment()">Cancelar</button>
-                <button
-                  class="submit-reply-btn"
-                  (click)="submitReplyToComment(reply.id)"
-                  [disabled]="!replyingToCommentContent.trim()"
-                >
-                  Responder
-                </button>
-              </div>
-            </div>
-          }
-
-          @if (reply.children && reply.children.length > 0) {
-            <div class="nested-replies">
-              @for (child of reply.children; track child.id) {
-                <div class="reply-item nested">
-                  <div class="reply-avatar small">
-                    @if (child.author.avatar) {
-                      <img [src]="getAvatarUrl(child.author.avatar)" alt="Avatar" class="avatar-image">
-                    } @else {
-                      {{ getAvatarInitial(child.author.name) }}
-                    }
-                  </div>
-                  <div class="reply-content">
-                    <div class="reply-header">
-                      <span class="reply-name">{{ child.author.name }}</span>
-                      <span class="reply-username">&#64;{{ child.author.username }}</span>
+            <div class="reply-content">
+              <div class="reply-header-row">
+                <div class="reply-header">
+                  <span class="reply-name">{{ vm.reply.author?.name || 'Usuário' }}</span>
+                  <span class="reply-username">&#64;{{ vm.reply.author?.username || 'usuario' }}</span>
+                  <span class="reply-time" *ngIf="formatTime(vm.reply.createdAt)">· {{ formatTime(vm.reply.createdAt) }}</span>
+                </div>
+                @if (currentUserId && vm.reply.author?.id && currentUserId === vm.reply.author?.id) {
+                  <button
+                    class="reply-menu-trigger"
+                    (click)="toggleActionMenu(vm.reply.id)"
+                    [attr.aria-expanded]="openActionMenuId === vm.reply.id"
+                    aria-label="Opções"
+                  >
+                    <lucide-icon name="more-horizontal" [size]="16"></lucide-icon>
+                  </button>
+                  @if (openActionMenuId === vm.reply.id) {
+                    <div class="reply-action-menu" role="menu">
+                      <button class="reply-action-menu-item" (click)="startEditReply(vm.reply); openActionMenuId = null">
+                        <lucide-icon name="pencil" [size]="14"></lucide-icon> Editar
+                      </button>
+                      <button class="reply-action-menu-item destructive" (click)="deleteReply(vm.reply.id); openActionMenuId = null">
+                        <lucide-icon name="trash-2" [size]="14"></lucide-icon> Excluir
+                      </button>
                     </div>
-                    @if (editingNestedReplyId === child.id) {
-                      <div class="edit-reply-form">
-                        <textarea
-                          [(ngModel)]="editNestedReplyContent"
-                          maxlength="280"
-                        ></textarea>
-                        <div class="edit-actions">
-                          <button class="cancel-edit" (click)="cancelEditNestedReply()">Cancelar</button>
-                          <button
-                            class="save-edit"
-                            (click)="saveEditNestedReply(child.id)"
-                            [disabled]="!editNestedReplyContent.trim() || savingReply"
-                          >
-                            Salvar
-                          </button>
-                        </div>
-                      </div>
-                    } @else {
-                      <p class="reply-text">{{ child.content }}</p>
-                    }
-                    @if (currentUserId === child.author.id && editingNestedReplyId !== child.id) {
-                      <div class="reply-actions">
-                        <button class="reply-edit-btn" (click)="startEditNestedReply(child)">Editar</button>
-                        <button class="reply-delete-btn" (click)="deleteNestedReply(child.id)">Excluir</button>
-                      </div>
-                    }
+                  }
+                }
+              </div>
+
+              <p class="reply-text">{{ vm.reply.content }}</p>
+
+              @if (currentUserId) {
+                <div class="reply-actions-bar">
+                  @if (showReplyToReply) {
+                    <button class="reply-to-reply-btn" (click)="toggleReplyToComment(vm.reply.id)">
+                      <lucide-icon name="arrow-big-up" [size]="14"></lucide-icon> Responder
+                    </button>
+                  }
+                  @if (vm.childCount > 0) {
+                    <button class="toggle-thread-btn" (click)="toggleThread(vm.reply.id)">
+                      @if (vm.isExpanded) {
+                        <lucide-icon name="chevron-up" [size]="14"></lucide-icon> Ocultar respostas
+                      } @else {
+                        <lucide-icon name="chevron-down" [size]="14"></lucide-icon>
+                        Ver {{ vm.childCount }} {{ vm.childCount === 1 ? 'resposta' : 'respostas' }}
+                      }
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (replyingToCommentId === vm.reply.id) {
+                <div class="reply-to-reply-form">
+                  <textarea
+                    [(ngModel)]="replyingToCommentContent"
+                    placeholder="Escreva uma resposta..."
+                    maxlength="280"
+                    rows="2"
+                  ></textarea>
+                  <div class="reply-actions">
+                    <button class="cancel-btn" (click)="cancelReplyToComment()">Cancelar</button>
+                    <button class="submit-reply-btn" (click)="submitReplyToComment(vm.reply.id)" [disabled]="!replyingToCommentContent.trim()">
+                      Responder
+                    </button>
                   </div>
                 </div>
               }
+
+              @if (vm.isExpanded && vm.validChildren.length > 0) {
+                <div class="nested-replies">
+                  @for (child of vm.validChildren; track child.id) {
+                    @if (child.id && child.content !== undefined && child.content !== null) {
+                      <div class="reply-item nested">
+                        <div class="nested-line"></div>
+                        <div class="reply-avatar small">
+                          @if (child.author?.avatar) {
+                            <img [src]="getAvatarUrl(child.author?.avatar)" alt="Avatar" class="avatar-image">
+                          } @else {
+                            <span class="avatar-initial">{{ getAvatarInitial(child.author?.name) }}</span>
+                          }
+                        </div>
+                        <div class="reply-content">
+                          <div class="reply-header-row">
+                            <div class="reply-header">
+                              <span class="reply-name">{{ child.author?.name || 'Usuário' }}</span>
+                              <span class="reply-username">&#64;{{ child.author?.username || 'usuario' }}</span>
+                              <span class="reply-time" *ngIf="formatTime(child.createdAt)">· {{ formatTime(child.createdAt) }}</span>
+                            </div>
+                            @if (currentUserId && child.author?.id && currentUserId === child.author?.id) {
+                              <button
+                                class="reply-menu-trigger small"
+                                (click)="toggleActionMenu(child.id)"
+                                [attr.aria-expanded]="openActionMenuId === child.id"
+                                aria-label="Opções"
+                              >
+                                <lucide-icon name="more-horizontal" [size]="14"></lucide-icon>
+                              </button>
+                              @if (openActionMenuId === child.id) {
+                                <div class="reply-action-menu" role="menu">
+                                  <button class="reply-action-menu-item" (click)="startEditNestedReply(child); openActionMenuId = null">
+                                    <lucide-icon name="pencil" [size]="14"></lucide-icon> Editar
+                                  </button>
+                                  <button class="reply-action-menu-item destructive" (click)="deleteNestedReply(child.id); openActionMenuId = null">
+                                    <lucide-icon name="trash-2" [size]="14"></lucide-icon> Excluir
+                                  </button>
+                                </div>
+                              }
+                            }
+                          </div>
+                          <p class="reply-text">{{ child.content }}</p>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              }
             </div>
-          }
-        </div>
-      </div>
-    }
+          </div>
+        }
+      }
+    </div>
 
     @if (hasMore) {
-      <button
-        class="load-more-replies"
-        (click)="loadMore.emit()"
-        [disabled]="isLoadingMore"
-      >
+      <button class="load-more-replies" (click)="loadMore.emit()" [disabled]="isLoadingMore">
         @if (isLoadingMore) {
           <div class="spinner-sm"></div>
         } @else {
-          Carregar mais respostas
+          Carregar mais comentários
         }
       </button>
     }

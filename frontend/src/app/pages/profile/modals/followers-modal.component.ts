@@ -62,7 +62,7 @@ import { User } from '../../../shared/models/user.model';
     .modal-user { display: flex; gap: 12px; padding: 12px 16px; text-decoration: none; transition: background 0.15s; align-items: center; }
     .modal-user:hover { background: var(--background-secondary); }
     .avatar-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
-    .avatar-placeholder { width: 96px; height: 96px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #0d8ecf); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 36px; }
+    .avatar-placeholder { width: 96px; height: 96px; border-radius: 50%; background: var(--primary); color: var(--text-inverse); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 36px; }
     .avatar-placeholder.small { width: 44px; height: 44px; font-size: 16px; }
     .user-info { display: flex; flex-direction: column; }
     .user-name { font-weight: 600; color: var(--text-primary); }

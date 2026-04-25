@@ -71,29 +71,25 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       .logo-icon {
         width: 80px;
         height: 80px;
-        background: linear-gradient(135deg, var(--primary), #8b5cf6);
-        border-radius: 20px;
+        background: var(--primary);
+        border-radius: var(--radius-xl);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 40px;
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        color: var(--text-inverse);
+        font-weight: var(--font-bold);
+        font-size: var(--font-4xl);
       }
     }
     
     h1 {
-      font-size: 32px;
-      font-weight: 700;
+      font-size: var(--font-3xl);
+      font-weight: var(--font-bold);
       color: var(--text-primary);
-      margin-bottom: 12px;
+      margin-bottom: var(--space-3);
       
       .brand {
-        background: linear-gradient(135deg, var(--primary), #8b5cf6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--primary);
       }
     }
     
@@ -130,16 +126,16 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       }
       
       h3 {
-        font-size: 16px;
-        font-weight: 600;
+        font-size: var(--font-base);
+        font-weight: var(--font-semibold);
         color: var(--text-primary);
-        margin-bottom: 8px;
+        margin-bottom: var(--space-2);
       }
       
       p {
-        font-size: 14px;
+        font-size: var(--font-sm);
         color: var(--text-secondary);
-        line-height: 1.5;
+        line-height: var(--leading-normal);
         margin: 0;
       }
     }
@@ -147,20 +143,20 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     .cta-section {
       background: var(--background-secondary);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px 32px;
+      border-radius: var(--radius-2xl);
+      padding: var(--space-10) var(--space-8);
       
       h2 {
-        font-size: 24px;
-        font-weight: 700;
+        font-size: var(--font-2xl);
+        font-weight: var(--font-bold);
         color: var(--text-primary);
-        margin-bottom: 8px;
+        margin-bottom: var(--space-2);
       }
       
       p {
-        font-size: 16px;
+        font-size: var(--font-base);
         color: var(--text-secondary);
-        margin-bottom: 24px;
+        margin-bottom: var(--space-6);
       }
     }
     
@@ -172,26 +168,29 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     }
     
     .btn {
-      padding: 14px 32px;
-      border-radius: 50px;
-      font-size: 16px;
-      font-weight: 600;
+      padding: var(--space-4) var(--space-8);
+      border-radius: var(--radius-full);
+      font-size: var(--font-base);
+      font-weight: var(--font-semibold);
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all var(--duration-200) var(--ease-out);
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--space-2);
+      
+      &:focus-visible {
+        outline: 2px solid var(--border-focus);
+        outline-offset: 2px;
+      }
     }
     
     .btn-primary {
-      background: linear-gradient(135deg, var(--primary), #8b5cf6);
-      color: white;
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+      background: var(--primary);
+      color: var(--text-inverse);
       
       &:hover {
+        background: var(--primary-hover);
         transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
-        text-decoration: none;
       }
     }
     

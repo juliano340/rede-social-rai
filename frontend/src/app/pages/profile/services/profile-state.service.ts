@@ -76,8 +76,8 @@ export class ProfileStateService {
 
     this.postReplies.update(replies =>
       replies.map(reply =>
-        reply.author.username === username
-          ? { ...reply, author: { ...reply.author, avatar } }
+        reply.author?.username === username
+          ? { ...reply, author: reply.author ? { ...reply.author, avatar } : null }
           : reply
       )
     );

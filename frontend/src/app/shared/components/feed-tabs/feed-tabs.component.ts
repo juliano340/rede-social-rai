@@ -29,22 +29,29 @@ import { CommonModule } from '@angular/common';
     .feed-tabs {
       display: flex;
       gap: 0;
-      margin-bottom: var(--space-4);
       border-bottom: 1px solid var(--border);
+      background: var(--background-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+
+      [data-theme="dark"] & {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      }
     }
     
     .feed-tab {
       flex: 1;
-      padding: var(--space-3) var(--space-4);
+      padding: var(--space-4);
       background: transparent;
       border: none;
-      font-size: var(--font-sm);
-      font-weight: var(--font-semibold);
+      border-bottom: 2px solid transparent;
+      font-size: var(--font-base);
+      font-weight: var(--font-medium);
       color: var(--text-secondary);
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color var(--duration-150) var(--ease-out),
-                  background var(--duration-150) var(--ease-out);
+      transition: all var(--duration-150) var(--ease-out);
       
       &:hover {
         color: var(--text-primary);
@@ -52,13 +59,15 @@ import { CommonModule } from '@angular/common';
       }
       
       &:focus-visible {
-        outline: 2px solid var(--border-focus);
-        outline-offset: 2px;
+        outline: none;
+        background: var(--background-hover);
       }
       
       &.active {
         color: var(--primary);
         border-bottom-color: var(--primary);
+        background: transparent;
+        font-weight: var(--font-semibold);
       }
     }
   `]

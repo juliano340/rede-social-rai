@@ -5,6 +5,22 @@ import { UrlUtilsService } from '../shared/services/url-utils.service';
 import { Post, Reply } from '../shared/models';
 import { HTTP_STATUS } from '../shared/constants/app.constants';
 
+export interface CommentsState {
+  status: 'idle' | 'loading' | 'loaded' | 'error';
+  replies: Reply[];
+  cursor: string | null;
+  hasMore: boolean;
+  loadingMore: boolean;
+}
+
+const IDLE_COMMENTS: CommentsState = {
+  status: 'idle',
+  replies: [],
+  cursor: null,
+  hasMore: false,
+  loadingMore: false,
+};
+
 @Injectable({ providedIn: 'root' })
 export class PostEditService {
   private postsService = inject(PostsService);
@@ -27,19 +43,191 @@ export class PostEditService {
   readonly deletingReplyId = signal<string | null>(null);
   readonly deletingReplyPostId = signal<string | null>(null);
 
-  readonly replyingToPost = signal<string | null>(null);
-  readonly replyContent = signal('');
   readonly replyingToComment = signal<string | null>(null);
   readonly replyingToCommentContent = signal('');
   readonly isSubmittingReply = signal(false);
-  readonly postReplies = signal<Reply[]>([]);
   readonly savingReply = signal(false);
-  readonly loadingReplies = signal(false);
-  readonly replyCursor = signal<string | null>(null);
-  readonly replyHasMore = signal(false);
-  readonly isLoadingMoreReplies = signal(false);
+  readonly replyLoading = signal(false);
 
   readonly postLikingId = signal<string | null>(null);
+
+  private _commentsByPostId = signal<Record<string, CommentsState>>({});
+  readonly commentsByPostId = this._commentsByPostId.asReadonly();
+
+  private _openedPostId = signal<string | null>(null);
+  readonly openedPostId = this._openedPostId.asReadonly();
+
+  get replyingToPost() { return this._openedPostId; }
+  get loadingReplies() { return this.replyLoading; }
+
+  toggleReply(postId: string): void { this.toggleComments(postId); }
+  openReplyForm(postId: string): void { this.openComments(postId); }
+
+  getComments(postId: string): CommentsState {
+    return this._commentsByPostId()[postId] || IDLE_COMMENTS;
+  }
+
+  getCommentsMap(): Map<string, CommentsState> {
+    return new Map(Object.entries(this._commentsByPostId()));
+  }
+
+  isOpen(postId: string): boolean {
+    return this._openedPostId() === postId;
+  }
+
+  openComments(postId: string): void {
+    if (this._openedPostId() === postId) return;
+    this._openedPostId.set(postId);
+    this.loadCommentsIfNeeded(postId);
+  }
+
+  closeComments(): void {
+    this._openedPostId.set(null);
+    this.replyingToComment.set(null);
+    this.replyingToCommentContent.set('');
+  }
+
+  toggleComments(postId: string): void {
+    if (this._openedPostId() === postId) {
+      this.closeComments();
+    } else {
+      this.openComments(postId);
+    }
+  }
+
+  private loadCommentsIfNeeded(postId: string): void {
+    const current = this.getComments(postId);
+    if (current.status === 'loaded' || current.status === 'loading') return;
+
+    this._commentsByPostId.update(map => ({
+      ...map,
+      [postId]: { ...IDLE_COMMENTS, status: 'loading' },
+    }));
+    this.replyLoading.set(true);
+
+    this.postsService.getReplies(postId).subscribe({
+      next: (data) => {
+        this._commentsByPostId.update(map => ({
+          ...map,
+          [postId]: {
+            status: 'loaded',
+            replies: data.replies || [],
+            cursor: data.nextCursor || null,
+            hasMore: !!data.nextCursor,
+            loadingMore: false,
+          },
+        }));
+        this.replyLoading.set(false);
+      },
+      error: () => {
+        this._commentsByPostId.update(map => ({
+          ...map,
+          [postId]: { ...IDLE_COMMENTS, status: 'error' },
+        }));
+        this.replyLoading.set(false);
+      },
+    });
+  }
+
+  loadMoreComments(postId: string): void {
+    const state = this.getComments(postId);
+    if (!state.cursor || state.loadingMore || state.status !== 'loaded') return;
+
+    this._commentsByPostId.update(map => ({
+      ...map,
+      [postId]: { ...map[postId], loadingMore: true },
+    }));
+
+    this.postsService.getReplies(postId, state.cursor).subscribe({
+      next: (data) => {
+        this._commentsByPostId.update(map => {
+          const prev = map[postId];
+          return {
+            ...map,
+            [postId]: {
+              ...prev,
+              replies: [...prev.replies, ...(data.replies || [])],
+              cursor: data.nextCursor || null,
+              hasMore: !!data.nextCursor,
+              loadingMore: false,
+            },
+          };
+        });
+      },
+      error: () => {
+        this._commentsByPostId.update(map => ({
+          ...map,
+          [postId]: { ...map[postId], loadingMore: false },
+        }));
+      },
+    });
+  }
+
+  private updateComments(postId: string, updater: (replies: Reply[]) => Reply[]): void {
+    this._commentsByPostId.update(map => {
+      const prev = map[postId];
+      if (!prev) return map;
+      return { ...map, [postId]: { ...prev, replies: updater(prev.replies) } };
+    });
+  }
+
+  submitReply(postId: string, content: string): void {
+    if (!content.trim()) return;
+
+    this.isSubmittingReply.set(true);
+    this.postsService.createReply(postId, content).subscribe({
+      next: (newReply: Reply) => {
+        this.updateComments(postId, replies => [...replies, newReply]);
+        const post = this.findPost(postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: [...(post.replies || []), newReply],
+            _count: { ...post._count, replies: post._count.replies + 1 },
+          });
+        }
+        this.isSubmittingReply.set(false);
+      },
+      error: () => { this.isSubmittingReply.set(false); },
+    });
+  }
+
+  submitReplyToComment(parentReplyId: string, postId: string, content: string): void {
+    if (!content.trim()) return;
+
+    this.isSubmittingReply.set(true);
+    this.postsService.createReply(postId, content, parentReplyId).subscribe({
+      next: (newChild: Reply) => {
+        this.updateComments(postId, replies =>
+          replies.map(r => r.id === parentReplyId ? {
+            ...r,
+            children: [...(r.children || []), newChild],
+            _count: { children: (r._count?.children ?? r.children?.length ?? 0) + 1 },
+          } : r)
+        );
+        const post = this.findPost(postId);
+        if (post) {
+          this.postsService.updatePostInSignals(postId, {
+            replies: (post.replies || []).map(r =>
+              r.id === parentReplyId ? { ...r, children: [...(r.children || []), newChild] } : r
+            ),
+            _count: { ...post._count, replies: post._count.replies + 1 },
+          });
+        }
+        this.replyingToComment.set(null);
+        this.replyingToCommentContent.set('');
+        this.isSubmittingReply.set(false);
+      },
+      error: (err) => {
+        this.isSubmittingReply.set(false);
+        if (err.status === HTTP_STATUS.UNAUTHORIZED) { this.authService.logout(); }
+      },
+    });
+  }
+
+  private findPost(postId: string): Post | undefined {
+    return this.postsService.feedPosts().find(p => p.id === postId)
+      || this.postsService.profilePosts().find(p => p.id === postId);
+  }
 
   startEditPost(post: Post): void {
     this.editingPost.set(post.id);
@@ -75,7 +263,7 @@ export class PostEditService {
         });
         this.cancelEditPost();
       },
-      error: () => { this.cancelEditPost(); }
+      error: () => { this.cancelEditPost(); },
     });
   }
 
@@ -93,7 +281,7 @@ export class PostEditService {
         this.postsService.removePostFromSignals(id);
         this.closeDeletePostModal();
       },
-      error: () => { this.closeDeletePostModal(); }
+      error: () => { this.closeDeletePostModal(); },
     });
   }
 
@@ -136,12 +324,10 @@ export class PostEditService {
 
     this.postsService.updateReply(postId, replyId, content).subscribe({
       next: (updated) => {
-        this.postReplies.update(replies =>
-          replies.map(r => r.id === replyId ? { ...updated, children: r.children } : r)
+        this.updateComments(postId, replies =>
+          replies.map(r => r.id === replyId ? { ...updated, children: r.children, _count: r._count } : r)
         );
-
-        const post = this.postsService.feedPosts().find(p => p.id === postId)
-          || this.postsService.profilePosts().find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (post) {
           this.postsService.updatePostInSignals(postId, {
             replies: (post.replies || []).map(r =>
@@ -150,7 +336,7 @@ export class PostEditService {
           });
         }
       },
-      error: () => {}
+      error: () => {},
     });
     this.cancelEditReply();
   }
@@ -165,13 +351,13 @@ export class PostEditService {
     this.editNestedReplyContent.set('');
   }
 
-  saveEditNestedReply(replyId: string, postId: string, parentReplyId: string): void {
+  saveEditNestedReply(replyId: string, postId: string, _parentReplyId: string): void {
     const content = this.editNestedReplyContent();
     if (!content.trim()) return;
 
     this.postsService.updateReply(postId, replyId, content).subscribe({
       next: () => {
-        this.postReplies.update(replies =>
+        this.updateComments(postId, replies =>
           replies.map(r => {
             if (r.children?.some(c => c.id === replyId)) {
               return { ...r, children: r.children.map(c => c.id === replyId ? { ...c, content } : c) };
@@ -179,9 +365,7 @@ export class PostEditService {
             return r;
           })
         );
-
-        const post = this.postsService.feedPosts().find(p => p.id === postId)
-          || this.postsService.profilePosts().find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (post) {
           this.postsService.updatePostInSignals(postId, {
             replies: (post.replies || []).map(r => {
@@ -194,7 +378,7 @@ export class PostEditService {
         }
         this.cancelEditNestedReply();
       },
-      error: () => {}
+      error: () => {},
     });
   }
 
@@ -212,8 +396,8 @@ export class PostEditService {
     this.postsService.deleteReply(postId, replyId).subscribe({
       next: () => {
         let deletedCount = 0;
-        this.postReplies.update(replies => {
-          return replies.filter(r => {
+        this.updateComments(postId, replies =>
+          replies.filter(r => {
             if (r.id === replyId) {
               deletedCount += 1 + (r.children?.length ?? 0);
               return false;
@@ -223,14 +407,17 @@ export class PostEditService {
             if (r.children?.some(c => c.id === replyId)) {
               const child = r.children.find(c => c.id === replyId);
               deletedCount += 1 + (child?.children?.length ?? 0);
-              return { ...r, children: r.children.filter(c => c.id !== replyId) };
+              const children = r.children.filter(c => c.id !== replyId);
+              return {
+                ...r,
+                children,
+                _count: r._count ? { ...r._count, children: Math.max(0, r._count.children - 1) } : r._count,
+              };
             }
             return r;
-          });
-        });
-
-        const post = this.postsService.feedPosts().find(p => p.id === postId)
-          || this.postsService.profilePosts().find(p => p.id === postId);
+          })
+        );
+        const post = this.findPost(postId);
         if (post) {
           const updatedReplies = (post.replies || [])
             .filter(r => r.id !== replyId)
@@ -245,16 +432,15 @@ export class PostEditService {
       error: (err) => {
         this.closeDeleteReplyModal();
         if (err.status === HTTP_STATUS.NOT_FOUND) {
-          const post = this.postsService.feedPosts().find(p => p.id === postId)
-            || this.postsService.profilePosts().find(p => p.id === postId);
+          const post = this.findPost(postId!);
           if (post) {
             const updatedReplies = (post.replies || [])
               .filter(r => r.id !== replyId)
               .map(r => ({ ...r, children: (r.children || []).filter(c => c.id !== replyId) }));
-            this.postsService.updatePostInSignals(postId, { replies: updatedReplies });
+            this.postsService.updatePostInSignals(postId!, { replies: updatedReplies });
           }
         }
-      }
+      },
     });
   }
 
@@ -264,91 +450,23 @@ export class PostEditService {
     this.deletingReplyPostId.set(null);
   }
 
-  deleteNestedReply(replyId: string, postId: string, parentReplyId: string): void {
-    this.showDeleteReplyModal.set(true);
-    this.deletingReplyId.set(replyId);
-    this.deletingReplyPostId.set(postId);
-  }
-
-  toggleReply(postId: string): void {
-    if (this.replyingToPost() === postId) { this.cancelReply(); }
-    else { this.openReplyForm(postId); }
-  }
-
-  openReplyForm(postId: string): void {
-    this.replyingToPost.set(postId);
-    this.replyContent.set('');
-  }
-
-  cancelReply(): void {
-    this.replyingToPost.set(null);
-    this.replyContent.set('');
-  }
-
-  submitReply(postId: string, replyContent?: string): void {
-    const content = replyContent ?? this.replyContent();
-    if (!content.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, content).subscribe({
-      next: (newReply: Reply) => {
-        this.postReplies.update(replies => [...replies, newReply]);
-
-        const post = this.postsService.feedPosts().find(p => p.id === postId)
-          || this.postsService.profilePosts().find(p => p.id === postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: [...(post.replies || []), newReply],
-            _count: { ...post._count, replies: post._count.replies + 1 }
-          });
-        }
-        this.replyContent.set('');
-        this.isSubmittingReply.set(false);
-      },
-      error: () => { this.isSubmittingReply.set(false); }
-    });
+  deleteNestedReply(replyId: string, postId: string, _parentReplyId: string): void {
+    this.deleteReply(replyId, postId);
   }
 
   toggleReplyToComment(replyId: string): void {
-    if (this.replyingToComment() === replyId) { this.cancelReplyToComment(); }
-    else { this.replyingToComment.set(replyId); this.replyingToCommentContent.set(''); }
+    if (this.replyingToComment() === replyId) {
+      this.replyingToComment.set(null);
+      this.replyingToCommentContent.set('');
+    } else {
+      this.replyingToComment.set(replyId);
+      this.replyingToCommentContent.set('');
+    }
   }
 
   cancelReplyToComment(): void {
     this.replyingToComment.set(null);
     this.replyingToCommentContent.set('');
-  }
-
-  submitReplyToComment(replyId: string, postId: string, replyContent?: string): void {
-    const content = replyContent ?? this.replyingToCommentContent();
-    if (!content.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, content, replyId).subscribe({
-      next: (newChild: Reply) => {
-        this.postReplies.update(replies =>
-          replies.map(r => r.id === replyId ? { ...r, children: [...(r.children || []), newChild] } : r)
-        );
-
-        const post = this.postsService.feedPosts().find(p => p.id === postId)
-          || this.postsService.profilePosts().find(p => p.id === postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: (post.replies || []).map(r =>
-              r.id === replyId ? { ...r, children: [...(r.children || []), newChild] } : r
-            ),
-            _count: { ...post._count, replies: post._count.replies + 1 }
-          });
-        }
-        this.replyingToCommentContent.set('');
-        this.replyingToComment.set(null);
-        this.isSubmittingReply.set(false);
-      },
-      error: (err) => {
-        this.isSubmittingReply.set(false);
-        if (err.status === HTTP_STATUS.UNAUTHORIZED) { this.authService.logout(); }
-      }
-    });
   }
 
   toggleLike(post: Post): void {
@@ -361,7 +479,7 @@ export class PostEditService {
     this.postLikingId.set(post.id);
     this.postsService.updatePostInSignals(post.id, {
       isLiked: newStatus,
-      _count: { ...post._count, likes: post._count.likes + likeDelta }
+      _count: { ...post._count, likes: post._count.likes + likeDelta },
     });
 
     this.postsService.likePost(post.id).subscribe({
@@ -369,13 +487,16 @@ export class PostEditService {
         this.postLikingId.set(null);
         this.postsService.updatePostInSignals(post.id, {
           isLiked: res.liked,
-          _count: { ...post._count, likes: post._count.likes + (res.liked ? 1 : 0) - (currentStatus ? 1 : 0) }
+          _count: { ...post._count, likes: post._count.likes + (res.liked ? 1 : 0) - (currentStatus ? 1 : 0) },
         });
       },
       error: () => {
         this.postLikingId.set(null);
-        this.postsService.updatePostInSignals(post.id, { isLiked: currentStatus, _count: { ...post._count, likes: post._count.likes } });
-      }
+        this.postsService.updatePostInSignals(post.id, {
+          isLiked: currentStatus,
+          _count: { ...post._count, likes: post._count.likes },
+        });
+      },
     });
   }
 

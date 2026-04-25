@@ -44,7 +44,6 @@ export class HomeComponent implements OnInit {
   loadError = signal<string | null>(null);
   submitError = signal<string | null>(null);
   submitSuccess = signal(false);
-  loadingReplies = signal(false);
   highlightPostId = signal<string | null>(null);
   highlightReplyId = signal<string | null>(null);
 
@@ -52,19 +51,6 @@ export class HomeComponent implements OnInit {
   postEdit = inject(PostEditService);
 
   get posts() { return this.postsService.feedPosts; }
-
-  get postLikingId() { return this.postEdit.postLikingId; }
-  get replyingToPost() { return this.postEdit.replyingToPost; }
-  readonly viewingRepliesPost = this.postEdit.replyingToPost;
-  get postReplies() { return this.postEdit.postReplies; }
-  get isSubmittingReply() { return this.postEdit.isSubmittingReply; }
-  get savingReply() { return this.postEdit.savingReply; }
-  get deletingPostId() { return this.postEdit.deletingPostId; }
-  get showDeletePostModal() { return this.postEdit.showDeletePostModal; }
-  get showDeleteModal() { return this.postEdit.showDeleteReplyModal; }
-  get replyCursor() { return this.postEdit.replyCursor; }
-  get replyHasMore() { return this.postEdit.replyHasMore; }
-  get isLoadingMoreReplies() { return this.postEdit.isLoadingMoreReplies; }
 
   constructor(
     public authService: AuthService,
@@ -81,8 +67,8 @@ export class HomeComponent implements OnInit {
         this.highlightPostId.set(postId);
         if (replyId) {
           this.highlightReplyId.set(replyId);
-          this.viewingRepliesPost.set(postId);
-          this.loadReplies(postId, () => this.scrollToReply(replyId));
+          this.postEdit.openComments(postId);
+          setTimeout(() => this.scrollToReply(replyId), 500);
         }
         setTimeout(() => this.scrollToPost(postId), 100);
       }
@@ -160,12 +146,11 @@ export class HomeComponent implements OnInit {
   }
 
   onReplyToggle(postId: string) {
-    if (this.replyingToPost() === postId) {
-      this.postEdit.cancelReply();
-    } else {
-      this.replyingToPost.set(postId);
-      this.loadReplies(postId);
-    }
+    this.postEdit.toggleComments(postId);
+  }
+
+  onCloseComments() {
+    this.postEdit.closeComments();
   }
 
   onDeleteClick(postId: string) {
@@ -193,48 +178,16 @@ export class HomeComponent implements OnInit {
     this.postEdit.editingPost.set(null);
   }
 
-  onOpenReplyForm(postId: string) {
-    this.postEdit.openReplyForm(postId);
-  }
-
   onSubmitReply(postId: string, content: string) {
     this.postEdit.submitReply(postId, content);
-  }
-
-  onSaveEditReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditReply(data.replyId, postId);
-  }
-
-  onDeleteReply(postId: string, replyId: string) {
-    this.postEdit.deleteReply(replyId, postId);
-  }
-
-  onToggleReplyToComment(commentId: string) {
-    this.postEdit.toggleReplyToComment(commentId);
-  }
-
-  onCancelReplyToComment() {
-    this.postEdit.cancelReplyToComment();
   }
 
   onSubmitReplyToComment(postId: string, data: { replyId: string; content: string }) {
     this.postEdit.submitReplyToComment(data.replyId, postId, data.content);
   }
 
-  onSaveEditNestedReply(postId: string, data: { replyId: string; content: string }) {
-    this.postEdit.saveEditNestedReply(data.replyId, postId, '');
-  }
-
-  onDeleteNestedReply(postId: string, replyId: string) {
-    this.postEdit.deleteNestedReply(replyId, postId, '');
-  }
-
-  onCloseDeleteReplyModal() {
-    this.postEdit.closeDeleteReplyModal();
-  }
-
-  onConfirmDeleteReply() {
-    this.postEdit.confirmDeleteReply();
+  onLoadMoreReplies(postId: string) {
+    this.postEdit.loadMoreComments(postId);
   }
 
   onCloseDeletePostModal() {
@@ -245,56 +198,7 @@ export class HomeComponent implements OnInit {
     this.postEdit.confirmDeletePost();
   }
 
-  loadReplies(postId: string, callback?: () => void) {
-    this.loadingReplies.set(true);
-    this.postEdit.replyCursor.set(null);
-    this.postEdit.replyHasMore.set(false);
-    this.postsService.getReplies(postId).subscribe({
-      next: (data) => {
-        this.postReplies.set(data.replies || []);
-        this.postEdit.replyCursor.set(data.nextCursor || null);
-        this.postEdit.replyHasMore.set(!!data.nextCursor);
-        this.loadingReplies.set(false);
-        if (callback) callback();
-      },
-      error: () => {
-        this.loadingReplies.set(false);
-      }
-    });
+  onOpenReplyForm(_postId: string) {
+    // ReplySection has its own composer, no action needed here
   }
-
-  loadMoreReplies(postId: string) {
-    const cursor = this.replyCursor();
-    if (!cursor || this.isLoadingMoreReplies()) return;
-
-    this.isLoadingMoreReplies.set(true);
-    this.postsService.getReplies(postId, cursor).subscribe({
-      next: (data) => {
-        this.postReplies.update(current => [...current, ...(data.replies || [])]);
-        this.postEdit.replyCursor.set(data.nextCursor || null);
-        this.postEdit.replyHasMore.set(!!data.nextCursor);
-        this.isLoadingMoreReplies.set(false);
-      },
-      error: () => {
-        this.isLoadingMoreReplies.set(false);
-      }
-    });
-  }
-
-  startEditReply(reply: Reply) {
-    this.postEdit.startEditReply(reply);
-  }
-
-  cancelEditReply() {
-    this.postEdit.cancelEditReply();
-  }
-
-  startEditNestedReply(reply: Reply) {
-    this.postEdit.startEditNestedReply(reply);
-  }
-
-  cancelEditNestedReply() {
-    this.postEdit.cancelEditNestedReply();
-  }
-
 }

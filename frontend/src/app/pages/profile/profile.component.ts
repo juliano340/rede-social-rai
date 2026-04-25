@@ -62,8 +62,8 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
           [currentUserId]="authService.currentUser()?.id || null"
           [postLikingId]="postEdit.postLikingId()"
           [deletingPostId]="postEdit.deletingPostId()"
-          [replyingToPost]="postEdit.replyingToPost()"
-          [loadingReplies]="postEdit.loadingReplies()"
+          [showReplies]="postEdit.openedPostId()"
+          [replies]="postEdit.getCommentsMap()"
           [isSubmittingReply]="postEdit.isSubmittingReply()"
           [savingReply]="postEdit.savingReply()"
           (likeClick)="postEdit.toggleLike($event)"
@@ -85,6 +85,7 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
           (cancelEditNested)="postEdit.cancelEditNestedReply()"
           (saveEditNestedReply)="onSaveEditNestedReply($event)"
           (deleteNestedReply)="postEdit.deleteNestedReply($event.replyId, $event.postId, '')"
+          (loadMoreReplies)="postEdit.loadMoreComments($event)"
         />
       } @else {
         <div class="error-state">
@@ -140,42 +141,55 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
   `,
   styles: [`
     .profile-page {
-      padding-top: var(--space-2);
+      padding-top: var(--space-4);
+      max-width: 800px;
+      margin: 0 auto;
     }
     
     .profile-card {
       background: var(--background-secondary);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-6);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
       margin-bottom: var(--space-6);
-      box-shadow: var(--shadow-xs);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--duration-150) var(--ease-out);
+      
+      &:hover {
+        box-shadow: var(--shadow-md);
+      }
     }
     
     .loading-state {
       text-align: center;
       padding: var(--space-20) var(--space-6);
+      background: var(--background-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
       
       p {
         color: var(--text-secondary);
         margin-top: var(--space-4);
         font-size: var(--font-sm);
       }
-    }
-    
-    .spinner-lg {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: var(--radius-full);
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto var(--space-4);
+      
+      .spinner-lg {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: var(--radius-full);
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto var(--space-4);
+      }
     }
     
     .error-state {
       text-align: center;
       padding: var(--space-20) var(--space-6);
+      background: var(--background-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
       
       .error-icon {
         font-size: 48px;
@@ -190,24 +204,41 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
       .btn-secondary {
         display: inline-block;
         margin-top: var(--space-4);
-        padding: var(--space-2) var(--space-5);
-        background: var(--background-secondary);
-        border: 1px solid var(--border);
+        padding: var(--space-3) var(--space-6);
+        background: var(--primary);
+        color: var(--text-inverse);
+        border: none;
         border-radius: var(--radius-full);
-        color: var(--text-primary);
         text-decoration: none;
         font-weight: var(--font-medium);
         font-size: var(--font-sm);
-        transition: background var(--duration-150) var(--ease-out);
+        transition: background var(--duration-150) var(--ease-out),
+                    transform var(--duration-150) var(--ease-out);
         
         &:hover {
-          background: var(--background-hover);
+          background: var(--primary-hover);
+          transform: translateY(-1px);
+        }
+        
+        &:focus-visible {
+          outline: 2px solid var(--border-focus);
+          outline-offset: 2px;
         }
       }
     }
     
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .profile-card:hover {
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .btn-secondary:hover {
+        transform: none;
+      }
     }
   `]
 })

@@ -17,6 +17,7 @@ import {
   X,
   Home,
   ChevronDown,
+  ChevronUp,
   Mail,
   Lock,
   FileText,
@@ -33,6 +34,8 @@ import {
   CheckCircle,
   XCircle,
   Info,
+  MoreHorizontal,
+  ArrowBigUp,
 } from 'lucide-angular';
 
 @NgModule({
@@ -53,6 +56,7 @@ import {
       X,
       Home,
       ChevronDown,
+      ChevronUp,
       Mail,
       Lock,
       FileText,
@@ -69,6 +73,8 @@ import {
       CheckCircle,
       XCircle,
       Info,
+      MoreHorizontal,
+      ArrowBigUp,
     }),
   ],
   exports: [LucideAngularModule],

@@ -106,8 +106,9 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
   `,
   styles: [`
     .search-page {
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
+      padding: var(--space-4);
     }
     
     .search-header {
@@ -136,7 +137,7 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
           width: 100%;
           padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) * 2 + 20px);
           border: 2px solid var(--border);
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius-full);
           font-size: var(--font-base);
           background: var(--background-secondary);
           color: var(--text-primary);
@@ -159,7 +160,7 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     .users-list {
       display: flex;
       flex-direction: column;
-      gap: var(--space-2);
+      gap: var(--space-3);
       
       h2 {
         font-size: var(--font-sm);
@@ -171,34 +172,41 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     
     .user-card {
       display: flex;
-      gap: var(--space-3);
+      gap: var(--space-4);
       padding: var(--space-4);
-      border-radius: var(--radius-md);
+      background: var(--background-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
       text-decoration: none;
-      transition: background var(--duration-150) var(--ease-out);
+      transition: background var(--duration-150) var(--ease-out),
+                  border-color var(--duration-150) var(--ease-out),
+                  transform var(--duration-150) var(--ease-out);
       
       &:hover {
-        background: var(--background-hover);
+        background: var(--background-tertiary);
+        border-color: var(--border-hover);
+        transform: translateY(-1px);
       }
     }
     
     .user-avatar {
-      width: 48px;
-      height: 48px;
+      width: 56px;
+      height: 56px;
       border-radius: var(--radius-full);
-      background: linear-gradient(135deg, var(--primary), #0d8ecf);
+      background: var(--primary);
       color: var(--text-inverse);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: var(--font-semibold);
-      font-size: var(--font-base);
+      font-size: var(--font-lg);
       flex-shrink: 0;
       overflow: hidden;
+      box-shadow: var(--shadow-xs);
       
       .avatar-image {
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
         border-radius: var(--radius-full);
         object-fit: cover;
       }
@@ -208,6 +216,7 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
       display: flex;
       flex-direction: column;
       min-width: 0;
+      flex: 1;
       
       .user-name {
         font-weight: var(--font-semibold);
@@ -254,6 +263,9 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     .empty-state {
       text-align: center;
       padding: var(--space-16) var(--space-6);
+      background: var(--background-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
       
       lucide-icon {
         color: var(--text-tertiary);
@@ -297,6 +309,9 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
       .empty-suggested {
         text-align: center;
         padding: var(--space-10) var(--space-6);
+        background: var(--background-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
         
         .spinner {
           width: 24px;
@@ -318,6 +333,12 @@ import { getAvatarUrl } from '../../shared/utils/avatar.utils';
     
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .user-card:hover {
+        transform: none;
+      }
     }
   `]
 })

@@ -34,8 +34,11 @@ export interface Reply {
     username: string;
     name: string;
     avatar: string | null;
-  };
+  } | null;
   children?: Reply[];
+  _count?: {
+    children: number;
+  };
 }
 
 export interface RepliesResponse {

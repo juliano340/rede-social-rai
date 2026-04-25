@@ -37,12 +37,12 @@ import { ButtonComponent } from '../../ui/button.component';
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.5);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      animation: fadeIn var(--duration-200) var(--ease-out);
+      animation: fadeIn var(--duration-150) var(--ease-out);
       padding: var(--space-4);
     }
     
@@ -54,7 +54,7 @@ import { ButtonComponent } from '../../ui/button.component';
       max-width: 400px;
       text-align: center;
       box-shadow: var(--shadow-2xl);
-      animation: slideUp var(--duration-300) var(--ease-spring);
+      animation: slideUp var(--duration-200) var(--ease-spring);
     }
     
     .modal__icon {

@@ -66,7 +66,7 @@ export type BadgeSize = 'sm' | 'md' | 'lg';
     
     .badge--warning {
       background: var(--warning-light);
-      color: #b58e00;
+      color: var(--warning);
     }
     
     .badge--error {

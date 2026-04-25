@@ -1,6 +1,6 @@
 .app-container {
   min-height: 100vh;
-  background: var(--background);
+  background: var(--surface-page);
 }
 
 .navbar {
@@ -11,6 +11,11 @@
   backdrop-filter: blur(12px);
   z-index: 100;
   box-shadow: var(--shadow-sm);
+
+  [data-theme="dark"] & {
+    background: rgba(17, 19, 24, 0.85);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
 }
 
 .nav-content {
@@ -25,22 +30,21 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   text-decoration: none;
 
   .logo-icon {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border-radius: 10px;
+    background: var(--primary);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 18px;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-    transition: transform 0.15s;
+    color: var(--text-inverse);
+    font-weight: var(--font-bold);
+    font-size: var(--font-lg);
+    transition: transform var(--duration-150) var(--ease-out);
   }
 
   &:hover .logo-icon {
@@ -48,8 +52,8 @@
   }
 
   .logo-text {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--font-xl);
+    font-weight: var(--font-bold);
     color: var(--text-primary);
     letter-spacing: -0.5px;
   }
@@ -122,14 +126,14 @@
 .avatar-placeholder {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--font-semibold);
+  font-size: var(--font-xs);
 }
 
 .chevron {
@@ -174,27 +178,31 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 8px 20px;
+  background: var(--primary);
+  color: var(--text-inverse);
+  padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-full);
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: var(--font-semibold);
+  font-size: var(--font-sm);
   text-decoration: none;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-  transition: all 0.15s;
+  transition: background var(--duration-150) var(--ease-out),
+              transform var(--duration-100) var(--ease-out);
 
   &:hover {
+    background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
   }
 }
 
 .main-content {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .menu-overlay {
@@ -202,7 +210,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 200;
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn var(--duration-150) var(--ease-out);
 }
 
 .user-menu {
@@ -210,12 +218,12 @@
   top: 56px;
   right: calc(50% - 300px + 16px);
   width: 240px;
-  background: var(--background);
+  background: var(--background-secondary);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
   z-index: 300;
-  animation: slideDown 0.15s ease;
+  animation: slideDown var(--duration-150) var(--ease-out);
   overflow: hidden;
 }
 
@@ -274,8 +282,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: var(--primary);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -430,7 +438,7 @@
     border: none;
 
     &:hover {
-      background: #c71d2f;
+      background: var(--error-hover, #dc2626);
     }
   }
 }

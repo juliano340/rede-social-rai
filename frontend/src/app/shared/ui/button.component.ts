@@ -128,13 +128,13 @@ export type ButtonType = 'button' | 'submit' | 'reset';
       border-color: var(--error);
       
       &:hover:not(:disabled) {
-        background: #d91e2a;
-        border-color: #d91e2a;
+        background: var(--error-hover, #dc2626);
+        border-color: var(--error-hover, #dc2626);
       }
       
       &:active:not(:disabled) {
-        background: #c01a25;
-        border-color: #c01a25;
+        background: var(--error-active, #b91c1c);
+        border-color: var(--error-active, #b91c1c);
       }
     }
     

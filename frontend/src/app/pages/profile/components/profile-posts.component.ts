@@ -31,12 +31,15 @@ import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } fro
             [authorLinkEnabled]="true"
             [highlighted]="false"
             [deleting]="deletingPostId() === post.id"
-            [replies]="post.replies || []"
-            [loadingReplies]="replyingToPost() === post.id ? loadingReplies() : false"
+            [showReplies]="showReplies() === post.id"
+            [replies]="replies()?.get(post.id)?.replies ?? post.replies ?? []"
+            [loadingReplies]="replies()?.get(post.id)?.status === 'loading' || false"
             [currentUserId]="currentUserId()"
             [highlightReplyId]="null"
             [isSubmittingReply]="isSubmittingReply()"
             [savingReply]="savingReply()"
+            [hasMoreReplies]="replies()?.get(post.id)?.hasMore ?? false"
+            [isLoadingMoreReplies]="replies()?.get(post.id)?.loadingMore ?? false"
             (likeClick)="likeClick.emit($event)"
             (replyToggle)="replyToggle.emit($event)"
             (deleteClick)="deleteClick.emit($event)"
@@ -56,6 +59,7 @@ import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } fro
             (cancelEditNested)="cancelEditNested.emit()"
             (saveEditNestedReply)="saveEditNestedReply.emit({ replyId: $event.replyId, postId: post.id })"
             (deleteNestedReplyEvent)="deleteNestedReply.emit({ replyId: $event, postId: post.id })"
+            (loadMoreReplies)="loadMoreReplies.emit($event)"
           ></app-post-card>
         }
       }
@@ -79,8 +83,8 @@ export class ProfilePostsComponent {
   currentUserId = input.required<string | null>();
   postLikingId = input.required<string | null>();
   deletingPostId = input.required<string | null>();
-  replyingToPost = input.required<string | null>();
-  loadingReplies = input.required<boolean>();
+  showReplies = input<string | null>(null);
+  replies = input<Map<string, any>>();
   isSubmittingReply = input.required<boolean>();
   savingReply = input.required<boolean>();
 
@@ -103,4 +107,5 @@ export class ProfilePostsComponent {
   cancelEditNested = output<void>();
   saveEditNestedReply = output<ReplyActionEvent>();
   deleteNestedReply = output<ReplyActionEvent>();
+  loadMoreReplies = output<string>();
 }

@@ -1,9 +1,16 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, HostListener, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideIconsModule } from '../../icons/lucide-icons.module';
 import { Reply } from '../../models';
 import { getAvatarUrl } from '../../utils/avatar.utils';
+
+export interface ReplyViewModel {
+  reply: Reply;
+  validChildren: Reply[];
+  childCount: number;
+  isExpanded: boolean;
+}
 
 @Component({
   selector: 'app-reply-section',
@@ -13,7 +20,25 @@ import { getAvatarUrl } from '../../utils/avatar.utils';
   styleUrl: './reply-section.component.scss'
 })
 export class ReplySectionComponent {
-  @Input() replies: Reply[] = [];
+  private elementRef = inject(ElementRef);
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.openActionMenuId && !this.elementRef.nativeElement.contains(event.target)) {
+      this.openActionMenuId = null;
+    }
+  }
+
+  private _replies: Reply[] = [];
+
+  @Input() set replies(value: Reply[]) {
+    this._replies = value || [];
+    this.rebuildViewModels();
+  }
+
+  get replies(): Reply[] {
+    return this._replies;
+  }
   @Input() loading = false;
   @Input() showForm = true;
   @Input() showReplyToReply = true;
@@ -40,65 +65,106 @@ export class ReplySectionComponent {
   @Output() saveEditNested = new EventEmitter<{ replyId: string; content: string }>();
   @Output() deleteNestedReplyEvent = new EventEmitter<string>();
 
-  showReplyForm = false;
   replyContent = '';
-  editingReplyId: string | null = null;
-  editReplyContent = '';
   replyingToCommentId: string | null = null;
   replyingToCommentContent = '';
-  editingNestedReplyId: string | null = null;
-  editNestedReplyContent = '';
+  openActionMenuId: string | null = null;
+
+  private _expandedThreadIds = signal<Set<string>>(new Set());
+  viewModels: ReplyViewModel[] = [];
+  totalCount = 0;
+
+  private rebuildViewModels(): void {
+    const expanded = this._expandedThreadIds();
+    this.viewModels = this._replies
+      .filter(reply => this.isRenderableReply(reply))
+      .map(reply => {
+        const normalizedReply = this.normalizeReply(reply);
+        const validChildren = (reply.children || [])
+          .filter(child => this.isRenderableReply(child))
+          .map(child => this.normalizeReply(child));
+        return {
+          reply: normalizedReply,
+          validChildren,
+          childCount: validChildren.length,
+          isExpanded: expanded.has(normalizedReply.id),
+        };
+      });
+    this.totalCount = this.viewModels.length;
+  }
+
+  private isRenderableReply(reply: Reply | null | undefined): reply is Reply {
+    return !!reply?.id && typeof reply.content === 'string';
+  }
+
+  private normalizeReply(reply: Reply): Reply {
+    const safeAuthor = reply.author || {} as any;
+    return {
+      ...reply,
+      content: String(reply.content || '').trim(),
+      author: {
+        id: String(safeAuthor.id || ''),
+        name: String(safeAuthor.name || 'Usuário').trim() || 'Usuário',
+        username: String(safeAuthor.username || 'usuario').trim() || 'usuario',
+        avatar: safeAuthor.avatar || null,
+      },
+    };
+  }
 
   getAvatarUrl = getAvatarUrl;
 
-  getAvatarInitial(name: string): string {
-    return ((name && name[0]) || '?').toUpperCase();
+  getAvatarInitial(name: string | null | undefined): string {
+    const n = String(name || '').trim();
+    return (n[0] || '?').toUpperCase();
   }
 
-  onClose() {
-    this.close.emit();
+  formatTime(value: string | Date | null | undefined): string {
+    if (!value) return '';
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
   }
 
-  onOpenForm() {
-    this.showReplyForm = true;
-    this.openForm.emit();
+  toggleThread(replyId: string): void {
+    this._expandedThreadIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(replyId)) { next.delete(replyId); }
+      else { next.add(replyId); }
+      return next;
+    });
+    this.rebuildViewModels();
   }
 
-  cancelReply() {
-    this.showReplyForm = false;
-    this.replyContent = '';
-    this.openForm.emit();
+  isThreadExpanded(replyId: string): boolean {
+    return this._expandedThreadIds().has(replyId);
   }
+
+  onClose() { this.close.emit(); }
+
+  onOpenForm() { this.openForm.emit(); }
 
   submitReply() {
     if (!this.replyContent.trim()) return;
     this.submitReplyEvent.emit(this.replyContent);
     this.replyContent = '';
-    this.showReplyForm = false;
   }
 
   startEditReply(reply: Reply) {
-    this.editingReplyId = reply.id;
-    this.editReplyContent = reply.content;
     this.startEdit.emit(reply);
   }
 
-  cancelEditReply() {
-    this.editingReplyId = null;
-    this.editReplyContent = '';
-    this.cancelEdit.emit();
+  cancelEditReply() { this.cancelEdit.emit(); }
+
+  saveEditReply(replyId: string, content: string) {
+    if (!content.trim()) return;
+    this.saveEdit.emit({ replyId, content });
   }
 
-  saveEditReply(replyId: string) {
-    if (!this.editReplyContent.trim()) return;
-    this.saveEdit.emit({ replyId, content: this.editReplyContent });
-    this.editingReplyId = null;
-    this.editReplyContent = '';
-  }
-
-  deleteReply(replyId: string) {
-    this.deleteReplyEvent.emit(replyId);
-  }
+  deleteReply(replyId: string) { this.deleteReplyEvent.emit(replyId); }
 
   toggleReplyToComment(replyId: string) {
     if (this.replyingToCommentId === replyId) {
@@ -124,26 +190,20 @@ export class ReplySectionComponent {
     this.replyingToCommentContent = '';
   }
 
-  startEditNestedReply(reply: Reply) {
-    this.editingNestedReplyId = reply.id;
-    this.editNestedReplyContent = reply.content;
-    this.startEditNested.emit(reply);
+  startEditNestedReply(reply: Reply) { this.startEditNested.emit(reply); }
+
+  cancelEditNestedReply() { this.cancelEditNested.emit(); }
+
+  saveEditNestedReply(replyId: string, content: string) {
+    if (!content.trim()) return;
+    this.saveEditNested.emit({ replyId, content });
   }
 
-  cancelEditNestedReply() {
-    this.editingNestedReplyId = null;
-    this.editNestedReplyContent = '';
-    this.cancelEditNested.emit();
+  deleteNestedReply(replyId: string) { this.deleteNestedReplyEvent.emit(replyId); }
+
+  toggleActionMenu(replyId: string) {
+    this.openActionMenuId = this.openActionMenuId === replyId ? null : replyId;
   }
 
-  saveEditNestedReply(replyId: string) {
-    if (!this.editNestedReplyContent.trim()) return;
-    this.saveEditNested.emit({ replyId, content: this.editNestedReplyContent });
-    this.editingNestedReplyId = null;
-    this.editNestedReplyContent = '';
-  }
-
-  deleteNestedReply(replyId: string) {
-    this.deleteNestedReplyEvent.emit(replyId);
-  }
+  closeActionMenu() { this.openActionMenuId = null; }
 }

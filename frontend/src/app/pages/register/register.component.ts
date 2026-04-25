@@ -123,47 +123,48 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
       align-items: center;
       min-height: calc(100vh - 140px);
       padding: 20px;
+      background: var(--background);
     }
     
     .auth-card {
       width: 100%;
-      max-width: 400px;
-      background: var(--background);
+      max-width: 420px;
+      background: var(--background-secondary);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      box-shadow: var(--shadow-md);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-xl);
     }
     
     .auth-header {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
       
       .logo-mini {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, var(--primary), #0d8ecf);
-        border-radius: 14px;
+        width: 56px;
+        height: 56px;
+        background: var(--primary);
+        border-radius: var(--radius-xl);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 24px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+        color: var(--text-inverse);
+        font-weight: var(--font-bold);
+        font-size: var(--font-2xl);
+        margin-bottom: var(--space-4);
+        box-shadow: var(--shadow-md);
       }
       
       h1 {
-        font-size: 24px;
-        font-weight: 700;
+        font-size: var(--font-2xl);
+        font-weight: var(--font-bold);
         color: var(--text-primary);
-        margin-bottom: 8px;
+        margin-bottom: var(--space-2);
       }
       
       p {
         color: var(--text-secondary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-sm);
       }
     }
     
@@ -179,9 +180,9 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
       gap: 6px;
       
       label {
-        font-weight: 500;
+        font-weight: var(--font-medium);
         color: var(--text-primary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-sm);
       }
       
       .input-wrapper {
@@ -191,7 +192,7 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
         
         .input-icon {
           position: absolute;
-          left: 14px;
+          left: var(--space-4);
           width: 20px;
           height: 20px;
           color: var(--text-tertiary);
@@ -200,13 +201,13 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
         
         input {
           width: 100%;
-          padding: 12px 14px 12px 42px;
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          font-size: var(--font-size-md);
+          padding: 14px 14px 14px 46px;
+          border: 2px solid var(--border);
+          border-radius: var(--radius-lg);
+          font-size: var(--font-base);
           background: var(--background);
           color: var(--text-primary);
-          transition: all var(--transition-fast);
+          transition: all var(--duration-150) var(--ease-out);
           
           &::placeholder {
             color: var(--text-tertiary);
@@ -225,17 +226,17 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
     }
     
     .field-error {
-      font-size: var(--font-size-xs);
+      font-size: var(--font-xs);
       color: var(--error);
     }
     
     .alert {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
       border-radius: var(--radius-md);
-      font-size: var(--font-size-sm);
+      font-size: var(--font-sm);
       
       .alert-icon {
         font-size: 16px;
@@ -250,24 +251,25 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
     
     button {
       width: 100%;
-      padding: 14px 24px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-      color: white;
+      padding: var(--space-4) var(--space-6);
+      background: var(--primary);
+      color: var(--text-inverse);
       border: none;
       border-radius: var(--radius-full);
-      font-size: var(--font-size-md);
-      font-weight: 600;
+      font-size: var(--font-base);
+      font-weight: var(--font-semibold);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      box-shadow: 0 2px 8px rgba(29, 161, 242, 0.3);
-      transition: all var(--transition-fast);
-      margin-top: 8px;
+      gap: var(--space-2);
+      transition: all var(--duration-150) var(--ease-out);
+      box-shadow: var(--shadow-md);
+      margin-top: var(--space-2);
       
       &:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.4);
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
       }
       
       &:active:not(:disabled) {
@@ -275,12 +277,18 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
       }
       
       &:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
+        transform: none;
       }
       
       &.loading {
         background: var(--primary-hover);
+      }
+      
+      &:focus-visible {
+        outline: 2px solid var(--border-focus);
+        outline-offset: 2px;
       }
     }
     
@@ -299,13 +307,33 @@ import { VALIDATION_LIMITS, VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '../
     
     .auth-footer {
       text-align: center;
-      margin-top: 24px;
+      margin-top: 28px;
       padding-top: 24px;
       border-top: 1px solid var(--border);
       
       p {
         color: var(--text-secondary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-sm);
+      }
+      
+      a {
+        color: var(--primary);
+        font-weight: var(--font-medium);
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      button:hover:not(:disabled) {
+        transform: none;
+      }
+      
+      .auth-card {
+        box-shadow: var(--shadow-md);
       }
     }
   `]

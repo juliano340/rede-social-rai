@@ -121,9 +121,9 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
   `,
   styles: [`
     .settings-page {
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: var(--space-5);
+      padding: var(--space-4);
     }
     
     .settings-header {
@@ -140,12 +140,18 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     .settings-section {
       background: var(--background-secondary);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-xl);
       margin-bottom: var(--space-4);
       overflow: hidden;
+      box-shadow: var(--shadow-xs);
+      transition: box-shadow var(--duration-150) var(--ease-out);
       
       &:last-child {
         margin-bottom: 0;
+      }
+      
+      &:hover {
+        box-shadow: var(--shadow-sm);
       }
       
       .danger-icon {
@@ -159,6 +165,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       gap: var(--space-3);
       padding: var(--space-4) var(--space-5);
       border-bottom: 1px solid var(--border);
+      background: var(--background-tertiary);
       color: var(--text-secondary);
       
       h2 {
@@ -195,6 +202,10 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         text-align: left;
         font: inherit;
         padding: var(--space-4) var(--space-5);
+        
+        &:hover {
+          background: var(--error-light);
+        }
       }
     }
     
@@ -226,8 +237,8 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     
     .setting-toggle {
       .toggle-track {
-        width: 48px;
-        height: 28px;
+        width: 52px;
+        height: 30px;
         background: var(--border);
         border-radius: var(--radius-full);
         position: relative;
@@ -238,8 +249,8 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         position: absolute;
         top: 2px;
         left: 2px;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         background: var(--background-secondary);
         border-radius: var(--radius-full);
         display: flex;
@@ -255,7 +266,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
           background: var(--primary);
           
           .toggle-thumb {
-            transform: translateX(20px);
+            transform: translateX(22px);
             color: var(--primary);
           }
         }
@@ -266,6 +277,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -278,16 +290,17 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       background: var(--background-secondary);
       border-radius: var(--radius-xl);
       width: 100%;
-      max-width: 440px;
+      max-width: 460px;
       box-shadow: var(--shadow-2xl);
       animation: slideDown var(--duration-200) var(--ease-spring);
+      border: 1px solid var(--border);
     }
     
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: var(--space-4) var(--space-5);
+      padding: var(--space-5) var(--space-6);
       border-bottom: 1px solid var(--border);
       
       h2 {
@@ -321,16 +334,16 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     }
     
     .modal-body {
-      padding: var(--space-5);
+      padding: var(--space-6);
     }
     
     .warning-box {
       display: flex;
-      gap: var(--space-3);
-      padding: var(--space-4);
+      gap: var(--space-4);
+      padding: var(--space-5);
       background: var(--error-light);
       border: 1px solid var(--error-lighter);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       margin-bottom: var(--space-5);
       
       .warning-icon {
@@ -394,11 +407,13 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       display: flex;
       justify-content: flex-end;
       gap: var(--space-3);
-      padding: var(--space-4) var(--space-5);
+      padding: var(--space-5) var(--space-6);
       border-top: 1px solid var(--border);
+      background: var(--background-tertiary);
+      border-radius: 0 0 var(--radius-xl) var(--radius-xl);
       
       .btn-cancel {
-        padding: var(--space-2) var(--space-4);
+        padding: var(--space-2) var(--space-5);
         border-radius: var(--radius-full);
         font-size: var(--font-sm);
         font-weight: var(--font-medium);
@@ -406,10 +421,12 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         background: var(--background-secondary);
         color: var(--text-primary);
         border: 1px solid var(--border);
-        transition: background var(--duration-150) var(--ease-out);
+        transition: background var(--duration-150) var(--ease-out),
+                    transform var(--duration-150) var(--ease-out);
         
         &:hover {
           background: var(--background-hover);
+          transform: translateY(-1px);
         }
         
         &:focus-visible {
@@ -419,7 +436,7 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
       }
       
       .btn-delete {
-        padding: var(--space-2) var(--space-4);
+        padding: var(--space-2) var(--space-5);
         border-radius: var(--radius-full);
         font-size: var(--font-sm);
         font-weight: var(--font-medium);
@@ -430,15 +447,18 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
         display: flex;
         align-items: center;
         gap: var(--space-2);
-        transition: background var(--duration-150) var(--ease-out);
+        transition: background var(--duration-150) var(--ease-out),
+                    transform var(--duration-150) var(--ease-out);
         
         &:hover:not(:disabled) {
-          background: #d91e2a;
+          background: var(--error-hover, #dc2626);
+          transform: translateY(-1px);
         }
         
         &:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+          transform: none;
         }
         
         .spinner-sm {
@@ -470,6 +490,17 @@ import { LucideIconsModule } from '../../shared/icons/lucide-icons.module';
     
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .settings-section:hover {
+        box-shadow: var(--shadow-xs);
+      }
+      
+      .btn-cancel:hover,
+      .btn-delete:hover:not(:disabled) {
+        transform: none;
+      }
     }
   `]
 })

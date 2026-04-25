@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LucideIconsModule } from '../../icons/lucide-icons.module';
@@ -37,6 +37,10 @@ import {
         <app-post-card-header
           [post]="post"
           [authorLinkEnabled]="authorLinkEnabled"
+          [isOwnPost]="isOwnPost"
+          [menuOpen]="menuOpen()"
+          (menuToggle)="toggleMenu()"
+          (deleteClick)="onDeleteClick()"
         />
 
         <p class="post-text">{{ post.content }}</p>
@@ -57,20 +61,15 @@ import {
           [post]="post"
           [isLiked]="isLiked"
           [isLiking]="isLiking"
-          [isOwnPost]="isOwnPost"
-          [deleting]="deleting"
           [showReplies]="showReplies"
-          [isEditing]="isEditing"
           (likeClick)="onLikeClick()"
           (replyToggle)="onReplyToggle()"
-          (editStart)="startEdit()"
-          (deleteClick)="onDeleteClick()"
         />
 
-        @if (showReplies) {
+        <div class="reply-section-wrapper" [style.display]="showReplies ? 'block' : 'none'">
           <app-reply-section
             [replies]="replies"
-            [loading]="loadingReplies"
+            [loading]="showReplies && loadingReplies"
             [showForm]="true"
             [showReplyToReply]="true"
             [currentUserId]="currentUserId"
@@ -95,7 +94,7 @@ import {
             (deleteNestedReplyEvent)="onDeleteNestedReply($event)"
             (loadMore)="onLoadMoreReplies()"
           ></app-reply-section>
-        }
+        </div>
       </div>
     </article>
   `,
@@ -104,12 +103,18 @@ import {
       display: flex;
       gap: var(--space-3);
       padding: var(--space-4);
-      background: var(--background-secondary);
-      border-bottom: 1px solid var(--border);
-      transition: background var(--duration-150) var(--ease-out);
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xs);
+      transition: background var(--duration-150) var(--ease-out),
+                  border-color var(--duration-150) var(--ease-out),
+                  box-shadow var(--duration-150) var(--ease-out);
       
       &:hover {
-        background: var(--background-tertiary);
+        background: var(--surface-card-hover);
+        border-color: var(--border-strong);
+        box-shadow: var(--shadow-sm);
       }
       
       &.deleting {
@@ -119,12 +124,14 @@ import {
       
       &.highlight-post {
         animation: highlight-fade 3s var(--ease-out);
+        background: var(--primary-light);
+        border-color: var(--primary);
       }
     }
     
     @keyframes highlight-fade {
       0% { background: var(--primary-light); }
-      100% { background: var(--background-secondary); }
+      100% { background: transparent; }
     }
     
     .post-avatar {
@@ -141,7 +148,7 @@ import {
         width: 48px;
         height: 48px;
         border-radius: var(--radius-full);
-        background: linear-gradient(135deg, var(--primary), #0d8ecf);
+        background: var(--primary);
         color: var(--text-inverse);
         display: flex;
         align-items: center;
@@ -155,7 +162,7 @@ import {
       flex: 1;
       min-width: 0;
     }
-    
+
     .post-text {
       margin: var(--space-2) 0;
       white-space: pre-wrap;
@@ -169,6 +176,10 @@ import {
       .post.highlight-post {
         animation: none;
       }
+      
+      .post:hover {
+        background: transparent;
+      }
     }
   `]
 })
@@ -181,6 +192,7 @@ export class PostCardComponent {
   @Input() highlighted = false;
   @Input() deleting = false;
 
+  @Input() showReplies = false;
   @Input() replies: Reply[] = [];
   @Input() loadingReplies = false;
   @Input() currentUserId: string | null = null;
@@ -192,6 +204,7 @@ export class PostCardComponent {
 
   @Output() likeClick = new EventEmitter<Post>();
   @Output() replyToggle = new EventEmitter<string>();
+  @Output() close = new EventEmitter<void>();
   @Output() loadMoreReplies = new EventEmitter<string>();
   @Output() editStart = new EventEmitter<Post>();
   @Output() deleteClick = new EventEmitter<string>();
@@ -219,7 +232,15 @@ export class PostCardComponent {
   @Output() deleteNestedReplyEvent = new EventEmitter<string>();
 
   isEditing = false;
-  showReplies = false;
+  menuOpen = signal(false);
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.post-content')) {
+      this.closeMenu();
+    }
+  }
 
   getAvatarUrl = getAvatarUrl;
 
@@ -227,10 +248,17 @@ export class PostCardComponent {
     return ((name && name[0]) || '?').toUpperCase();
   }
 
+  toggleMenu() {
+    this.menuOpen.update(v => !v);
+  }
+
+  closeMenu() {
+    this.menuOpen.set(false);
+  }
+
   onLikeClick() { this.likeClick.emit(this.post); }
 
   onReplyToggle() {
-    this.showReplies = !this.showReplies;
     this.replyToggle.emit(this.post.id);
   }
 
@@ -251,7 +279,7 @@ export class PostCardComponent {
 
   onDeleteClick() { this.deleteClick.emit(this.post.id); }
 
-  onCloseReplies() { this.showReplies = false; }
+  onCloseReplies() { this.close.emit(); }
 
   onOpenReplyForm() { this.openReplyForm.emit(); }
 
