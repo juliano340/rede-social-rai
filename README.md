@@ -33,20 +33,37 @@ rai/
 
 ### Instalação
 
-**Backend:**
+Instale as dependências da raiz, do backend e do frontend:
+
 ```bash
+npm install
+
 cd backend
 npm install
 npm run prisma:generate
 npm run prisma:migrate
-npm run start:dev
+
+cd ../frontend
+npm install
 ```
 
-**Frontend:**
+### Rodando o projeto
+
+Na raiz do projeto, execute backend e frontend juntos com um único comando:
+
 ```bash
-cd frontend
-npm install
-ng serve
+npm run dev
+```
+
+Esse comando inicia:
+- Backend: `backend` com `npm run start:dev`
+- Frontend: `frontend` com `npm start`
+
+Se precisar rodar separadamente:
+
+```bash
+npm run dev:backend
+npm run dev:frontend
 ```
 
 ## Funcionalidades
