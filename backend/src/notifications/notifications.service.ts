@@ -56,7 +56,10 @@ export class NotificationsService {
     const args: Parameters<typeof this.prisma.notification.findMany>[0] = {
       where: { userId },
       take,
-      orderBy: { id: 'desc' },
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
       include: {
         actor: {
           select: { id: true, username: true, name: true, avatar: true },
@@ -72,8 +75,20 @@ export class NotificationsService {
     };
 
     if (cursor) {
-      args.cursor = { id: cursor };
-      args.skip = 1;
+      const cursorNotification = await this.prisma.notification.findFirst({
+        where: { id: cursor, userId },
+        select: { id: true, createdAt: true },
+      });
+
+      if (cursorNotification) {
+        args.where = {
+          userId,
+          OR: [
+            { createdAt: { lt: cursorNotification.createdAt } },
+            { createdAt: cursorNotification.createdAt, id: { lt: cursorNotification.id } },
+          ],
+        };
+      }
     }
 
     const notifications = await this.prisma.notification.findMany(args);

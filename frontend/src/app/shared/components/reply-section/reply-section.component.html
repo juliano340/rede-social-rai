@@ -76,9 +76,21 @@
                 }
               </div>
 
-              <p class="reply-text">{{ vm.reply.content }}</p>
+              @if (editingReplyId === vm.reply.id) {
+                <div class="edit-reply-form">
+                  <textarea [(ngModel)]="editReplyContent" maxlength="280" rows="2"></textarea>
+                  <div class="edit-actions">
+                    <button class="cancel-edit" (click)="cancelEditReply()">Cancelar</button>
+                    <button class="save-edit" (click)="saveEditReply(vm.reply.id)" [disabled]="!editReplyContent.trim() || savingReply">
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <p class="reply-text">{{ vm.reply.content }}</p>
+              }
 
-              @if (currentUserId) {
+              @if (currentUserId && editingReplyId !== vm.reply.id) {
                 <div class="reply-actions-bar">
                   @if (showReplyToReply) {
                     <button class="reply-to-reply-btn" (click)="toggleReplyToComment(vm.reply.id)">
@@ -156,7 +168,19 @@
                               }
                             }
                           </div>
-                          <p class="reply-text">{{ child.content }}</p>
+                          @if (editingNestedReplyId === child.id) {
+                            <div class="edit-reply-form">
+                              <textarea [(ngModel)]="editNestedReplyContent" maxlength="280" rows="2"></textarea>
+                              <div class="edit-actions">
+                                <button class="cancel-edit" (click)="cancelEditNestedReply()">Cancelar</button>
+                                <button class="save-edit" (click)="saveEditNestedReply(child.id)" [disabled]="!editNestedReplyContent.trim() || savingReply">
+                                  Salvar
+                                </button>
+                              </div>
+                            </div>
+                          } @else {
+                            <p class="reply-text">{{ child.content }}</p>
+                          }
                         </div>
                       </div>
                     }

@@ -356,7 +356,7 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.notificationService.getNotifications().subscribe({
       next: (response) => {
-        this.notifications.set(response.notifications);
+        this.notifications.set(this.sortNotifications(response.notifications));
         this.loading.set(false);
       },
       error: () => {
@@ -408,6 +408,13 @@ export class NotificationMenuComponent implements OnInit, OnDestroy {
   }
 
   getAvatarUrl = getAvatarUrl;
+
+  private sortNotifications(notifications: Notification[]): Notification[] {
+    return [...notifications].sort((a, b) => {
+      const dateDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return dateDiff || b.id.localeCompare(a.id);
+    });
+  }
 
   getNotificationText(notification: Notification): string {
     switch (notification.type) {

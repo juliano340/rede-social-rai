@@ -40,6 +40,7 @@ import {
           [isOwnPost]="isOwnPost"
           [menuOpen]="menuOpen()"
           (menuToggle)="toggleMenu()"
+          (editClick)="startEdit()"
           (deleteClick)="onDeleteClick()"
         />
 
@@ -263,6 +264,7 @@ export class PostCardComponent {
   }
 
   startEdit() {
+    this.closeMenu();
     this.isEditing = true;
     this.editStart.emit(this.post);
   }
@@ -277,7 +279,10 @@ export class PostCardComponent {
     this.isEditing = false;
   }
 
-  onDeleteClick() { this.deleteClick.emit(this.post.id); }
+  onDeleteClick() {
+    this.closeMenu();
+    this.deleteClick.emit(this.post.id);
+  }
 
   onCloseReplies() { this.close.emit(); }
 

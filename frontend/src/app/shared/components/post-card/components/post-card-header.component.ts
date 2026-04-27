@@ -41,6 +41,13 @@ import { Post } from '../../../models/post.model';
           
           @if (menuOpen()) {
             <div class="menu-dropdown" (click)="$event.stopPropagation()">
+              <button class="menu-item" (click)="onEditClick()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                </svg>
+                Editar
+              </button>
               <button class="menu-item menu-item--danger" (click)="onDeleteClick()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -183,6 +190,7 @@ export class PostCardHeaderComponent {
   
   menuOpen = input<boolean>(false);
   menuToggle = output<MouseEvent>();
+  editClick = output<void>();
   deleteClick = output<void>();
   
   formatDate = formatDate;
@@ -192,6 +200,10 @@ export class PostCardHeaderComponent {
     this.menuToggle.emit(event);
   }
   
+  onEditClick() {
+    this.editClick.emit();
+  }
+
   onDeleteClick() {
     this.deleteClick.emit();
   }

@@ -66,8 +66,12 @@ export class ReplySectionComponent {
   @Output() deleteNestedReplyEvent = new EventEmitter<string>();
 
   replyContent = '';
+  editingReplyId: string | null = null;
+  editReplyContent = '';
   replyingToCommentId: string | null = null;
   replyingToCommentContent = '';
+  editingNestedReplyId: string | null = null;
+  editNestedReplyContent = '';
   openActionMenuId: string | null = null;
 
   private _expandedThreadIds = signal<Set<string>>(new Set());
@@ -154,14 +158,23 @@ export class ReplySectionComponent {
   }
 
   startEditReply(reply: Reply) {
+    this.editingReplyId = reply.id;
+    this.editReplyContent = reply.content;
     this.startEdit.emit(reply);
   }
 
-  cancelEditReply() { this.cancelEdit.emit(); }
+  cancelEditReply() {
+    this.editingReplyId = null;
+    this.editReplyContent = '';
+    this.cancelEdit.emit();
+  }
 
-  saveEditReply(replyId: string, content: string) {
-    if (!content.trim()) return;
+  saveEditReply(replyId: string) {
+    const content = this.editReplyContent.trim();
+    if (!content) return;
     this.saveEdit.emit({ replyId, content });
+    this.editingReplyId = null;
+    this.editReplyContent = '';
   }
 
   deleteReply(replyId: string) { this.deleteReplyEvent.emit(replyId); }
@@ -190,13 +203,24 @@ export class ReplySectionComponent {
     this.replyingToCommentContent = '';
   }
 
-  startEditNestedReply(reply: Reply) { this.startEditNested.emit(reply); }
+  startEditNestedReply(reply: Reply) {
+    this.editingNestedReplyId = reply.id;
+    this.editNestedReplyContent = reply.content;
+    this.startEditNested.emit(reply);
+  }
 
-  cancelEditNestedReply() { this.cancelEditNested.emit(); }
+  cancelEditNestedReply() {
+    this.editingNestedReplyId = null;
+    this.editNestedReplyContent = '';
+    this.cancelEditNested.emit();
+  }
 
-  saveEditNestedReply(replyId: string, content: string) {
-    if (!content.trim()) return;
+  saveEditNestedReply(replyId: string) {
+    const content = this.editNestedReplyContent.trim();
+    if (!content) return;
     this.saveEditNested.emit({ replyId, content });
+    this.editingNestedReplyId = null;
+    this.editNestedReplyContent = '';
   }
 
   deleteNestedReply(replyId: string) { this.deleteNestedReplyEvent.emit(replyId); }

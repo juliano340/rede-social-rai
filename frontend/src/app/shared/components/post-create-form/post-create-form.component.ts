@@ -291,7 +291,7 @@ import { isValidImageUrl, normalizeUrl } from '../../utils/media.utils';
 
       .publish-btn {
         background: var(--primary);
-        color: #0f172a;
+        color: var(--text-inverse);
         border: none;
         padding: var(--space-2) var(--space-5);
         border-radius: var(--radius-full);
@@ -329,13 +329,22 @@ import { isValidImageUrl, normalizeUrl } from '../../utils/media.utils';
           background: var(--primary-hover);
         }
 
+        [data-theme="dark"] & {
+          color: #0f172a;
+        }
+
         .spinner {
           width: 16px;
           height: 16px;
-          border: 2px solid rgba(15, 23, 42, 0.3);
-          border-top-color: #0f172a;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
+
+          [data-theme="dark"] & {
+            border-color: rgba(15, 23, 42, 0.3);
+            border-top-color: #0f172a;
+          }
         }
       }
     }

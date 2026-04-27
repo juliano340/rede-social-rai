@@ -55,6 +55,7 @@ export interface SubmitReplyEvent {
 export interface ReplyActionEvent {
   replyId: string;
   postId: string;
+  content?: string;
 }
 
 export interface NestedReplyEvent {

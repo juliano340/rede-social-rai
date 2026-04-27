@@ -38,14 +38,14 @@ import { AuthService } from '../../../services/auth.service';
           (submitReplyEvent)="postEdit.submitReply(post.id, $event)"
           (startEditReply)="postEdit.startEditReply($event)"
           (cancelEditReply)="postEdit.cancelEditReply()"
-          (saveEditReply)="postEdit.saveEditReply($event.replyId, post.id)"
+          (saveEditReply)="postEdit.saveEditReply($event.replyId, post.id, $event.content)"
           (deleteReplyEvent)="postEdit.deleteReply($event, post.id)"
           (toggleReplyToCommentEvent)="postEdit.toggleReplyToComment($event)"
           (cancelReplyToCommentEvent)="postEdit.cancelReplyToComment()"
           (submitReplyToCommentEvent)="postEdit.submitReplyToComment($event.replyId, post.id, $event.content)"
           (startEditNestedReply)="postEdit.startEditNestedReply($event)"
           (cancelEditNested)="postEdit.cancelEditNestedReply()"
-          (saveEditNestedReply)="postEdit.saveEditNestedReply($event.replyId, post.id, '')"
+          (saveEditNestedReply)="postEdit.saveEditNestedReply($event.replyId, post.id, '', $event.content)"
           (deleteNestedReplyEvent)="postEdit.deleteNestedReply($event, post.id, '')"
         ></app-post-card>
       }

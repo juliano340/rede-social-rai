@@ -318,8 +318,8 @@ export class PostEditService {
     this.editReplyContent.set('');
   }
 
-  saveEditReply(replyId: string, postId: string): void {
-    const content = this.editReplyContent();
+  saveEditReply(replyId: string, postId: string, replyContent?: string): void {
+    const content = replyContent ?? this.editReplyContent();
     if (!content.trim()) return;
 
     this.postsService.updateReply(postId, replyId, content).subscribe({
@@ -351,8 +351,8 @@ export class PostEditService {
     this.editNestedReplyContent.set('');
   }
 
-  saveEditNestedReply(replyId: string, postId: string, _parentReplyId: string): void {
-    const content = this.editNestedReplyContent();
+  saveEditNestedReply(replyId: string, postId: string, _parentReplyId: string, replyContent?: string): void {
+    const content = replyContent ?? this.editNestedReplyContent();
     if (!content.trim()) return;
 
     this.postsService.updateReply(postId, replyId, content).subscribe({

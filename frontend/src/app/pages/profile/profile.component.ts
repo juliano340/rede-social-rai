@@ -429,7 +429,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSaveEditReply(event: ReplyActionEvent) {
-    this.postEdit.saveEditReply(event.replyId, event.postId);
+    this.postEdit.saveEditReply(event.replyId, event.postId, event.content);
   }
 
   onSubmitReplyToComment(event: NestedReplyEvent) {
@@ -437,7 +437,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSaveEditNestedReply(event: ReplyActionEvent) {
-    this.postEdit.saveEditNestedReply(event.replyId, event.postId, '');
+    this.postEdit.saveEditNestedReply(event.replyId, event.postId, '', event.content);
   }
 
   onEditSave(data: { postId: string; content: string; mediaUrl: string | null; mediaType: 'image' | 'youtube' | null; linkUrl: string | null }) {
