@@ -1,30 +1,16 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { PostsService } from './posts.service';
-import { AuthService } from './auth.service';
+import { CommentsState, CommentsStateService } from './comments-state.service';
+import { ReplyMutationService } from './reply-mutation.service';
 import { UrlUtilsService } from '../shared/services/url-utils.service';
 import { Post, Reply } from '../shared/models';
-import { HTTP_STATUS } from '../shared/constants/app.constants';
-
-export interface CommentsState {
-  status: 'idle' | 'loading' | 'loaded' | 'error';
-  replies: Reply[];
-  cursor: string | null;
-  hasMore: boolean;
-  loadingMore: boolean;
-}
-
-const IDLE_COMMENTS: CommentsState = {
-  status: 'idle',
-  replies: [],
-  cursor: null,
-  hasMore: false,
-  loadingMore: false,
-};
+export type { CommentsState } from './comments-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class PostEditService {
   private postsService = inject(PostsService);
-  private authService = inject(AuthService);
+  private commentsState = inject(CommentsStateService);
+  private replyMutation = inject(ReplyMutationService);
   private urlUtils = inject(UrlUtilsService);
 
   readonly editingPost = signal<string | null>(null);
@@ -35,198 +21,63 @@ export class PostEditService {
   readonly showDeletePostModal = signal(false);
   readonly deletingPostId = signal<string | null>(null);
 
-  readonly editingReply = signal<string | null>(null);
-  readonly editReplyContent = signal('');
-  readonly editingNestedReply = signal<string | null>(null);
-  readonly editNestedReplyContent = signal('');
-  readonly showDeleteReplyModal = signal(false);
-  readonly deletingReplyId = signal<string | null>(null);
-  readonly deletingReplyPostId = signal<string | null>(null);
-
-  readonly replyingToComment = signal<string | null>(null);
-  readonly replyingToCommentContent = signal('');
-  readonly isSubmittingReply = signal(false);
-  readonly savingReply = signal(false);
-  readonly replyLoading = signal(false);
-
   readonly postLikingId = signal<string | null>(null);
 
-  private _commentsByPostId = signal<Record<string, CommentsState>>({});
-  readonly commentsByPostId = this._commentsByPostId.asReadonly();
+  get editingReply() { return this.replyMutation.editingReply; }
+  get editReplyContent() { return this.replyMutation.editReplyContent; }
+  get editingNestedReply() { return this.replyMutation.editingNestedReply; }
+  get editNestedReplyContent() { return this.replyMutation.editNestedReplyContent; }
+  get showDeleteReplyModal() { return this.replyMutation.showDeleteReplyModal; }
+  get deletingReplyId() { return this.replyMutation.deletingReplyId; }
+  get deletingReplyPostId() { return this.replyMutation.deletingReplyPostId; }
+  get replyingToComment() { return this.replyMutation.replyingToComment; }
+  get replyingToCommentContent() { return this.replyMutation.replyingToCommentContent; }
+  get isSubmittingReply() { return this.replyMutation.isSubmittingReply; }
+  get savingReply() { return this.replyMutation.savingReply; }
+  get replyLoading() { return this.commentsState.replyLoading; }
+  get commentsByPostId() { return this.commentsState.commentsByPostId; }
+  get openedPostId() { return this.commentsState.openedPostId; }
+  get replyingToPost() { return this.commentsState.replyingToPost; }
+  get loadingReplies() { return this.commentsState.loadingReplies; }
 
-  private _openedPostId = signal<string | null>(null);
-  readonly openedPostId = this._openedPostId.asReadonly();
-
-  get replyingToPost() { return this._openedPostId; }
-  get loadingReplies() { return this.replyLoading; }
-
-  toggleReply(postId: string): void { this.toggleComments(postId); }
-  openReplyForm(postId: string): void { this.openComments(postId); }
+  toggleReply(postId: string): void { this.commentsState.toggleComments(postId); }
+  openReplyForm(postId: string): void { this.commentsState.openComments(postId); }
 
   getComments(postId: string): CommentsState {
-    return this._commentsByPostId()[postId] || IDLE_COMMENTS;
+    return this.commentsState.getComments(postId);
   }
 
   getCommentsMap(): Map<string, CommentsState> {
-    return new Map(Object.entries(this._commentsByPostId()));
+    return this.commentsState.getCommentsMap();
   }
 
   isOpen(postId: string): boolean {
-    return this._openedPostId() === postId;
+    return this.commentsState.isOpen(postId);
   }
 
   openComments(postId: string): void {
-    if (this._openedPostId() === postId) return;
-    this._openedPostId.set(postId);
-    this.loadCommentsIfNeeded(postId);
+    this.commentsState.openComments(postId);
   }
 
   closeComments(): void {
-    this._openedPostId.set(null);
-    this.replyingToComment.set(null);
-    this.replyingToCommentContent.set('');
+    this.commentsState.closeComments();
+    this.replyMutation.cancelReplyToComment();
   }
 
   toggleComments(postId: string): void {
-    if (this._openedPostId() === postId) {
-      this.closeComments();
-    } else {
-      this.openComments(postId);
-    }
-  }
-
-  private loadCommentsIfNeeded(postId: string): void {
-    const current = this.getComments(postId);
-    if (current.status === 'loaded' || current.status === 'loading') return;
-
-    this._commentsByPostId.update(map => ({
-      ...map,
-      [postId]: { ...IDLE_COMMENTS, status: 'loading' },
-    }));
-    this.replyLoading.set(true);
-
-    this.postsService.getReplies(postId).subscribe({
-      next: (data) => {
-        this._commentsByPostId.update(map => ({
-          ...map,
-          [postId]: {
-            status: 'loaded',
-            replies: data.replies || [],
-            cursor: data.nextCursor || null,
-            hasMore: !!data.nextCursor,
-            loadingMore: false,
-          },
-        }));
-        this.replyLoading.set(false);
-      },
-      error: () => {
-        this._commentsByPostId.update(map => ({
-          ...map,
-          [postId]: { ...IDLE_COMMENTS, status: 'error' },
-        }));
-        this.replyLoading.set(false);
-      },
-    });
+    this.commentsState.toggleComments(postId);
   }
 
   loadMoreComments(postId: string): void {
-    const state = this.getComments(postId);
-    if (!state.cursor || state.loadingMore || state.status !== 'loaded') return;
-
-    this._commentsByPostId.update(map => ({
-      ...map,
-      [postId]: { ...map[postId], loadingMore: true },
-    }));
-
-    this.postsService.getReplies(postId, state.cursor).subscribe({
-      next: (data) => {
-        this._commentsByPostId.update(map => {
-          const prev = map[postId];
-          return {
-            ...map,
-            [postId]: {
-              ...prev,
-              replies: [...prev.replies, ...(data.replies || [])],
-              cursor: data.nextCursor || null,
-              hasMore: !!data.nextCursor,
-              loadingMore: false,
-            },
-          };
-        });
-      },
-      error: () => {
-        this._commentsByPostId.update(map => ({
-          ...map,
-          [postId]: { ...map[postId], loadingMore: false },
-        }));
-      },
-    });
-  }
-
-  private updateComments(postId: string, updater: (replies: Reply[]) => Reply[]): void {
-    this._commentsByPostId.update(map => {
-      const prev = map[postId];
-      if (!prev) return map;
-      return { ...map, [postId]: { ...prev, replies: updater(prev.replies) } };
-    });
+    this.commentsState.loadMoreComments(postId);
   }
 
   submitReply(postId: string, content: string): void {
-    if (!content.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, content).subscribe({
-      next: (newReply: Reply) => {
-        this.updateComments(postId, replies => [...replies, newReply]);
-        const post = this.findPost(postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: [...(post.replies || []), newReply],
-            _count: { ...post._count, replies: post._count.replies + 1 },
-          });
-        }
-        this.isSubmittingReply.set(false);
-      },
-      error: () => { this.isSubmittingReply.set(false); },
-    });
+    this.replyMutation.submitReply(postId, content);
   }
 
   submitReplyToComment(parentReplyId: string, postId: string, content: string): void {
-    if (!content.trim()) return;
-
-    this.isSubmittingReply.set(true);
-    this.postsService.createReply(postId, content, parentReplyId).subscribe({
-      next: (newChild: Reply) => {
-        this.updateComments(postId, replies =>
-          replies.map(r => r.id === parentReplyId ? {
-            ...r,
-            children: [...(r.children || []), newChild],
-            _count: { children: (r._count?.children ?? r.children?.length ?? 0) + 1 },
-          } : r)
-        );
-        const post = this.findPost(postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: (post.replies || []).map(r =>
-              r.id === parentReplyId ? { ...r, children: [...(r.children || []), newChild] } : r
-            ),
-            _count: { ...post._count, replies: post._count.replies + 1 },
-          });
-        }
-        this.replyingToComment.set(null);
-        this.replyingToCommentContent.set('');
-        this.isSubmittingReply.set(false);
-      },
-      error: (err) => {
-        this.isSubmittingReply.set(false);
-        if (err.status === HTTP_STATUS.UNAUTHORIZED) { this.authService.logout(); }
-      },
-    });
-  }
-
-  private findPost(postId: string): Post | undefined {
-    return this.postsService.feedPosts().find(p => p.id === postId)
-      || this.postsService.profilePosts().find(p => p.id === postId);
+    this.replyMutation.submitReplyToComment(parentReplyId, postId, content);
   }
 
   startEditPost(post: Post): void {
@@ -309,164 +160,51 @@ export class PostEditService {
   getDomain(url: string): string { return this.urlUtils.getDomain(url); }
 
   startEditReply(reply: Reply): void {
-    this.editingReply.set(reply.id);
-    this.editReplyContent.set(reply.content);
+    this.replyMutation.startEditReply(reply);
   }
 
   cancelEditReply(): void {
-    this.editingReply.set(null);
-    this.editReplyContent.set('');
+    this.replyMutation.cancelEditReply();
   }
 
   saveEditReply(replyId: string, postId: string, replyContent?: string): void {
-    const content = replyContent ?? this.editReplyContent();
-    if (!content.trim()) return;
-
-    this.postsService.updateReply(postId, replyId, content).subscribe({
-      next: (updated) => {
-        this.updateComments(postId, replies =>
-          replies.map(r => r.id === replyId ? { ...updated, children: r.children, _count: r._count } : r)
-        );
-        const post = this.findPost(postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: (post.replies || []).map(r =>
-              r.id === replyId ? { ...updated, children: r.children } : r
-            ),
-          });
-        }
-      },
-      error: () => {},
-    });
-    this.cancelEditReply();
+    this.replyMutation.saveEditReply(replyId, postId, replyContent);
   }
 
   startEditNestedReply(reply: Reply): void {
-    this.editingNestedReply.set(reply.id);
-    this.editNestedReplyContent.set(reply.content);
+    this.replyMutation.startEditNestedReply(reply);
   }
 
   cancelEditNestedReply(): void {
-    this.editingNestedReply.set(null);
-    this.editNestedReplyContent.set('');
+    this.replyMutation.cancelEditNestedReply();
   }
 
   saveEditNestedReply(replyId: string, postId: string, _parentReplyId: string, replyContent?: string): void {
-    const content = replyContent ?? this.editNestedReplyContent();
-    if (!content.trim()) return;
-
-    this.postsService.updateReply(postId, replyId, content).subscribe({
-      next: () => {
-        this.updateComments(postId, replies =>
-          replies.map(r => {
-            if (r.children?.some(c => c.id === replyId)) {
-              return { ...r, children: r.children.map(c => c.id === replyId ? { ...c, content } : c) };
-            }
-            return r;
-          })
-        );
-        const post = this.findPost(postId);
-        if (post) {
-          this.postsService.updatePostInSignals(postId, {
-            replies: (post.replies || []).map(r => {
-              if (r.children?.some(c => c.id === replyId)) {
-                return { ...r, children: r.children.map(c => c.id === replyId ? { ...c, content } : c) };
-              }
-              return r;
-            }),
-          });
-        }
-        this.cancelEditNestedReply();
-      },
-      error: () => {},
-    });
+    this.replyMutation.saveEditNestedReply(replyId, postId, _parentReplyId, replyContent);
   }
 
   deleteReply(replyId: string, postId: string): void {
-    this.showDeleteReplyModal.set(true);
-    this.deletingReplyId.set(replyId);
-    this.deletingReplyPostId.set(postId);
+    this.replyMutation.deleteReply(replyId, postId);
   }
 
   confirmDeleteReply(): void {
-    const replyId = this.deletingReplyId();
-    const postId = this.deletingReplyPostId();
-    if (!replyId || !postId) return;
-
-    this.postsService.deleteReply(postId, replyId).subscribe({
-      next: () => {
-        let deletedCount = 0;
-        this.updateComments(postId, replies =>
-          replies.filter(r => {
-            if (r.id === replyId) {
-              deletedCount += 1 + (r.children?.length ?? 0);
-              return false;
-            }
-            return true;
-          }).map(r => {
-            if (r.children?.some(c => c.id === replyId)) {
-              const child = r.children.find(c => c.id === replyId);
-              deletedCount += 1 + (child?.children?.length ?? 0);
-              const children = r.children.filter(c => c.id !== replyId);
-              return {
-                ...r,
-                children,
-                _count: r._count ? { ...r._count, children: Math.max(0, r._count.children - 1) } : r._count,
-              };
-            }
-            return r;
-          })
-        );
-        const post = this.findPost(postId);
-        if (post) {
-          const updatedReplies = (post.replies || [])
-            .filter(r => r.id !== replyId)
-            .map(r => ({ ...r, children: (r.children || []).filter(c => c.id !== replyId) }));
-          this.postsService.updatePostInSignals(postId, {
-            replies: updatedReplies,
-            _count: { ...post._count, replies: Math.max(0, post._count.replies - (deletedCount || 1)) },
-          });
-        }
-        this.closeDeleteReplyModal();
-      },
-      error: (err) => {
-        this.closeDeleteReplyModal();
-        if (err.status === HTTP_STATUS.NOT_FOUND) {
-          const post = this.findPost(postId!);
-          if (post) {
-            const updatedReplies = (post.replies || [])
-              .filter(r => r.id !== replyId)
-              .map(r => ({ ...r, children: (r.children || []).filter(c => c.id !== replyId) }));
-            this.postsService.updatePostInSignals(postId!, { replies: updatedReplies });
-          }
-        }
-      },
-    });
+    this.replyMutation.confirmDeleteReply();
   }
 
   closeDeleteReplyModal(): void {
-    this.showDeleteReplyModal.set(false);
-    this.deletingReplyId.set(null);
-    this.deletingReplyPostId.set(null);
+    this.replyMutation.closeDeleteReplyModal();
   }
 
   deleteNestedReply(replyId: string, postId: string, _parentReplyId: string): void {
-    this.deleteReply(replyId, postId);
+    this.replyMutation.deleteNestedReply(replyId, postId, _parentReplyId);
   }
 
   toggleReplyToComment(replyId: string): void {
-    if (this.replyingToComment() === replyId) {
-      this.replyingToComment.set(null);
-      this.replyingToCommentContent.set('');
-    } else {
-      this.replyingToComment.set(replyId);
-      this.replyingToCommentContent.set('');
-    }
+    this.replyMutation.toggleReplyToComment(replyId);
   }
 
   cancelReplyToComment(): void {
-    this.replyingToComment.set(null);
-    this.replyingToCommentContent.set('');
+    this.replyMutation.cancelReplyToComment();
   }
 
   toggleLike(post: Post): void {

@@ -70,15 +70,24 @@ export class PostsService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  private async getCursorDate(cursor: string): Promise<Date> {
+  private async getCursor(cursor: string): Promise<{ id: string; createdAt: Date }> {
     const post = await this.prisma.post.findUnique({
       where: { id: cursor },
-      select: { createdAt: true },
+      select: { id: true, createdAt: true },
     });
     if (!post) {
       throw new NotFoundException('Cursor post not found');
     }
-    return post.createdAt;
+    return post;
+  }
+
+  private buildPostCursorWhere(cursorPost: { id: string; createdAt: Date }): Prisma.PostWhereInput {
+    return {
+      OR: [
+        { createdAt: { lt: cursorPost.createdAt } },
+        { createdAt: cursorPost.createdAt, id: { lt: cursorPost.id } },
+      ],
+    };
   }
 
   private validateContent(content: string, label = 'Post'): void {
@@ -156,7 +165,10 @@ export class PostsService {
     const posts = await this.prisma.post.findMany({
       where,
       take,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
       include: this.buildFeedInclude(userId),
     });
 
@@ -171,7 +183,7 @@ export class PostsService {
 
   async findAll(cursor?: string, limit = 20, userId?: string): Promise<{ posts: PostResponse[]; nextCursor: string | null; hasMore: boolean }> {
     const cacheKey = `posts:all:${cursor || 'initial'}:${limit}:${userId || 'anon'}`;
-    const where = cursor ? { createdAt: { lt: await this.getCursorDate(cursor) } } : {};
+    const where = cursor ? this.buildPostCursorWhere(await this.getCursor(cursor)) : {};
     return this.fetchPaginatedPosts(cacheKey, where, limit, userId);
   }
 
@@ -189,7 +201,7 @@ export class PostsService {
     const cacheKey = `posts:following:${userId}:${cursor || 'initial'}:${limit}`;
     const where: Prisma.PostWhereInput = { authorId: { in: followingIds } };
     if (cursor) {
-      where.createdAt = { lt: await this.getCursorDate(cursor) };
+      Object.assign(where, this.buildPostCursorWhere(await this.getCursor(cursor)));
     }
 
     return this.fetchPaginatedPosts(cacheKey, where, limit, userId);
@@ -199,7 +211,7 @@ export class PostsService {
     const cacheKey = `posts:user:${userId}:${cursor || 'initial'}:${limit}:${requesterId || 'anon'}`;
     const where: Prisma.PostWhereInput = { authorId: userId };
     if (cursor) {
-      where.createdAt = { lt: await this.getCursorDate(cursor) };
+      Object.assign(where, this.buildPostCursorWhere(await this.getCursor(cursor)));
     }
 
     return this.fetchPaginatedPosts(cacheKey, where, limit, requesterId);

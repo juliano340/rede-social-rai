@@ -47,6 +47,8 @@ model Post {
 
   @@index([authorId])
   @@index([createdAt])
+  @@index([createdAt, id])
+  @@index([authorId, createdAt, id])
 }
 
 model Like {
@@ -81,6 +83,7 @@ model Reply {
   @@index([postId])
   @@index([parentId])
   @@index([createdAt])
+  @@index([postId, parentId, createdAt, id])
 }
 
 model Follow {
@@ -124,4 +127,5 @@ model Notification {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, createdAt, id])
 }
