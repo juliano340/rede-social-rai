@@ -53,7 +53,18 @@ ng serve
 
 - [x] Cadastro/Login de usuários
 - [x] Feed de postagens
-- [x] Criar postagens
+- [x] Criar/editar/deletar postagens
+- [x] Mídia em postagens (imagem, YouTube)
+- [x] Preview de links
+- [x] Likes com atualização otimista
+- [x] Comentários/respostas
+- [x] Respostas aninhadas (nested replies)
+- [x] Responder a comentários
+- [x] Editar/respostas
+- [x] Deletar postagens e respostas
 - [x] Perfil do usuário
-- [ ] Seguir usuários
-- [x] Likes e respostas
+- [x] Seguir usuários
+
+---
+
+**Última atualização:** Abril 2026
