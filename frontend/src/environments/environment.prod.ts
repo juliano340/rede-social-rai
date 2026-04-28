@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://jverso.juliano340.com'
+  apiUrl: 'https://rai-api.juliano340.com'
 };
