@@ -129,15 +129,8 @@ export class UsersService {
   }
 
   async getProfileByUsername(username: string, currentUserId: string) {
-    const cacheKey = `profile:username:${username}:${currentUserId}`;
-    const cached = await this.cacheManager.get<{
-      id: string; username: string; name: string | null; bio: string | null; bioLink: string | null; avatar: string | null; createdAt: Date;
-      _count: { posts: number; followers: number; following: number }; isFollowing: boolean;
-    }>(cacheKey);
-    if (cached) return cached;
-
     const user = await this.findByUsername(username);
-    
+
     const isFollowing = await this.prisma.follow.findUnique({
       where: {
         followerId_followingId: {
@@ -147,13 +140,10 @@ export class UsersService {
       },
     });
 
-    const result = {
+    return {
       ...user,
       isFollowing: !!isFollowing,
     };
-
-    await this.cacheManager.set(cacheKey, result, 300000);
-    return result;
   }
 
   async updateAvatar(userId: string, avatarPath: string) {
@@ -242,6 +232,7 @@ export class UsersService {
 
   private async invalidateUserCache(username: string) {
     await this.cacheManager.del(`user:username:${username}`);
+    await this.cacheManager.del(`profile:username:${username}`);
   }
 
   async follow(followerId: string, followingId: string) {
