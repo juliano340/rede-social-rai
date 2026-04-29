@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "frontend",
   "framework": "angular",
   "buildCommand": "ng build --configuration production",
   "outputDirectory": "dist/rai-frontend/browser",
