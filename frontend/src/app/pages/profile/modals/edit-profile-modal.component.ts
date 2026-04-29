@@ -55,28 +55,80 @@ import { VALIDATION_LIMITS } from '../../../shared/constants/validation.constant
     }
   `,
   styles: [`
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 500; animation: fadeIn 0.15s ease; }
-    .edit-profile-modal { background: var(--background); border-radius: var(--radius-lg); width: 90%; max-width: 440px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-    h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
-    .modal-close { background: none; border: none; font-size: 20px; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: var(--radius-md); }
-    .modal-close:hover { background: var(--background-secondary); }
-    .modal-body { padding: 20px; }
-    .form-group { margin-bottom: 16px; }
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 500; animation: fadeIn 0.15s ease; padding: 16px;
+    }
+    .edit-profile-modal {
+      background: var(--popover);
+      border-radius: var(--radius-xl);
+      width: min(100%, 440px); max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      box-shadow: var(--shadow-2xl);
+      border: 1px solid var(--border);
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    h2 { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.01em; }
+    .modal-close {
+      background: none; border: none; font-size: 22px; color: var(--text-tertiary);
+      cursor: pointer; padding: 6px; border-radius: var(--radius-md); line-height: 1;
+      transition: all 0.15s;
+    }
+    .modal-close:hover { background: var(--accent); color: var(--text-primary); }
+    .modal-body { padding: 22px; }
+    .form-group { margin-bottom: 18px; }
     .form-group:last-child { margin-bottom: 0; }
-    label { display: block; font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
-    input, textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 15px; color: var(--text-primary); background: var(--background); transition: border-color 0.15s; }
-    input:focus, textarea:focus { outline: none; border-color: var(--primary); }
-    input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
-    textarea { resize: vertical; min-height: 80px; }
-    .char-hint { display: block; text-align: right; font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
-    .field-error { display: block; margin-top: 6px; color: var(--error); font-size: 12px; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 20px; border-top: 1px solid var(--border); }
-    .btn-cancel { background: var(--background-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; }
-    .btn-cancel:hover { background: var(--border); }
-    .btn-save { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--text-primary); margin-bottom: 7px;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+      padding: 11px 13px; font-size: 14px; color: var(--text-primary);
+      background: var(--surface-input);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus, textarea:focus {
+      outline: none; border-color: var(--ring);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { resize: vertical; min-height: 90px; }
+    .char-hint {
+      display: block; text-align: right;
+      font-size: 12px; font-weight: 500;
+      color: var(--text-muted); margin-top: 5px;
+    }
+    .field-error { display: block; margin-top: 6px; color: var(--error); font-size: 12px; font-weight: 500; }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding: 18px 22px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-cancel {
+      background: var(--accent); color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      padding: 9px 22px; border-radius: var(--radius-full);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: var(--muted); border-color: var(--border-strong); }
+    .btn-save {
+      background: var(--primary); color: var(--text-inverse);
+      border: none; padding: 9px 22px; border-radius: var(--radius-full);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
     .btn-save:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-cancel:focus-visible, .btn-save:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `]
 })
