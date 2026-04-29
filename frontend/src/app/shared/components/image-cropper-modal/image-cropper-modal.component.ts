@@ -163,7 +163,7 @@ export class ImageCropperModalComponent implements AfterViewInit {
       height: 400,
     });
 
-    canvas.toBlob((blob) => {
+    canvas.toBlob((blob: Blob | null) => {
       if (blob) {
         this.cropped.emit(blob);
       }
