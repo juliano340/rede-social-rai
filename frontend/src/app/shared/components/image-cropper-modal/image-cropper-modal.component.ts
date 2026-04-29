@@ -1,4 +1,4 @@
-import { Component, input, output, ViewChild, ElementRef, AfterViewInit, OnDestroy, signal, effect } from '@angular/core';
+import { Component, input, output, ViewChild, ElementRef, AfterViewInit, OnDestroy, signal, effect, inject, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import Cropper from 'cropperjs';
 
@@ -132,10 +132,13 @@ import Cropper from 'cropperjs';
   `]
 })
 export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
+  private zone = inject(NgZone);
+
   show = input.required<boolean>();
   imageFile = input.required<File | null>();
 
   cropped = output<Blob>();
+  processingStarted = output<void>();
   skip = output<void>();
   cancel = output<void>();
 
@@ -233,13 +236,17 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
       height: 300,
     });
 
+    this.processingStarted.emit();
+
     canvas.toBlob((blob: Blob | null) => {
-      if (blob) {
-        this.cropped.emit(blob);
-        return;
-      }
-      this.processing.set(false);
-      this.destroyCropper();
+      this.zone.run(() => {
+        if (blob) {
+          this.cropped.emit(blob);
+          return;
+        }
+        this.processing.set(false);
+        this.destroyCropper();
+      });
     }, 'image/jpeg', 0.92);
   }
 

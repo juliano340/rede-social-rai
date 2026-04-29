@@ -35,6 +35,7 @@ import { Post, Reply, SubmitReplyEvent, ReplyActionEvent, NestedReplyEvent } fro
             [replies]="replies()?.get(post.id)?.replies ?? post.replies ?? []"
             [loadingReplies]="replies()?.get(post.id)?.status === 'loading' || false"
             [currentUserId]="currentUserId()"
+            [currentUserAvatar]="currentUserAvatar()"
             [highlightReplyId]="null"
             [isSubmittingReply]="isSubmittingReply()"
             [savingReply]="savingReply()"
@@ -81,6 +82,7 @@ export class ProfilePostsComponent {
   posts = input.required<Post[]>();
   loading = input.required<boolean>();
   currentUserId = input.required<string | null>();
+  currentUserAvatar = input<string | null | undefined>(null);
   postLikingId = input.required<string | null>();
   deletingPostId = input.required<string | null>();
   showReplies = input<string | null>(null);

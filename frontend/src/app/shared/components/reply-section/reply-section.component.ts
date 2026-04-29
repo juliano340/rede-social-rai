@@ -43,6 +43,7 @@ export class ReplySectionComponent {
   @Input() showForm = true;
   @Input() showReplyToReply = true;
   @Input() currentUserId: string | null = null;
+  @Input() currentUserAvatar: string | null | undefined = null;
   @Input() highlightReplyId: string | null = null;
   @Input() isSubmitting = false;
   @Input() savingReply = false;
@@ -116,6 +117,12 @@ export class ReplySectionComponent {
   }
 
   getAvatarUrl = getAvatarUrl;
+
+  getReplyAvatar(reply: Reply): string | null | undefined {
+    return this.currentUserId && reply.author?.id === this.currentUserId
+      ? this.currentUserAvatar
+      : reply.author?.avatar;
+  }
 
   getAvatarInitial(name: string | null | undefined): string {
     const n = String(name || '').trim();

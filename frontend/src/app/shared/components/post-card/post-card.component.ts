@@ -24,8 +24,8 @@ import {
   template: `
     <article class="post" [class.deleting]="deleting" [class.highlight-post]="highlighted">
       <div class="post-avatar">
-        @if (post.author.avatar) {
-          <img [src]="getAvatarUrl(post.author.avatar)" alt="Avatar" class="avatar-image">
+        @if (getPostAvatar()) {
+          <img [src]="getAvatarUrl(getPostAvatar())" alt="Avatar" class="avatar-image">
         } @else {
           <div class="avatar-placeholder" aria-hidden="true">
             {{ getAvatarInitial(post.author.name) }}
@@ -74,6 +74,7 @@ import {
             [showForm]="true"
             [showReplyToReply]="true"
             [currentUserId]="currentUserId"
+            [currentUserAvatar]="currentUserAvatar"
             [highlightReplyId]="highlightReplyId"
             [isSubmitting]="isSubmittingReply"
             [savingReply]="savingReply"
@@ -197,6 +198,7 @@ export class PostCardComponent {
   @Input() replies: Reply[] = [];
   @Input() loadingReplies = false;
   @Input() currentUserId: string | null = null;
+  @Input() currentUserAvatar: string | null | undefined = null;
   @Input() highlightReplyId: string | null = null;
   @Input() isSubmittingReply = false;
   @Input() savingReply = false;
@@ -244,6 +246,12 @@ export class PostCardComponent {
   }
 
   getAvatarUrl = getAvatarUrl;
+
+  getPostAvatar(): string | null | undefined {
+    return this.currentUserId && this.post.author.id === this.currentUserId
+      ? this.currentUserAvatar
+      : this.post.author.avatar;
+  }
 
   getAvatarInitial(name: string): string {
     return ((name && name[0]) || '?').toUpperCase();

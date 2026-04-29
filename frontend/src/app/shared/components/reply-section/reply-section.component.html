@@ -41,8 +41,8 @@
         @if (vm.reply.id && vm.reply.content !== undefined && vm.reply.content !== null) {
           <div class="reply-item" [class.highlight-reply]="highlightReplyId === vm.reply.id" [attr.id]="'reply-' + vm.reply.id">
             <div class="reply-avatar">
-              @if (vm.reply.author?.avatar) {
-                <img [src]="getAvatarUrl(vm.reply.author?.avatar)" alt="Avatar" class="avatar-image">
+              @if (getReplyAvatar(vm.reply)) {
+                <img [src]="getAvatarUrl(getReplyAvatar(vm.reply))" alt="Avatar" class="avatar-image">
               } @else {
                 <span class="avatar-initial">{{ getAvatarInitial(vm.reply.author?.name) }}</span>
               }
@@ -134,8 +134,8 @@
                       <div class="reply-item nested">
                         <div class="nested-line"></div>
                         <div class="reply-avatar small">
-                          @if (child.author?.avatar) {
-                            <img [src]="getAvatarUrl(child.author?.avatar)" alt="Avatar" class="avatar-image">
+                          @if (getReplyAvatar(child)) {
+                            <img [src]="getAvatarUrl(getReplyAvatar(child))" alt="Avatar" class="avatar-image">
                           } @else {
                             <span class="avatar-initial">{{ getAvatarInitial(child.author?.name) }}</span>
                           }

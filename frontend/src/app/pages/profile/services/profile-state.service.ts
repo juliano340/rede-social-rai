@@ -2,12 +2,14 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { UserProfile, User } from '../../../shared/models/user.model';
 import { Post, Reply } from '../../../shared/models/post.model';
 import { PostsService } from '../../../services/posts.service';
+import { CommentsStateService } from '../../../services/comments-state.service';
 
 export type ModalType = 'followers' | 'following' | null;
 
 @Injectable()
 export class ProfileStateService {
   private postsService = inject(PostsService);
+  private commentsState = inject(CommentsStateService);
 
   readonly profile = signal<UserProfile | null>(null);
   get posts() { return this.postsService.profilePosts; }
@@ -63,10 +65,12 @@ export class ProfileStateService {
 
   updateAvatar(avatar: string): void {
     this.profile.update(p => p ? { ...p, avatar } : p);
-    const username = this.profile()?.username;
+    const profile = this.profile();
+    const username = profile?.username;
     if (!username) return;
 
-    this.postsService.updateAvatarInSignals(username, avatar);
+    this.postsService.updateAvatarInSignals(username, avatar, profile?.id);
+    this.commentsState.updateAvatarInComments(username, avatar, profile?.id);
 
     this.postReplies.update(replies =>
       replies.map(reply =>

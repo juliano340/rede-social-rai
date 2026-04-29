@@ -73,6 +73,10 @@ export class AuthService {
     return this.authState.currentUser();
   }
 
+  updateCurrentUser(updates: Partial<User>): void {
+    this.authState.updateUser(updates);
+  }
+
   refreshCurrentUser(): void {
     this.http.get<User>(`${this.apiUrl}${API_ENDPOINTS.USERS.ME}`, { withCredentials: true }).subscribe({
       next: (user) => {

@@ -25,6 +25,7 @@ import { AuthService } from '../../../services/auth.service';
           [replies]="post.replies || []"
           [loadingReplies]="false"
           [currentUserId]="authService.currentUser()?.id || null"
+          [currentUserAvatar]="authService.currentUser()?.avatar"
           [highlightReplyId]="highlightReplyId"
           [isSubmittingReply]="postEdit.isSubmittingReply()"
           [savingReply]="postEdit.savingReply()"

@@ -105,6 +105,19 @@ export class CommentsStateService {
     });
   }
 
+  updateAvatarInComments(username: string, avatar: string, userId?: string): void {
+    this._commentsByPostId.update(map => {
+      const next: Record<string, CommentsState> = {};
+      Object.entries(map).forEach(([postId, state]) => {
+        next[postId] = {
+          ...state,
+          replies: state.replies.map(reply => this.updateReplyAvatar(reply, username, avatar, userId)),
+        };
+      });
+      return next;
+    });
+  }
+
   findPost(postId: string): Post | undefined {
     return this.postsService.feedPosts().find(p => p.id === postId)
       || this.postsService.profilePosts().find(p => p.id === postId);
@@ -142,5 +155,17 @@ export class CommentsStateService {
         this.replyLoading.set(false);
       },
     });
+  }
+
+  private updateReplyAvatar(reply: Reply, username: string, avatar: string, userId?: string): Reply {
+    return {
+      ...reply,
+      author: reply.author && this.isSameAuthor(reply.author, username, userId) ? { ...reply.author, avatar } : reply.author,
+      children: reply.children?.map(child => this.updateReplyAvatar(child, username, avatar, userId)),
+    };
+  }
+
+  private isSameAuthor(author: { id?: string; username?: string }, username: string, userId?: string): boolean {
+    return (!!userId && author.id === userId) || author.username === username;
   }
 }

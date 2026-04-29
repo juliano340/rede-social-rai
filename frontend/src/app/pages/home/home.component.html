@@ -39,6 +39,7 @@
             [replies]="postEdit.getComments(post.id).replies"
             [loadingReplies]="postEdit.getComments(post.id).status === 'loading'"
             [currentUserId]="authService.currentUser()?.id || null"
+            [currentUserAvatar]="authService.currentUser()?.avatar"
             [highlightReplyId]="highlightReplyId()"
             [isSubmittingReply]="postEdit.isSubmittingReply()"
             [savingReply]="postEdit.savingReply()"

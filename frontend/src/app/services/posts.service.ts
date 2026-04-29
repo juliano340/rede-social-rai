@@ -81,21 +81,38 @@ export class PostsService {
     this.profilePosts.update(posts => [post, ...posts]);
   }
 
-  updateAvatarInSignals(username: string, avatar: string): void {
+  updateAvatarInSignals(username: string, avatar: string, userId?: string): void {
+    const updatePost = (post: Post): Post => ({
+      ...post,
+      author: this.isSameAuthor(post.author, username, userId) ? { ...post.author, avatar } : post.author,
+      replies: post.replies?.map(reply => this.updateReplyAvatar(reply, username, avatar, userId)),
+    });
+
     this.feedPosts.update(posts =>
-      posts.map(post =>
-        post.author.username === username
-          ? { ...post, author: { ...post.author, avatar } }
-          : post
-      )
+      posts.map(updatePost)
     );
     this.profilePosts.update(posts =>
-      posts.map(post =>
-        post.author.username === username
-          ? { ...post, author: { ...post.author, avatar } }
-          : post
-      )
+      posts.map(updatePost)
     );
+
+    this.cache.forEach((entry, key) => {
+      this.cache.set(key, {
+        ...entry,
+        data: { ...entry.data, posts: entry.data.posts.map(updatePost) },
+      });
+    });
+  }
+
+  private updateReplyAvatar(reply: Reply, username: string, avatar: string, userId?: string): Reply {
+    return {
+      ...reply,
+      author: reply.author && this.isSameAuthor(reply.author, username, userId) ? { ...reply.author, avatar } : reply.author,
+      children: reply.children?.map(child => this.updateReplyAvatar(child, username, avatar, userId)),
+    };
+  }
+
+  private isSameAuthor(author: { id?: string; username?: string }, username: string, userId?: string): boolean {
+    return (!!userId && author.id === userId) || author.username === username;
   }
 
   getPosts(cursor?: string, limit = 20): Observable<PostsResponse> {

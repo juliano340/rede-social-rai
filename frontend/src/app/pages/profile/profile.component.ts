@@ -62,6 +62,7 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
           [posts]="state.posts()"
           [loading]="state.postsLoading()"
           [currentUserId]="authService.currentUser()?.id || null"
+          [currentUserAvatar]="authService.currentUser()?.avatar"
           [postLikingId]="postEdit.postLikingId()"
           [deletingPostId]="postEdit.deletingPostId()"
           [showReplies]="postEdit.openedPostId()"
@@ -125,6 +126,7 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
       <app-image-cropper-modal
         [show]="showCropper()"
         [imageFile]="cropFile()"
+        (processingStarted)="hideCropper()"
         (cropped)="onCropConfirm($event)"
         (skip)="onCropSkip()"
         (cancel)="closeCropper()"
@@ -378,6 +380,10 @@ export class ProfileComponent implements OnInit {
     this.cropFile.set(null);
   }
 
+  hideCropper() {
+    this.showCropper.set(false);
+  }
+
   onCropConfirm(blob: Blob) {
     this.showCropper.set(false);
     const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
@@ -398,8 +404,8 @@ export class ProfileComponent implements OnInit {
     this.state.setUploadingAvatar(true);
     this.usersService.uploadAvatar(file).subscribe({
       next: (response) => {
+        this.authService.updateCurrentUser({ avatar: response.avatar });
         this.state.updateAvatar(response.avatar);
-        this.authService.refreshCurrentUser();
         this.state.setUploadingAvatar(false);
         this.toast.success('Foto atualizada!');
       },
@@ -415,8 +421,8 @@ export class ProfileComponent implements OnInit {
     this.state.setUploadingAvatar(true);
     this.usersService.updateAvatarUrl(url.trim()).subscribe({
       next: (response) => {
+        this.authService.updateCurrentUser({ avatar: response.avatar });
         this.state.updateAvatar(response.avatar);
-        this.authService.refreshCurrentUser();
         this.state.setUploadingAvatar(false);
         this.state.closeAvatarModal();
         this.toast.success('Foto atualizada!');
