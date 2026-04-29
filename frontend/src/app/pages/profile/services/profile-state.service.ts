@@ -66,13 +66,7 @@ export class ProfileStateService {
     const username = this.profile()?.username;
     if (!username) return;
 
-    this.postsService.profilePosts.update(posts =>
-      posts.map(post =>
-        post.author.username === username
-          ? { ...post, author: { ...post.author, avatar } }
-          : post
-      )
-    );
+    this.postsService.updateAvatarInSignals(username, avatar);
 
     this.postReplies.update(replies =>
       replies.map(reply =>

@@ -81,6 +81,23 @@ export class PostsService {
     this.profilePosts.update(posts => [post, ...posts]);
   }
 
+  updateAvatarInSignals(username: string, avatar: string): void {
+    this.feedPosts.update(posts =>
+      posts.map(post =>
+        post.author.username === username
+          ? { ...post, author: { ...post.author, avatar } }
+          : post
+      )
+    );
+    this.profilePosts.update(posts =>
+      posts.map(post =>
+        post.author.username === username
+          ? { ...post, author: { ...post.author, avatar } }
+          : post
+      )
+    );
+  }
+
   getPosts(cursor?: string, limit = 20): Observable<PostsResponse> {
     const cacheKey = this.getCacheKey(cursor, limit, 'posts');
     const cached = this.getCached<PostsResponse>(cacheKey);
