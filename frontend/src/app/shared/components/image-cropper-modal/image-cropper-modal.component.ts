@@ -244,6 +244,7 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   }
 
   private destroyCropper() {
+    this.processing.set(false);
     if (this.cropper) {
       this.cropper.destroy();
       this.cropper = null;
