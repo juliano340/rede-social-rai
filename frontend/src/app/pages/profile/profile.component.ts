@@ -19,6 +19,7 @@ import { ProfilePostsComponent } from './components/profile-posts.component';
 import { FollowersModalComponent } from './modals/followers-modal.component';
 import { EditProfileModalComponent } from './modals/edit-profile-modal.component';
 import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.component';
+import { ImageCropperModalComponent } from '../../shared/components/image-cropper-modal/image-cropper-modal.component';
 
 @Component({
   selector: 'app-profile',
@@ -28,6 +29,7 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
     PostCardComponent, DeleteConfirmModalComponent,
     ProfileHeaderComponent, ProfilePostsComponent,
     FollowersModalComponent, EditProfileModalComponent, AvatarUploadModalComponent,
+    ImageCropperModalComponent,
   ],
   providers: [ProfileStateService],
   template: `
@@ -118,6 +120,13 @@ import { AvatarUploadModalComponent } from './modals/avatar-upload-modal.compone
         (fileClick)="triggerFileInput()"
         (saveUrl)="saveAvatarUrl($event)"
         (close)="state.closeAvatarModal()"
+      />
+
+      <app-image-cropper-modal
+        [show]="showCropper()"
+        [imageFile]="cropFile()"
+        (cropped)="onCropConfirm($event)"
+        (cancel)="closeCropper()"
       />
 
       <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none" />
@@ -253,6 +262,9 @@ export class ProfileComponent implements OnInit {
 
   bioLinkError = signal('');
 
+  showCropper = signal(false);
+  cropFile = signal<File | null>(null);
+
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   ngOnInit() {
@@ -340,8 +352,22 @@ export class ProfileComponent implements OnInit {
         this.toast.error('A imagem deve ter no máximo 5MB.');
         return;
       }
-      this.uploadAvatar(file);
+      this.state.closeAvatarModal();
+      this.cropFile.set(file);
+      this.showCropper.set(true);
     }
+  }
+
+  closeCropper() {
+    this.showCropper.set(false);
+    this.cropFile.set(null);
+  }
+
+  onCropConfirm(blob: Blob) {
+    this.showCropper.set(false);
+    const file = new File([blob], 'avatar.webp', { type: 'image/webp' });
+    this.cropFile.set(null);
+    this.uploadAvatar(file);
   }
 
   uploadAvatar(file: File) {
@@ -350,7 +376,6 @@ export class ProfileComponent implements OnInit {
       next: (response) => {
         this.state.updateAvatar(response.avatar);
         this.state.setUploadingAvatar(false);
-        this.state.closeAvatarModal();
         this.toast.success('Foto atualizada!');
       },
       error: () => {
