@@ -133,7 +133,7 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
         this.destroyCropper();
         this.ready.set(false);
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngAfterViewInit() {
