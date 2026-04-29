@@ -399,6 +399,7 @@ export class ProfileComponent implements OnInit {
     this.usersService.uploadAvatar(file).subscribe({
       next: (response) => {
         this.state.updateAvatar(response.avatar);
+        this.authService.refreshCurrentUser();
         this.state.setUploadingAvatar(false);
         this.toast.success('Foto atualizada!');
       },
@@ -415,6 +416,7 @@ export class ProfileComponent implements OnInit {
     this.usersService.updateAvatarUrl(url.trim()).subscribe({
       next: (response) => {
         this.state.updateAvatar(response.avatar);
+        this.authService.refreshCurrentUser();
         this.state.setUploadingAvatar(false);
         this.state.closeAvatarModal();
         this.toast.success('Foto atualizada!');
