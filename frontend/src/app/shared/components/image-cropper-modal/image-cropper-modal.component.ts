@@ -44,64 +44,70 @@ import Cropper from 'cropperjs';
   `,
   styles: [`
     .cropper-overlay {
-      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
       display: flex; align-items: center; justify-content: center;
       z-index: 1000; animation: fadeIn 0.15s ease; padding: 16px;
     }
     .cropper-modal {
-      background: var(--background);
+      background: var(--popover);
       border-radius: var(--radius-xl);
       width: min(100%, 460px); max-height: calc(100vh - 32px);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--shadow-2xl);
       overflow: hidden; display: flex; flex-direction: column;
+      border: 1px solid var(--border);
     }
     .cropper-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 18px 22px; border-bottom: 1px solid var(--border); gap: 16px;
     }
-    h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
-    p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; }
+    .cropper-header h2 { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.01em; }
+    .cropper-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: 13px; line-height: 1.4; }
     .cropper-close {
-      background: none; border: none; font-size: 24px; color: var(--text-secondary);
-      cursor: pointer; padding: 4px 8px; border-radius: var(--radius-md); line-height: 1;
+      background: none; border: none; font-size: 22px; color: var(--text-tertiary);
+      cursor: pointer; padding: 6px; border-radius: var(--radius-md); line-height: 1;
+      transition: all 0.15s; flex-shrink: 0;
     }
-    .cropper-close:hover { background: var(--background-secondary); }
+    .cropper-close:hover { background: var(--accent); color: var(--text-primary); }
     .cropper-body {
-      padding: 16px; overflow: auto;
+      padding: 16px 22px; overflow: auto;
     }
     .image-container {
       max-width: 100%; max-height: 52vh;
       overflow: hidden;
       border-radius: var(--radius-lg);
+      background: var(--surface-page);
     }
     .image-container img {
       max-width: 100%; display: block;
     }
     .cropper-loading, .cropper-error {
       min-height: 220px; display: flex; align-items: center; justify-content: center;
-      border: 1px dashed var(--border); border-radius: var(--radius-lg);
-      color: var(--text-secondary); font-size: 14px; text-align: center; padding: 24px;
+      border: 1px dashed var(--border-strong); border-radius: var(--radius-lg);
+      color: var(--text-tertiary); font-size: 14px; text-align: center; padding: 24px;
+      background: var(--surface-page);
     }
-    .cropper-error { color: var(--error); background: var(--error-light); border-color: rgba(224, 36, 94, 0.25); }
+    .cropper-error { color: var(--error); background: var(--error-light); border-color: var(--destructive-light); }
     .cropper-footer {
-      display: flex; justify-content: flex-end; gap: 12px;
-      padding: 16px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding: 16px 22px 20px;
     }
     .btn-cancel {
-      padding: 10px 24px; border-radius: var(--radius-full);
-      font-size: 14px; font-weight: 500; cursor: pointer;
-      background: var(--background-secondary); color: var(--text-primary);
-      border: 1px solid var(--border); transition: background 0.15s;
+      padding: 10px 22px; border-radius: var(--radius-full);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      background: var(--accent); color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.15s;
     }
-    .btn-cancel:hover { background: var(--background-hover); }
+    .btn-cancel:hover { background: var(--muted); border-color: var(--border-strong); }
     .btn-confirm {
-      padding: 10px 24px; border-radius: var(--radius-full);
+      padding: 10px 22px; border-radius: var(--radius-full);
       font-size: 14px; font-weight: 600; cursor: pointer;
       background: var(--primary); color: var(--text-inverse);
-      border: none; transition: background 0.15s;
+      border: none; transition: all 0.15s;
     }
     .btn-confirm:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-confirm:focus-visible, .btn-cancel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
     @media (max-width: 520px) {
       .cropper-footer { flex-direction: column-reverse; }
       .btn-cancel, .btn-confirm { width: 100%; }
