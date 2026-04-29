@@ -91,10 +91,10 @@ import { UserProfile } from '../../../shared/models/user.model';
     .camera-icon { color: var(--text-inverse); }
     .profile-info { flex: 1; }
     .profile-info-header { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
-    .profile-name-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; }
-    .edit-profile-btn { background: var(--background-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); font-size: var(--font-xs); font-weight: var(--font-medium); cursor: pointer; transition: all var(--duration-150) var(--ease-out); }
+    .profile-name-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; min-width: 0; }
+    .edit-profile-btn { flex-shrink: 0; background: var(--background-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); font-size: var(--font-xs); font-weight: var(--font-medium); cursor: pointer; transition: all var(--duration-150) var(--ease-out); }
     .edit-profile-btn:hover { background: var(--background-hover); }
-    h1 { font-size: var(--font-2xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0; }
+    h1 { font-size: var(--font-2xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .username { color: var(--text-secondary); font-size: var(--font-base); display: block; margin: 0; }
     .bio { margin: 0; color: var(--text-primary); line-height: var(--leading-normal); }
     .bio-link { display: block; margin: 0; text-align: left; align-self: flex-start; color: var(--primary); font-size: var(--font-sm); text-decoration: none; word-break: break-all; }
