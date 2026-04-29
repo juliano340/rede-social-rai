@@ -126,6 +126,7 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
         [show]="showCropper()"
         [imageFile]="cropFile()"
         (cropped)="onCropConfirm($event)"
+        (skip)="onCropSkip()"
         (cancel)="closeCropper()"
       />
 
@@ -382,6 +383,15 @@ export class ProfileComponent implements OnInit {
     const file = new File([blob], 'avatar.webp', { type: 'image/webp' });
     this.cropFile.set(null);
     this.uploadAvatar(file);
+  }
+
+  onCropSkip() {
+    this.showCropper.set(false);
+    const file = this.cropFile();
+    this.cropFile.set(null);
+    if (file) {
+      this.uploadAvatar(file);
+    }
   }
 
   uploadAvatar(file: File) {

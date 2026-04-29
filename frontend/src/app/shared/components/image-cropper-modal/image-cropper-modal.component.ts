@@ -33,10 +33,15 @@ import Cropper from 'cropperjs';
             }
           </div>
           <div class="cropper-footer">
-            <button class="btn-cancel" (click)="cancel.emit()">Cancelar</button>
-            <button class="btn-confirm" (click)="confirm()" [disabled]="!ready()">
-              Usar foto cortada
+            <button class="btn-skip" (click)="skipCrop()" [disabled]="!ready()">
+              Usar foto original
             </button>
+            <div class="footer-right">
+              <button class="btn-cancel" (click)="cancel.emit()">Cancelar</button>
+              <button class="btn-confirm" (click)="confirm()" [disabled]="!ready()">
+                Cortar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -88,9 +93,19 @@ import Cropper from 'cropperjs';
     }
     .cropper-error { color: var(--error); background: var(--error-light); border-color: var(--destructive-light); }
     .cropper-footer {
-      display: flex; justify-content: flex-end; gap: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
       padding: 16px 22px 20px;
     }
+    .footer-right { display: flex; gap: 10px; }
+    .btn-skip {
+      padding: 10px 18px; border-radius: var(--radius-full);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      background: transparent; color: var(--text-tertiary);
+      border: 1px dashed var(--border);
+      transition: all 0.15s;
+    }
+    .btn-skip:hover:not(:disabled) { color: var(--text-primary); border-color: var(--border-strong); background: var(--accent); }
+    .btn-skip:disabled { opacity: 0.3; cursor: not-allowed; }
     .btn-cancel {
       padding: 10px 22px; border-radius: var(--radius-full);
       font-size: 14px; font-weight: 600; cursor: pointer;
@@ -109,8 +124,9 @@ import Cropper from 'cropperjs';
     .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-confirm:focus-visible, .btn-cancel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
     @media (max-width: 520px) {
-      .cropper-footer { flex-direction: column-reverse; }
-      .btn-cancel, .btn-confirm { width: 100%; }
+      .cropper-footer { flex-direction: column-reverse; align-items: stretch; }
+      .footer-right { flex-direction: column-reverse; }
+      .btn-skip, .btn-cancel, .btn-confirm { width: 100%; }
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `]
@@ -120,6 +136,7 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   imageFile = input.required<File | null>();
 
   cropped = output<Blob>();
+  skip = output<void>();
   cancel = output<void>();
 
   @ViewChild('image') image!: ElementRef<HTMLImageElement>;
@@ -175,9 +192,11 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
         aspectRatio: 1,
         viewMode: 1,
         dragMode: 'move',
-        autoCropArea: 0.8,
+        autoCropArea: 0.75,
         cropBoxMovable: true,
-        cropBoxResizable: false,
+        cropBoxResizable: true,
+        minCropBoxWidth: 80,
+        minCropBoxHeight: 80,
         toggleDragModeOnDblclick: false,
         responsive: true,
         restore: false,
@@ -194,6 +213,11 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   onImageError() {
     this.loadError.set(true);
     this.ready.set(false);
+    this.destroyCropper();
+  }
+
+  skipCrop() {
+    this.skip.emit();
     this.destroyCropper();
   }
 
