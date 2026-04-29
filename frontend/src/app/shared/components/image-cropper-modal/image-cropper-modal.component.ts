@@ -33,13 +33,13 @@ import Cropper from 'cropperjs';
             }
           </div>
           <div class="cropper-footer">
-            <button class="btn-skip" (click)="skipCrop()" [disabled]="!ready()">
+            <button class="btn-skip" (click)="skipCrop()" [disabled]="!ready() || processing()">
               Usar foto original
             </button>
             <div class="footer-right">
-              <button class="btn-cancel" (click)="cancel.emit()">Cancelar</button>
-              <button class="btn-confirm" (click)="confirm()" [disabled]="!ready()">
-                Cortar
+              <button class="btn-cancel" (click)="cancel.emit()" [disabled]="processing()">Cancelar</button>
+              <button class="btn-confirm" (click)="confirm()" [disabled]="!ready() || processing()">
+                @if (processing()) { Processando... } @else { Cortar }
               </button>
             </div>
           </div>
@@ -145,6 +145,7 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   imageSrc = signal<string>('');
   loadError = signal(false);
   ready = signal(false);
+  processing = signal(false);
   private cropper: Cropper | null = null;
   private objectUrl: string | null = null;
 
@@ -217,12 +218,15 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   }
 
   skipCrop() {
+    this.processing.set(true);
     this.skip.emit();
     this.destroyCropper();
   }
 
   confirm() {
-    if (!this.cropper) return;
+    if (!this.cropper || this.processing()) return;
+
+    this.processing.set(true);
 
     const canvas = this.cropper.getCroppedCanvas({
       width: 400,
@@ -232,7 +236,9 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
     canvas.toBlob((blob: Blob | null) => {
       if (blob) {
         this.cropped.emit(blob);
+        return;
       }
+      this.processing.set(false);
       this.destroyCropper();
     }, 'image/webp', 0.85);
   }
