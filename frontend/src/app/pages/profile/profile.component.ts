@@ -153,6 +153,8 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
       padding-top: var(--space-4);
       max-width: 800px;
       margin: 0 auto;
+      width: 100%;
+      overflow-x: hidden;
     }
     
     .profile-card {
@@ -163,6 +165,7 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
       margin-bottom: var(--space-6);
       box-shadow: var(--shadow-sm);
       transition: box-shadow var(--duration-150) var(--ease-out);
+      overflow: hidden;
       
       &:hover {
         box-shadow: var(--shadow-md);
@@ -247,6 +250,16 @@ import { ImageCropperModalComponent } from '../../shared/components/image-croppe
       
       .btn-secondary:hover {
         transform: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .profile-page {
+        padding: var(--space-4) var(--space-3) 0;
+      }
+
+      .profile-card {
+        padding: var(--space-5);
       }
     }
   `]

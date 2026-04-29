@@ -11,7 +11,10 @@ import Cropper from 'cropperjs';
       <div class="cropper-overlay" (click)="cancel.emit()">
         <div class="cropper-modal" (click)="$event.stopPropagation()">
           <div class="cropper-header">
-            <h2>Ajustar foto</h2>
+            <div>
+              <h2>Ajustar foto</h2>
+              <p>Arraste a imagem para centralizar seu avatar.</p>
+            </div>
             <button class="cropper-close" (click)="cancel.emit()">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -24,7 +27,7 @@ import Cropper from 'cropperjs';
           <div class="cropper-footer">
             <button class="btn-cancel" (click)="cancel.emit()">Cancelar</button>
             <button class="btn-confirm" (click)="confirm()" [disabled]="!ready()">
-              Confirmar
+              Usar foto cortada
             </button>
           </div>
         </div>
@@ -33,32 +36,33 @@ import Cropper from 'cropperjs';
   `,
   styles: [`
     .cropper-overlay {
-      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7);
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
       display: flex; align-items: center; justify-content: center;
-      z-index: 1000; animation: fadeIn 0.15s ease;
+      z-index: 1000; animation: fadeIn 0.15s ease; padding: 16px;
     }
     .cropper-modal {
       background: var(--background);
       border-radius: var(--radius-xl);
-      width: 90%; max-width: 460px;
+      width: min(100%, 460px); max-height: calc(100vh - 32px);
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
+      overflow: hidden; display: flex; flex-direction: column;
     }
     .cropper-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 16px 20px; border-bottom: 1px solid var(--border);
     }
     h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
+    p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; }
     .cropper-close {
       background: none; border: none; font-size: 24px; color: var(--text-secondary);
       cursor: pointer; padding: 4px 8px; border-radius: var(--radius-md); line-height: 1;
     }
     .cropper-close:hover { background: var(--background-secondary); }
     .cropper-body {
-      padding: 16px;
+      padding: 16px; overflow: auto;
     }
     .image-container {
-      max-width: 100%; max-height: 50vh;
+      max-width: 100%; max-height: 52vh;
       overflow: hidden;
       border-radius: var(--radius-lg);
     }
@@ -84,6 +88,10 @@ import Cropper from 'cropperjs';
     }
     .btn-confirm:hover:not(:disabled) { background: var(--primary-hover); }
     .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 520px) {
+      .cropper-footer { flex-direction: column-reverse; }
+      .btn-cancel, .btn-confirm { width: 100%; }
+    }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `]
 })

@@ -20,7 +20,10 @@ import { LucideIconsModule } from '../../../shared/icons/lucide-icons.module';
           <div class="modal-body">
             <div class="avatar-option" (click)="fileClick.emit()">
               <span class="option-icon">📁</span>
-              <span class="option-label">Enviar arquivo</span>
+              <span class="option-copy">
+                <span class="option-label">Enviar e cortar foto</span>
+                <span class="option-description">Escolha uma imagem do aparelho e ajuste o enquadramento.</span>
+              </span>
             </div>
             <div class="avatar-option-divider"><span>ou</span></div>
             <div class="avatar-url-option">
@@ -41,8 +44,8 @@ import { LucideIconsModule } from '../../../shared/icons/lucide-icons.module';
     }
   `,
   styles: [`
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 500; animation: fadeIn 0.15s ease; }
-    .avatar-modal { background: var(--background); border-radius: var(--radius-lg); width: 90%; max-width: 360px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; z-index: 500; animation: fadeIn 0.15s ease; padding: 16px; }
+    .avatar-modal { background: var(--background); border-radius: var(--radius-lg); width: min(100%, 380px); max-height: calc(100vh - 32px); overflow-y: auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
     h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
     .modal-close { background: none; border: none; font-size: 20px; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: var(--radius-md); }
@@ -51,7 +54,9 @@ import { LucideIconsModule } from '../../../shared/icons/lucide-icons.module';
     .avatar-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; transition: background 0.15s; }
     .avatar-option:hover { background: var(--background-secondary); }
     .option-icon { font-size: 20px; }
-    .option-label { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+    .option-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .option-label { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .option-description { color: var(--text-secondary); font-size: 12px; line-height: 1.35; }
     .avatar-option-divider { display: flex; align-items: center; gap: 12px; margin: 12px 0; color: var(--text-tertiary); font-size: 13px; }
     .avatar-option-divider::before, .avatar-option-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .avatar-url-option label { display: block; font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; }
