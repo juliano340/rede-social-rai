@@ -229,8 +229,8 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
     this.processing.set(true);
 
     const canvas = this.cropper.getCroppedCanvas({
-      width: 400,
-      height: 400,
+      width: 300,
+      height: 300,
     });
 
     canvas.toBlob((blob: Blob | null) => {
@@ -240,7 +240,7 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
       }
       this.processing.set(false);
       this.destroyCropper();
-    }, 'image/webp', 0.85);
+    }, 'image/jpeg', 0.92);
   }
 
   private destroyCropper() {

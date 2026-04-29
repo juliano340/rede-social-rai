@@ -380,7 +380,7 @@ export class ProfileComponent implements OnInit {
 
   onCropConfirm(blob: Blob) {
     this.showCropper.set(false);
-    const file = new File([blob], 'avatar.webp', { type: 'image/webp' });
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
     this.cropFile.set(null);
     this.uploadAvatar(file);
   }
