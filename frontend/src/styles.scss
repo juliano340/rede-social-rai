@@ -2,13 +2,13 @@
 
 /* Cropper theme overrides — match design system */
 .cropper-container { background: transparent !important; }
-.cropper-drag-box { background-color: transparent !important; }
-.cropper-modal { opacity: 0.6 !important; }
-.cropper-face { background-color: transparent !important; }
+.cropper-drag-box { background: transparent !important; }
+.cropper-modal { opacity: 0.65 !important; }
+.cropper-face { background-color: rgba(255, 255, 255, 0.08) !important; opacity: 1 !important; }
 .cropper-view-box { outline-color: var(--primary) !important; outline-width: 2px !important; }
 .cropper-line { background-color: var(--primary) !important; }
 .cropper-point { background-color: var(--primary) !important; }
-.cropper-bg { opacity: 0.15; }
+.cropper-bg { opacity: 0.12; }
 .cropper-center::before,
 .cropper-center::after { background-color: var(--text-tertiary) !important; }
 

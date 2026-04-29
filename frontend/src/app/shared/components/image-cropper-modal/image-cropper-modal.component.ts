@@ -175,12 +175,17 @@ export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
         aspectRatio: 1,
         viewMode: 1,
         dragMode: 'move',
-        autoCropArea: 1,
+        autoCropArea: 0.8,
         cropBoxMovable: true,
         cropBoxResizable: false,
         toggleDragModeOnDblclick: false,
         responsive: true,
         restore: false,
+        highlight: true,
+        modal: true,
+        guides: true,
+        center: true,
+        background: false,
       });
       this.ready.set(true);
     }, 100);
