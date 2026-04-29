@@ -1,4 +1,4 @@
-import { Component, input, output, ViewChild, ElementRef, AfterViewInit, signal, effect } from '@angular/core';
+import { Component, input, output, ViewChild, ElementRef, AfterViewInit, OnDestroy, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import Cropper from 'cropperjs';
 
@@ -20,9 +20,17 @@ import Cropper from 'cropperjs';
             </button>
           </div>
           <div class="cropper-body">
-            <div class="image-container" #imageContainer>
-              <img #image [src]="imageSrc()" alt="Preview" (load)="onImageLoad($event)" />
-            </div>
+            @if (loadError()) {
+              <div class="cropper-error">
+                Não foi possível carregar esta imagem. Tente uma foto em JPG, PNG ou WebP.
+              </div>
+            } @else if (imageSrc()) {
+              <div class="image-container" #imageContainer>
+                <img #image [src]="imageSrc()" alt="Preview" (load)="onImageLoad($event)" (error)="onImageError()" />
+              </div>
+            } @else {
+              <div class="cropper-loading">Carregando imagem...</div>
+            }
           </div>
           <div class="cropper-footer">
             <button class="btn-cancel" (click)="cancel.emit()">Cancelar</button>
@@ -69,6 +77,12 @@ import Cropper from 'cropperjs';
     .image-container img {
       max-width: 100%; display: block;
     }
+    .cropper-loading, .cropper-error {
+      min-height: 220px; display: flex; align-items: center; justify-content: center;
+      border: 1px dashed var(--border); border-radius: var(--radius-lg);
+      color: var(--text-secondary); font-size: 14px; text-align: center; padding: 24px;
+    }
+    .cropper-error { color: var(--error); background: var(--error-light); border-color: rgba(224, 36, 94, 0.25); }
     .cropper-footer {
       display: flex; justify-content: flex-end; gap: 12px;
       padding: 16px 20px; border-top: 1px solid var(--border);
@@ -95,7 +109,7 @@ import Cropper from 'cropperjs';
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `]
 })
-export class ImageCropperModalComponent implements AfterViewInit {
+export class ImageCropperModalComponent implements AfterViewInit, OnDestroy {
   show = input.required<boolean>();
   imageFile = input.required<File | null>();
 
@@ -106,8 +120,10 @@ export class ImageCropperModalComponent implements AfterViewInit {
   @ViewChild('imageContainer') imageContainer!: ElementRef<HTMLDivElement>;
 
   imageSrc = signal<string>('');
+  loadError = signal(false);
   ready = signal(false);
   private cropper: Cropper | null = null;
+  private objectUrl: string | null = null;
 
   constructor() {
     effect(() => {
@@ -126,18 +142,19 @@ export class ImageCropperModalComponent implements AfterViewInit {
     }
   }
 
+  ngOnDestroy() {
+    this.destroyCropper();
+  }
+
   private loadImage() {
     const file = this.imageFile();
     if (!file) return;
 
     this.destroyCropper();
+    this.loadError.set(false);
     this.ready.set(false);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      this.imageSrc.set(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    this.objectUrl = URL.createObjectURL(file);
+    this.imageSrc.set(this.objectUrl);
   }
 
   onImageLoad(event: Event) {
@@ -163,6 +180,12 @@ export class ImageCropperModalComponent implements AfterViewInit {
     }, 100);
   }
 
+  onImageError() {
+    this.loadError.set(true);
+    this.ready.set(false);
+    this.destroyCropper();
+  }
+
   confirm() {
     if (!this.cropper) return;
 
@@ -183,6 +206,10 @@ export class ImageCropperModalComponent implements AfterViewInit {
     if (this.cropper) {
       this.cropper.destroy();
       this.cropper = null;
+    }
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
     }
     this.imageSrc.set('');
   }

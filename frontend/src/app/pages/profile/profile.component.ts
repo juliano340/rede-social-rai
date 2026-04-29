@@ -368,6 +368,7 @@ export class ProfileComponent implements OnInit {
       this.state.closeAvatarModal();
       this.cropFile.set(file);
       this.showCropper.set(true);
+      input.value = '';
     }
   }
 
