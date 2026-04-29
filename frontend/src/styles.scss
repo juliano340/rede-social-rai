@@ -1,5 +1,17 @@
 @import 'cropperjs/dist/cropper.css';
 
+/* Cropper theme overrides — match design system */
+.cropper-container { background: transparent !important; }
+.cropper-drag-box { background-color: transparent !important; }
+.cropper-modal { opacity: 0.6 !important; }
+.cropper-face { background-color: transparent !important; }
+.cropper-view-box { outline-color: var(--primary) !important; outline-width: 2px !important; }
+.cropper-line { background-color: var(--primary) !important; }
+.cropper-point { background-color: var(--primary) !important; }
+.cropper-bg { opacity: 0.15; }
+.cropper-center::before,
+.cropper-center::after { background-color: var(--text-tertiary) !important; }
+
 * {
   margin: 0;
   padding: 0;

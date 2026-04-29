@@ -9,7 +9,7 @@ import Cropper from 'cropperjs';
   template: `
     @if (show()) {
       <div class="cropper-overlay" (click)="cancel.emit()">
-        <div class="cropper-modal" (click)="$event.stopPropagation()">
+        <div class="crop-card" (click)="$event.stopPropagation()">
           <div class="cropper-header">
             <div>
               <h2>Ajustar foto</h2>
@@ -48,7 +48,7 @@ import Cropper from 'cropperjs';
       display: flex; align-items: center; justify-content: center;
       z-index: 1000; animation: fadeIn 0.15s ease; padding: 16px;
     }
-    .cropper-modal {
+    .crop-card {
       background: var(--popover);
       border-radius: var(--radius-xl);
       width: min(100%, 460px); max-height: calc(100vh - 32px);
